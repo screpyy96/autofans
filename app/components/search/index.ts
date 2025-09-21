@@ -8,7 +8,7 @@ export type { FilterPanelProps } from './FilterPanel';
 export { SortControls } from './SortControls';
 export type { SortControlsProps, ViewMode, ResultsPerPage } from './SortControls';
 
-export { SavedSearches } from './SavedSearches';
+export { SearchHeader } from './SearchHeader';
 
 // Hooks
 export { useSearch } from '~/hooks/useSearch';

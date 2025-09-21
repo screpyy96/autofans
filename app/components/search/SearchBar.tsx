@@ -325,35 +325,52 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   return (
     <div className={cn("relative w-full", className)}>
       <form onSubmit={handleSubmit} className="relative">
-        <Input
-          ref={inputRef}
-          type="text"
-          value={query}
-          onChange={handleInputChange}
-          onFocus={handleInputFocus}
-          onBlur={handleInputBlur}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          autoFocus={autoFocus}
-          disabled={disabled}
-          leftIcon={<SearchIcon className="h-5 w-5 text-white/80" />}
-          leftIconClassName="text-white/80"
-          className={isLoading ? "pr-20" : "pr-16"}
-        />
-        {isLoading && (
-          <div className="pointer-events-none absolute inset-y-0 right-12 flex items-center text-accent-gold">
-            <Spinner size="sm" />
+        {/* Clean input container - similar to hero style */}
+        <div className="relative bg-secondary-800/50 backdrop-blur-sm border border-accent-gold/30 rounded-xl overflow-hidden hover:border-accent-gold/50 transition-colors duration-300">
+          {/* Search icon */}
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <SearchIcon className="h-5 w-5 text-accent-gold" />
           </div>
-        )}
-        {query && (
-          <button
-            type="button"
-            onClick={handleClear}
-            className="absolute inset-y-0 right-4 flex items-center text-white/60 hover:text-accent-gold transition-colors"
-          >
-            <XIcon />
-          </button>
-        )}
+
+          {/* Input field */}
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={handleInputChange}
+            onFocus={handleInputFocus}
+            onBlur={handleInputBlur}
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder}
+            autoFocus={autoFocus}
+            disabled={disabled}
+            className={cn(
+              'block w-full pl-12 pr-16 py-3 bg-transparent border-0',
+              'placeholder-white/70 text-white',
+              'focus:outline-none focus:ring-2 focus:ring-accent-gold focus:border-accent-gold',
+              'transition-all duration-300',
+              disabled && 'opacity-50 cursor-not-allowed'
+            )}
+          />
+
+          {/* Loading spinner */}
+          {isLoading && (
+            <div className="absolute inset-y-0 right-12 flex items-center text-accent-gold">
+              <Spinner size="sm" />
+            </div>
+          )}
+
+          {/* Clear button */}
+          {query && (
+            <button
+              type="button"
+              onClick={handleClear}
+              className="absolute inset-y-0 right-4 flex items-center text-accent-gold hover:text-accent-gold transition-colors"
+            >
+              <XIcon />
+            </button>
+          )}
+        </div>
       </form>
 
       <AnimatePresence>
@@ -364,21 +381,21 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="absolute top-full left-0 right-0 z-50 mt-2 bg-glass backdrop-blur-xl border border-premium rounded-2xl shadow-modal max-h-96 overflow-y-auto"
+            className="absolute top-full left-0 right-0 z-50 mt-2 bg-secondary-900/90 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl max-h-96 overflow-y-auto"
           >
             {isLoading ? (
               <div className="p-4 text-center">
                 <Spinner size="sm" className="mx-auto" />
-                <p className="text-sm text-gray-400 mt-2">Se caută...</p>
+                <p className="text-sm text-white/80 mt-2">Se caută...</p>
               </div>
             ) : (
               <div className="py-2">
                 {Object.entries(groupedSuggestions).map(([category, items]) => (
                   <div key={category}>
                     {category !== 'undefined' && (
-                      <div className="px-4 py-2 text-xs font-semibold text-accent-gold uppercase tracking-wide border-b border-premium flex items-center">
-                        {category === 'recent' && <ClockIcon className="mr-2" />}
-                        {category === 'popular' && <TrendingIcon className="mr-2" />}
+                      <div className="px-4 py-2 text-xs font-semibold text-accent-gold uppercase tracking-wide border-b border-white/10 flex items-center bg-white/5">
+                        {category === 'recent' && <ClockIcon className="mr-2 w-3 h-3 text-accent-gold" />}
+                        {category === 'popular' && <TrendingIcon className="mr-2 w-3 h-3 text-accent-gold" />}
                         {category === 'recent' ? 'Căutări recente' : 
                          category === 'popular' ? 'Căutări populare' : category}
                       </div>
@@ -391,30 +408,30 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                           type="button"
                           onClick={() => handleSuggestionClick(suggestion)}
                           className={cn(
-                            "w-full px-4 py-3 text-left hover:bg-accent-gold/10 transition-colors flex items-center text-gray-300 hover:text-accent-gold",
+                            "w-full px-4 py-3 text-left hover:bg-accent-gold/10 transition-colors flex items-center text-white hover:text-accent-gold",
                             globalIndex === selectedIndex && "bg-accent-gold/20 text-accent-gold"
                           )}
                           whileHover={{ backgroundColor: "rgba(212, 175, 55, 0.1)" }}
                         >
                           <div className="flex items-center flex-1">
                             {suggestion.type === 'recent' && (
-                              <ClockIcon className="mr-3 text-accent-gold" />
+                              <ClockIcon className="mr-3 w-4 h-4 text-accent-gold" />
                             )}
                             {suggestion.type === 'popular' && (
-                              <TrendingIcon className="mr-3 text-accent-gold" />
+                              <TrendingIcon className="mr-3 w-4 h-4 text-accent-gold" />
                             )}
                             {(suggestion.type === 'brand' || suggestion.type === 'model') && (
-                              <SearchIcon className="mr-3 text-accent-gold" />
+                              <SearchIcon className="mr-3 w-4 h-4 text-accent-gold" />
                             )}
                             <span className="text-white">{suggestion.text}</span>
                           </div>
                           {suggestion.type === 'brand' && (
-                            <span className="text-xs text-accent-gold bg-accent-gold/20 px-2 py-1 rounded border border-accent-gold/30">
+                            <span className="text-xs text-accent-gold bg-accent-gold/10 px-2 py-1 rounded-full border border-accent-gold/30">
                               Marcă
                             </span>
                           )}
                           {suggestion.type === 'model' && (
-                            <span className="text-xs text-accent-gold bg-accent-gold/20 px-2 py-1 rounded border border-accent-gold/30">
+                            <span className="text-xs text-accent-gold bg-accent-gold/10 px-2 py-1 rounded-full border border-accent-gold/30">
                               Model
                             </span>
                           )}

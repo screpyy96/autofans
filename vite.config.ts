@@ -4,7 +4,7 @@ import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
-  plugins: [tailwindcss(), reactRouter(), tsconfigPaths()],
+  plugins: [reactRouter(), tailwindcss(), tsconfigPaths()],
   build: {
     // Code splitting optimization
     rollupOptions: {
@@ -32,7 +32,7 @@ export default defineConfig({
   },
   // Performance optimizations
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router', 'framer-motion', 'lucide-react'],
+    include: ['react', 'react-dom', 'framer-motion', 'lucide-react'],
     exclude: ['@react-router/dev']
-  }
+  },
 });

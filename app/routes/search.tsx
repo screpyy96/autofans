@@ -1,23 +1,19 @@
 import { Link } from 'react-router';
 import { useState, useEffect } from 'react';
-import type { Route } from "./+types/search";
-import { SearchBar } from '~/components/search/SearchBar';
+import { SearchHeader } from '~/components/search';
 import { FilterPanel } from '~/components/search/FilterPanel';
-import { SortControls } from '~/components/search/SortControls';
+
 import { CarGrid } from '~/components/car/CarGrid';
-import { Button } from '~/components/ui/Button';
-import { Card } from '~/components/ui/Card';
 import { Badge } from '~/components/ui/Badge';
-import { RouteErrorBoundary } from '~/components/error';
-import { Filter, X } from 'lucide-react';
+import { Button } from '~/components/ui/Button';
 import { mockCars } from '~/data/mockData';
 import { useFilters } from '~/hooks/useFilters';
 import { useSortAndView } from '~/hooks/useSortAndView';
 import { useFavorites, useComparison, useAppInitialization } from '~/stores/useAppStore';
+import { RouteErrorBoundary } from '~/components/error';
 import type { FilterState } from '~/types';
-import { cn } from '~/lib/utils';
 
-export function meta({}: Route.MetaArgs) {
+export function meta({}: any) {
   return [
     { title: "Căutare Mașini - AutoFans" },
     { name: "description", content: "Caută și găsește mașina perfectă din peste 15,000 de anunțuri verificate." },
@@ -119,104 +115,20 @@ function SearchContent() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
-        {/* Search Header */}
-        <div className="mb-8 sm:mb-12">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-4 tracking-tight">
-              Caută mașini
-            </h1>
-            <p className="text-lg sm:text-xl text-gray-300 max-w-2xl mx-auto">
-              Găsește mașina perfectă din peste 15,000 de anunțuri verificate
-            </p>
-          </div>
-
-          <Card
-            variant="elevated"
-            padding="lg"
-            className="bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-lg border border-white/20 text-white shadow-2xl"
-          >
-            <div className="space-y-6">
-              {/* Search Bar Section */}
-              <div className="flex flex-col lg:flex-row lg:items-center lg:gap-8">
-                <div className="w-full lg:flex-1">
-                  <SearchBar
-                    onSearch={handleSearch}
-                    placeholder="Caută după marcă, model, oraș..."
-                    className="w-full"
-                  />
-                </div>
-
-                {/* Results Info */}
-                <div className="flex w-full flex-col gap-3 text-sm text-white/80 sm:text-base lg:items-end lg:text-right">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/15 px-4 py-2 font-semibold text-white/90 backdrop-blur-sm">
-                      <div className="w-2 h-2 bg-accent-gold rounded-full"></div>
-                      {displayedCars.length} rezultate
-                    </span>
-                    {comparisonCars.length > 0 && (
-                      <span className="inline-flex items-center gap-2 rounded-full border border-accent-gold/30 bg-accent-gold/15 px-4 py-2 font-semibold text-accent-gold backdrop-blur-sm">
-                        <div className="w-2 h-2 bg-accent-gold rounded-full animate-pulse"></div>
-                        {comparisonCars.length} în comparație
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-white/50 sm:text-sm">
-                    <span className="inline-block w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
-                    Actualizat automat după aplicarea filtrelor
-                  </p>
-                </div>
-              </div>
-
-              {/* Controls Section */}
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pt-4 border-t border-white/10">
-                <div className="flex flex-wrap items-center gap-3">
-                  <Button
-                    variant={showFilters ? "primary" : "outline"}
-                    onClick={() => setShowFilters(!showFilters)}
-                    className={cn(
-                      "flex items-center gap-2 rounded-xl border-2 transition-all duration-200",
-                      showFilters
-                        ? "bg-gold-gradient text-secondary-900 shadow-lg shadow-accent-gold/25 border-accent-gold"
-                        : "bg-white/10 text-white hover:bg-white/20 border-white/20 hover:border-white/40"
-                    )}
-                  >
-                    <Filter className="h-4 w-4" />
-                    Filtre
-                    {activeFilterCount > 0 && (
-                      <Badge variant="secondary" size="sm" className="bg-red-500/20 text-red-300 border-red-500/30">
-                        {activeFilterCount}
-                      </Badge>
-                    )}
-                  </Button>
-
-                  {hasActiveFilters && (
-                    <button
-                      onClick={resetFilters}
-                      className="inline-flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-300 transition-all duration-200 hover:bg-red-500/20 hover:border-red-500/30"
-                    >
-                      <X className="h-4 w-4" />
-                      Șterge filtrele
-                    </button>
-                  )}
-                </div>
-
-                <div className="sm:ml-auto">
-                  <SortControls
-                    activeSort={activeSort}
-                    onSortChange={setActiveSort}
-                    viewMode={viewMode}
-                    onViewModeChange={setViewMode}
-                    resultsPerPage={12}
-                    onResultsPerPageChange={() => {}}
-                    totalResults={displayedCars.length}
-                    showResultsInfo={false}
-                    compact={false}
-                  />
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div>
+        <SearchHeader
+          onSearch={handleSearch}
+          displayedCarsCount={displayedCars.length}
+          comparisonCarsCount={comparisonCars.length}
+          showFilters={showFilters}
+          setShowFilters={setShowFilters}
+          activeFilterCount={activeFilterCount}
+          hasActiveFilters={hasActiveFilters}
+          resetFilters={resetFilters}
+          activeSort={activeSort}
+          setActiveSort={setActiveSort}
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+        />
 
         <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
           {/* Filters Sidebar */}
@@ -261,7 +173,7 @@ function SearchContent() {
                     <div className="absolute inset-0 rounded-full h-16 w-16 border-4 border-transparent border-r-accent-gold/40 animate-spin mx-auto" style={{animationDirection: 'reverse', animationDuration: '1s'}}></div>
                   </div>
                   <p className="text-white text-lg font-medium">Căutăm mașini...</p>
-                  <p className="text-gray-400 text-sm mt-2">Te rugăm să aștepți</p>
+                  <p className="text-gray-300 text-sm mt-2">Te rugăm să aștepți</p>
                 </div>
               </div>
             ) : (

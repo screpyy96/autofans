@@ -33,6 +33,7 @@ export interface CreateListingWizardProps {
     onSaveDraft: (draft: Partial<CarDraft>) => Promise<void>;
     initialData?: Partial<CarDraft>;
     onClose?: () => void;
+    onFilesSelected?: (files: File[]) => Promise<void>;
 }
 
 interface WizardStep {
@@ -84,7 +85,8 @@ export function CreateListingWizard({
     onSubmit,
     onSaveDraft,
     initialData,
-    onClose
+    onClose,
+    onFilesSelected
 }: CreateListingWizardProps) {
     const [currentStep, setCurrentStep] = useState(0);
     const [formData, setFormData] = useState<Partial<CarDraft>>(initialData || {});
@@ -1064,8 +1066,8 @@ function DescriptionStep({ formData, updateFormData, errors }: StepProps) {
         </div>
     );
 } function
-    ImagesStep({ formData, updateFormData, errors }: StepProps) {
-    const handleImagesChange = (files: File[]) => {
+    ImagesStep({ formData, updateFormData, errors, onFilesSelected }: StepProps & { onFilesSelected?: (files: File[]) => Promise<void> }) {
+    const handleImagesChange = async (files: File[]) => {
         // Convert files to Image objects for the form data
         const imageObjects: Image[] = files.map((file, index) => ({
             id: `temp-${index}`,
@@ -1077,6 +1079,13 @@ function DescriptionStep({ formData, updateFormData, errors }: StepProps) {
         }));
 
         updateFormData('images', imageObjects);
+        if (onFilesSelected) {
+            try {
+                await onFilesSelected(files);
+            } catch (e) {
+                console.error('Image upload error', e);
+            }
+        }
     };
 
     return (

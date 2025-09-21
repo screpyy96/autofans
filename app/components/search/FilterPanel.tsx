@@ -457,12 +457,16 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
         "relative overflow-hidden rounded-3xl border border-primary-700/40 bg-secondary-900/70 text-white shadow-[0_25px_60px_rgba(8,12,24,0.55)] backdrop-blur-xl",
         className
       )}
+      style={{ minHeight: isMobile ? 'auto' : 'auto', maxHeight: isMobile ? '80vh' : 'none' }}
     >
       <div className="pointer-events-none absolute -top-24 right-10 h-40 w-40 rounded-full bg-primary-600/25 blur-3xl" aria-hidden="true" />
       <div className="pointer-events-none absolute -bottom-28 left-6 h-36 w-36 rounded-full bg-accent-gold/25 blur-3xl" aria-hidden="true" />
 
       {/* Header */}
-      <div className={cn("relative border-b border-white/12 px-5 py-5", isMobile && "px-4 py-4")}>
+      <div
+        className={cn("relative border-b border-white/12 px-5 py-5", isMobile && "px-4 py-4")}
+        style={isMobile ? { position: 'sticky', top: 0, zIndex: 20, background: 'rgba(15, 23, 42, 0.95)', backdropFilter: 'blur(12px)' } : {}}
+      >
         <div className={cn("flex items-center justify-between", isMobile && "flex-col items-start space-y-3") }>
           <div className="flex items-center gap-3">
             <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-accent-gold/15 text-accent-gold">
@@ -542,7 +546,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
       </div>
 
       {/* Filter Groups */}
-      <div className="relative divide-y divide-white/12 pb-20 text-sm sm:pb-10">
+      <div className="relative divide-y divide-white/12 pb-20 text-sm sm:pb-10 max-h-[60vh] overflow-y-auto lg:max-h-none lg:overflow-visible">
         {/* Price Range */}
         <FilterGroup
           title="Preț"
@@ -704,7 +708,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
       </div>
 
       {isMobile && (
-        <div className="sticky bottom-0 left-0 right-0 border-t border-white/12 bg-secondary-900/95 px-4 py-3 backdrop-blur-xl">
+        <div className="sticky bottom-0 left-0 right-0 border-t border-white/12 bg-secondary-900/95 px-4 py-3 backdrop-blur-xl z-10">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"

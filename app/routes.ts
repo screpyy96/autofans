@@ -4,6 +4,9 @@ export default [
   // Core routes - loaded immediately
   index("routes/home.tsx"),
   route("/search", "routes/search.tsx"),
+  route("/login", "routes/login.tsx", { lazy: true }),
+  route("/auth/callback", "routes/auth.callback.tsx", { lazy: true }),
+  route("/logout", "routes/logout.tsx", { lazy: true }),
   
   // Secondary routes - can be lazy loaded
   route("/favorites", "routes/favorites.tsx", { lazy: true }),
@@ -11,6 +14,8 @@ export default [
   route("/car/:id", "routes/car.$id.tsx"),
   route("/create-listing", "routes/create-listing.tsx", { lazy: true }),
   route("/compare", "routes/compare.tsx", { lazy: true }),
+  route("/dashboard", "routes/dashboard.tsx", { lazy: true }),
+  route("/dashboard/listings", "routes/dashboard.listings.tsx", { lazy: true }),
   
   // Demo routes (pentru dezvoltare) - always lazy
   route("/demo/design-system", "routes/design-system.tsx", { lazy: true }),

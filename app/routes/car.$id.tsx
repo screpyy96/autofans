@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import type { Route } from "./+types/car.$id";
+import { type LoaderFunctionArgs, useLoaderData } from "react-router";
+import { getSupabaseServerClient } from "~/lib/supabase.server";
 import { CarDetails } from '~/components/car/CarDetails';
 import { LoanCalculator } from '~/components/calculator/LoanCalculator';
 import { ContactModal } from '~/components/ui/ContactModal';
@@ -7,6 +9,8 @@ import { Card } from '~/components/ui/Card';
 import { Button } from '~/components/ui/Button';
 import { Calculator, MessageCircle } from 'lucide-react';
 import { mockCars } from '~/data/mockData';
+import type { Car, Image } from '~/types';
+import { FuelType, TransmissionType } from "~/types";
 import { useComparison } from '~/stores/useAppStore';
 
 export function meta({ params }: Route.MetaArgs) {
@@ -24,12 +28,97 @@ export function meta({ params }: Route.MetaArgs) {
   ];
 }
 
+export async function loader({ params, request }: LoaderFunctionArgs) {
+  const idParam = params.id;
+  if (!idParam) return { listing: null };
+  try {
+    const { supabase, headers } = getSupabaseServerClient(request);
+    const { data: listing } = await supabase
+      .from('listings')
+      .select('id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, body_type, images, created_at')
+      .eq('id', Number(idParam))
+      .single();
+
+    let signedMap: Record<string, string> = {};
+    if (listing?.images?.length) {
+      const paths: string[] = (listing.images as any[])
+        .map((i) => i?.path)
+        .filter(Boolean);
+      if (paths.length) {
+        const { data: signed } = await supabase
+          .storage
+          .from('listing-images')
+          .createSignedUrls(paths, 60 * 60);
+        for (const item of signed || []) {
+          const it: any = item;
+          if (it?.path && it?.signedUrl) signedMap[it.path] = it.signedUrl as string;
+        }
+      }
+    }
+
+    return { listing: listing ?? null, signedMap };
+  } catch (e) {
+    console.error('car.$id loader error:', e);
+    return { listing: null, signedMap: {} };
+  }
+}
+
 export default function CarDetail({ params }: Route.ComponentProps) {
+  const data = useLoaderData() as any;
   const [isFavorited, setIsFavorited] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
 
-  const car = mockCars.find(c => c.id === params.id);
+  let car: Car | undefined = undefined;
+  if (data?.listing) {
+    const l = data.listing as any;
+    const images: Image[] = (l.images || [])
+      .map((img: any, idx: number) => ({
+        id: String(idx),
+        url: data.signedMap?.[img.path] || '',
+        thumbnailUrl: data.signedMap?.[img.path] || '',
+        alt: l.title,
+        order: idx,
+        isMain: !!img.isMain,
+      }))
+      .filter((i: Image) => !!i.url);
+
+    car = {
+      id: String(l.id),
+      title: l.title || `${l.make} ${l.model}`,
+      brand: l.make || '—',
+      model: l.model || '—',
+      year: l.year || new Date().getFullYear(),
+      mileage: l.mileage || 0,
+      fuelType: (l.fuel_type as FuelType) || FuelType.PETROL,
+      transmission: (l.transmission as TransmissionType) || TransmissionType.MANUAL,
+      price: Number(l.price || 0),
+      currency: l.currency || 'EUR',
+      negotiable: false,
+      location: { id: 'loc-1', city: 'București', county: 'București', country: 'RO' },
+      images: images.length ? images : [{ id: '0', url: '/placeholder-car.jpg', thumbnailUrl: '/placeholder-car.jpg', alt: 'car', order: 0, isMain: true }],
+      specifications: { engineSize: 0, power: 0, doors: 4, seats: 5 },
+      features: [],
+      condition: { overall: 3 as any, exterior: 3 as any, interior: 3 as any, engine: 3 as any, transmission: 3 as any, hasAccidents: false },
+      seller: {
+        id: 'seller', type: 'dealer', name: 'Vânzător', email: '', phone: '',
+        location: { id: 'loc-1', city: 'București', county: 'București', country: 'RO' }, isVerified: true,
+      },
+      description: l.description || '',
+      createdAt: l.created_at ? new Date(l.created_at) : new Date(),
+      updatedAt: l.created_at ? new Date(l.created_at) : new Date(),
+      status: 'active' as any,
+      viewCount: 0,
+      favoriteCount: 0,
+      contactCount: 0,
+      owners: 1,
+      serviceHistory: false,
+    };
+  }
+
+  if (!car) {
+    car = mockCars.find(c => c.id === params.id);
+  }
   const similarCars = mockCars.filter(c => c.id !== params.id && c.brand === car?.brand).slice(0, 4);
 
   const { isInComparison, addToComparison, removeFromComparison } = useComparison();

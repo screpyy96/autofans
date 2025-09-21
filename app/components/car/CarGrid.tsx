@@ -33,12 +33,12 @@ function CarCardSkeleton({ variant = 'grid' }: { variant?: 'grid' | 'list' }) {
   
   return (
     <div className={cn(
-      'animate-pulse rounded-lg border border-gray-200 bg-white overflow-hidden',
+      'animate-pulse rounded-lg border border-white/10 bg-secondary-900/70 backdrop-blur-xl overflow-hidden',
       isListView ? 'flex flex-row' : 'flex flex-col'
     )}>
       {/* Image skeleton */}
       <div className={cn(
-        'bg-gray-200',
+        'bg-secondary-700/50',
         isListView ? 'w-80 h-48 flex-shrink-0' : 'aspect-[4/3] w-full'
       )} />
       
@@ -48,8 +48,8 @@ function CarCardSkeleton({ variant = 'grid' }: { variant?: 'grid' | 'list' }) {
         isListView ? 'flex-1 p-6' : 'p-4'
       )}>
         {/* Title skeleton */}
-        <div className="h-6 bg-gray-200 rounded mb-2" />
-        <div className="h-4 bg-gray-200 rounded w-3/4 mb-3" />
+        <div className="h-6 bg-secondary-700/50 rounded mb-2" />
+        <div className="h-4 bg-secondary-700/50 rounded w-3/4 mb-3" />
         
         {/* Specs skeleton */}
         <div className={cn(
@@ -57,30 +57,30 @@ function CarCardSkeleton({ variant = 'grid' }: { variant?: 'grid' | 'list' }) {
           isListView ? 'grid-cols-2' : 'grid-cols-2'
         )}>
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-4 bg-gray-200 rounded" />
+            <div key={i} className="h-4 bg-secondary-700/50 rounded" />
           ))}
         </div>
         
         {/* Features skeleton */}
         <div className="mb-4 flex gap-1 flex-wrap">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-6 w-16 bg-gray-200 rounded-full" />
+            <div key={i} className="h-6 w-16 bg-secondary-700/50 rounded-full" />
           ))}
         </div>
         
         {/* Stats skeleton */}
         <div className="mb-4 flex gap-4">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-4 w-8 bg-gray-200 rounded" />
+            <div key={i} className="h-4 w-8 bg-secondary-700/50 rounded" />
           ))}
         </div>
         
         {/* Seller skeleton */}
         <div className="mb-4 flex items-center gap-3">
-          <div className="h-8 w-8 bg-gray-200 rounded-full" />
+          <div className="h-8 w-8 bg-secondary-700/50 rounded-full" />
           <div className="flex-1">
-            <div className="h-4 bg-gray-200 rounded mb-1" />
-            <div className="h-3 bg-gray-200 rounded w-2/3" />
+            <div className="h-4 bg-secondary-700/50 rounded mb-1" />
+            <div className="h-3 bg-secondary-700/50 rounded w-2/3" />
           </div>
         </div>
         
@@ -89,8 +89,8 @@ function CarCardSkeleton({ variant = 'grid' }: { variant?: 'grid' | 'list' }) {
           'flex gap-2',
           isListView ? 'flex-row' : 'flex-col'
         )}>
-          <div className="h-10 bg-gray-200 rounded flex-1" />
-          {!isListView && <div className="h-10 bg-gray-200 rounded" />}
+          <div className="h-10 bg-secondary-700/50 rounded flex-1" />
+          {!isListView && <div className="h-10 bg-secondary-700/50 rounded" />}
         </div>
       </div>
     </div>
@@ -117,15 +117,15 @@ function EmptyState({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="mb-6 rounded-full bg-gray-100 p-6">
-        <Search className="h-12 w-12 text-gray-400" />
+      <div className="mb-6 rounded-full bg-secondary-800/60 p-6">
+        <Search className="h-12 w-12 text-accent-gold" />
       </div>
       
-      <h3 className="mb-2 text-xl font-semibold text-gray-900">
+      <h3 className="mb-2 text-xl font-semibold text-white">
         {title}
       </h3>
       
-      <p className="mb-6 text-gray-500">
+      <p className="mb-6 text-gray-300">
         {description}
       </p>
       
@@ -298,12 +298,12 @@ export function CarGrid({
       {/* End of results message */}
       {!hasMore && cars.length > 0 && (
         <motion.div
-          className="mt-8 text-center text-gray-500"
+          className="mt-8 text-center text-gray-300"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
         >
-          <div className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-4 py-2">
+          <div className="inline-flex items-center gap-2 rounded-full bg-secondary-800/60 px-4 py-2">
             <CarIcon className="h-4 w-4" />
             <span>Ai văzut toate mașinile disponibile</span>
           </div>

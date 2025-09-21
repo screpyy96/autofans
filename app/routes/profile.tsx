@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Link } from 'react-router';
+import { Link, redirect, Form, useLoaderData } from 'react-router';
+import type { LoaderFunctionArgs } from 'react-router';
+import { getSupabaseServerClient } from '~/lib/supabase.server';
 import type { Route } from "./+types/profile";
 import { Button } from '~/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/Card';
@@ -31,7 +33,24 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
+export async function loader({ request }: LoaderFunctionArgs) {
+  const { supabase, headers } = getSupabaseServerClient(request);
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    const next = new URL(request.url).pathname;
+    return redirect(`/login?next=${encodeURIComponent(next)}`, { headers });
+  }
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id, role, email, display_name, avatar_url')
+    .eq('id', user.id)
+    .single();
+  return { profile };
+}
+
 export default function Profile() {
+  const data = useLoaderData<typeof loader>();
+  const role = (data as any)?.profile?.role as 'buyer' | 'seller' | undefined;
   const [activeTab, setActiveTab] = useState<'overview' | 'listings' | 'settings'>('overview');
   const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
 
@@ -111,6 +130,26 @@ export default function Profile() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        {/* Seller status and quick actions */}
+        <Card variant="elevated" padding="lg" className="mb-6 sm:mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-white font-semibold">Tip cont</h2>
+              <p className="text-gray-300 text-sm">{role === 'seller' ? 'Vânzător (poți publica anunțuri)' : 'Cumpărător (poți salva favorite și căutări)'}</p>
+            </div>
+            {role === 'seller' ? (
+              <Link to="/dashboard">
+                <Button variant="outline" size="sm">Deschide Dashboard</Button>
+              </Link>
+            ) : (
+              <Form method="post" action="/dashboard">
+                <input type="hidden" name="intent" value="promote" />
+                <Button size="sm" className="bg-gold-gradient text-secondary-900">Devino vânzător</Button>
+              </Form>
+            )}
+          </div>
+        </Card>
+
         {/* Profile Header - Mobile Optimized */}
         <Card variant="elevated" padding="lg" className="mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">

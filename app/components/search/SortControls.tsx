@@ -64,15 +64,15 @@ const ViewModeToggle: React.FC<ViewModeToggleProps> = ({
   compact = false
 }) => {
   return (
-    <div className="flex items-center bg-secondary-800/80 border border-primary-700/40 rounded-xl p-1 shadow-[0_4px_16px_rgba(15,23,42,0.35)] backdrop-blur">
+    <div className="flex items-center bg-secondary-800/80 border border-accent-gold/30 rounded-xl p-1 shadow-[0_4px_16px_rgba(15,23,42,0.35)] backdrop-blur hover:shadow-glow transition-shadow">
       <motion.button
         onClick={() => onViewModeChange('grid')}
         className={cn(
           "flex items-center justify-center rounded-lg transition-all duration-200",
           compact ? "px-2 py-1" : "px-3 py-2",
           viewMode === 'grid'
-            ? "bg-primary-600 text-white shadow-card"
-            : "text-white/60 hover:text-white"
+            ? "bg-gold-gradient text-secondary-900 shadow-card"
+            : "text-white/60 hover:text-accent-gold hover:bg-accent-gold/10"
         )}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
@@ -87,8 +87,8 @@ const ViewModeToggle: React.FC<ViewModeToggleProps> = ({
           "flex items-center justify-center rounded-lg transition-all duration-200",
           compact ? "px-2 py-1" : "px-3 py-2",
           viewMode === 'list'
-            ? "bg-primary-600 text-white shadow-card"
-            : "text-white/60 hover:text-white"
+            ? "bg-gold-gradient text-secondary-900 shadow-card"
+            : "text-white/60 hover:text-accent-gold hover:bg-accent-gold/10"
         )}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}

@@ -13,9 +13,9 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 
 const buttonVariants = {
   primary: 'bg-gold-gradient text-secondary-900 hover:shadow-glow focus:ring-accent-gold focus:ring-offset-secondary-800',
-  secondary: 'bg-secondary-700 text-white hover:bg-secondary-600 focus:ring-accent-gold focus:ring-offset-secondary-800',
-  outline: 'border-2 border-premium text-gray-300 hover:bg-accent-gold/10 hover:text-accent-gold hover:border-accent-gold focus:ring-accent-gold focus:ring-offset-secondary-800',
-  ghost: 'text-gray-300 hover:bg-accent-gold/10 hover:text-accent-gold focus:ring-accent-gold focus:ring-offset-secondary-800',
+  secondary: 'bg-secondary-800/50 text-white hover:bg-secondary-700/50 border border-accent-gold/20 focus:ring-accent-gold focus:ring-offset-secondary-800',
+  outline: 'border-2 border-accent-gold/30 text-accent-gold hover:bg-accent-gold/10 hover:text-accent-gold focus:ring-accent-gold focus:ring-offset-secondary-800',
+  ghost: 'text-white/70 hover:bg-accent-gold/10 hover:text-accent-gold focus:ring-accent-gold focus:ring-offset-secondary-800',
   danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 focus:ring-offset-secondary-800',
 };
 

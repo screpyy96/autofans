@@ -33,8 +33,8 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           <motion.select
             ref={ref}
             className={cn(
-              'block w-full px-4 py-3 border border-premium rounded-2xl',
-              'text-white bg-glass backdrop-blur-xl',
+              'block w-full px-4 py-3 border border-accent-gold/30 rounded-xl',
+              'text-white bg-secondary-800/50 backdrop-blur-sm',
               'focus:outline-none focus:ring-2 focus:ring-accent-gold focus:border-accent-gold focus:ring-offset-secondary-800',
               'transition-all duration-300 hover:border-accent-gold/50',
               'appearance-none cursor-pointer',

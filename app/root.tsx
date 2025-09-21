@@ -7,12 +7,15 @@ import {
   ScrollRestoration,
   useRouteError,
   isRouteErrorResponse,
+  useLoaderData,
 } from "react-router";
+import type { LoaderFunctionArgs } from "react-router";
 import type { LinksFunction } from "react-router";
 // AppProvider is no longer needed with Zustand
 import { MainLayout } from "~/components/layout/MainLayout";
 import { useAppInitialization } from "~/hooks/useAppInitialization";
 import "./app.css";
+import { getSupabaseServerClient } from "~/lib/supabase.server";
 
 export const links: LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -106,10 +109,31 @@ export function ErrorBoundary() {
 export default function App() {
   // Initialize app once at the root level
   useAppInitialization();
+  const data = useLoaderData<typeof loader>();
   
   return (
     <MainLayout>
       <Outlet />
     </MainLayout>
   );
+}
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  try {
+    const { supabase, headers } = getSupabaseServerClient(request);
+    const { data: { user } } = await supabase.auth.getUser();
+    let profile: any = null;
+    if (user?.id) {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, email, display_name, avatar_url, role')
+        .eq('id', user.id)
+        .single();
+      profile = data ?? null;
+    }
+    return { user, profile };
+  } catch (e) {
+    console.error("Supabase init error:", e);
+    return { user: null, profile: null };
+  }
 }

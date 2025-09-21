@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useLocation } from 'react-router';
+import { useState, useEffect } from 'react';
+import { Link, useLocation, useRouteLoaderData } from 'react-router';
 import { motion } from 'framer-motion';
 import {
   Search,
@@ -7,7 +7,8 @@ import {
   User,
   Menu,
   X,
-  Plus
+  Plus,
+  ChevronDown
 } from 'lucide-react';
 import { Button } from '~/components/ui/Button';
 import { PremiumFooter } from '~/components/layout/PremiumFooter';
@@ -15,12 +16,13 @@ import { NotificationBell } from '~/components/ui/NotificationBell';
 import { useNotifications } from '~/hooks/useNotifications';
 import { useUser, useComparison } from '~/stores/useAppStore';
 import { cn } from '~/lib/utils';
+import React from 'react';
 
 interface MainLayoutProps {
   children: React.ReactNode;
 }
 
-const navigation = [
+const baseNavigation = [
   { name: 'Acasă', href: '/', icon: Search },
   { name: 'Căutare', href: '/search', icon: Search },
   { name: 'Favorite', href: '/favorites', icon: Heart },
@@ -29,6 +31,7 @@ const navigation = [
 
 export function MainLayout({ children }: MainLayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const location = useLocation();
   const { user } = useUser();
   const { comparisonCars } = useComparison();
@@ -49,12 +52,33 @@ export function MainLayout({ children }: MainLayoutProps) {
     return location.pathname.startsWith(href);
   };
 
+  // Auth from root loader (Supabase)
+  const rootData = useRouteLoaderData('root') as
+    | { user?: { id: string; email?: string; user_metadata?: Record<string, any> } | null, profile?: { role?: string, avatar_url?: string, email?: string, display_name?: string } | null }
+    | undefined;
+  const authUser = rootData?.user ?? null;
+  const profile = (rootData as any)?.profile ?? null;
+  const nextParam = encodeURIComponent(location.pathname || '/');
+
   // Handle mobile menu keyboard navigation
   const handleMobileMenuKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       setMobileMenuOpen(false);
     }
   };
+
+  // Close user menu on route change
+  React.useEffect(() => {
+    setUserMenuOpen(false);
+  }, [location.pathname]);
+
+  // Build navigation dynamically (hide "Contul meu" when logged out)
+  const navigation = React.useMemo(() => {
+    return baseNavigation.filter((item) => {
+      if (item.href === '/profile') return !!authUser; // hide when not logged
+      return true;
+    });
+  }, [authUser]);
 
   return (
     <div className="min-h-screen bg-premium-gradient">
@@ -151,6 +175,62 @@ export function MainLayout({ children }: MainLayoutProps) {
                 </Button>
               </Link>
 
+              {/* Auth */}
+              {authUser ? (
+                <div className="relative">
+                  <button
+                    className="flex items-center gap-2 px-2 py-1 rounded-2xl hover:bg-white/5 transition"
+                    onClick={() => setUserMenuOpen((v) => !v)}
+                    aria-haspopup="menu"
+                    aria-expanded={userMenuOpen}
+                  >
+                    {profile?.avatar_url || authUser.user_metadata?.avatar_url || authUser.user_metadata?.picture ? (
+                      <img
+                        src={(profile?.avatar_url || authUser.user_metadata?.avatar_url || authUser.user_metadata?.picture) as string}
+                        alt="avatar"
+                        className="h-7 w-7 rounded-full border border-white/20"
+                      />
+                    ) : (
+                      <div className="h-7 w-7 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-xs text-white">
+                        {(authUser.email?.[0] || 'U').toUpperCase()}
+                      </div>
+                    )}
+                    <span className="hidden sm:block text-sm text-gray-300 max-w-[160px] truncate">
+                      {profile?.display_name || authUser.email}
+                    </span>
+                    <ChevronDown className="h-4 w-4 text-gray-400" />
+                  </button>
+                  {userMenuOpen && (
+                    <div
+                      role="menu"
+                      className="absolute right-0 mt-2 w-48 bg-secondary-900/90 border border-white/20 rounded-2xl shadow-2xl backdrop-blur-xl overflow-hidden z-50"
+                    >
+                      {profile?.role === 'seller' && (
+                        <Link to="/dashboard" className="block px-3 py-2 text-sm text-gray-200 hover:bg-white/5" role="menuitem">
+                          Dashboard
+                        </Link>
+                      )}
+                      <Link to="/profile" className="block px-3 py-2 text-sm text-gray-200 hover:bg-white/5" role="menuitem">
+                        Profil
+                      </Link>
+                      <Link to="/favorites" className="block px-3 py-2 text-sm text-gray-200 hover:bg-white/5" role="menuitem">
+                        Favorite
+                      </Link>
+                      <div className="my-1 h-px bg-white/10" />
+                      <Link to="/logout" className="block px-3 py-2 text-sm text-gray-200 hover:bg-white/5" role="menuitem">
+                        Ieșire
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Link to={`/login?next=${nextParam}`}>
+                  <Button variant="primary" size="sm" className="hidden sm:inline-flex">
+                    Autentificare
+                  </Button>
+                </Link>
+              )}
+
               {/* Mobile menu button */}
               <button
                 className="md:hidden p-3 rounded-2xl text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-300 focus:outline-none"
@@ -173,14 +253,14 @@ export function MainLayout({ children }: MainLayoutProps) {
         {mobileMenuOpen && (
           <div 
             id="mobile-menu"
-            className="md:hidden border-t border-premium bg-glass backdrop-blur-xl animate-slide-down"
+            className="md:hidden border-t border-white/20 bg-secondary-900/90 backdrop-blur-xl animate-slide-down"
             role="navigation"
             aria-label="Navigare mobilă"
             onKeyDown={handleMobileMenuKeyDown}
           >
             <div className="px-4 py-4 space-y-2">
               {/* Mobile Notification Bell */}
-              <div className="flex items-center justify-between px-4 py-3 rounded-2xl bg-glass border border-premium">
+              <div className="flex items-center justify-between px-4 py-3 rounded-2xl bg-white/5 border border-white/20">
                 <span className="text-base font-medium text-gray-300">Notificări</span>
                 <NotificationBell
                   notifications={notifications}
@@ -199,8 +279,8 @@ export function MainLayout({ children }: MainLayoutProps) {
                   className={cn(
                     'flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-all duration-300 border border-transparent',
                     isActive(item.href)
-                      ? 'text-white bg-white/5 border-premium'
-                      : 'text-gray-300 hover:text-white hover:bg-white/5 hover:border-premium'
+                      ? 'text-white bg-white/5 border-white/20'
+                      : 'text-gray-300 hover:text-white hover:bg-white/5 hover:border-white/20'
                   )}
                   onClick={() => setMobileMenuOpen(false)}
                   aria-current={isActive(item.href) ? 'page' : undefined}
@@ -210,8 +290,8 @@ export function MainLayout({ children }: MainLayoutProps) {
                 </Link>
               ))}
 
-              <div className="pt-4 border-t border-premium">
-                <Link to="/create-listing">
+              <div className="pt-4 border-t border-white/20">
+                <Link to="/create-listing" onClick={() => setMobileMenuOpen(false)}>
                   <Button
                     variant="primary"
                     size="sm"
@@ -221,6 +301,29 @@ export function MainLayout({ children }: MainLayoutProps) {
                     Adaugă anunț
                   </Button>
                 </Link>
+                {/* Mobile auth actions */}
+                <div className="mt-3">
+                  {authUser ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      <Link to="/profile" onClick={() => setMobileMenuOpen(false)}>
+                        <Button variant="outline" size="sm" className="w-full">
+                          Profil
+                        </Button>
+                      </Link>
+                      <Link to="/logout" onClick={() => setMobileMenuOpen(false)}>
+                        <Button variant="outline" size="sm" className="w-full">
+                          Ieșire
+                        </Button>
+                      </Link>
+                    </div>
+                  ) : (
+                    <Link to={`/login?next=${nextParam}`} onClick={() => setMobileMenuOpen(false)}>
+                      <Button variant="primary" size="sm" className="w-full bg-gold-gradient text-secondary-900 hover:shadow-lg transition-all duration-300">
+                        Autentificare
+                      </Button>
+                    </Link>
+                  )}
+                </div>
               </div>
             </div>
           </div>

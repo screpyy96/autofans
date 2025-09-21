@@ -9,9 +9,9 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const cardVariants = {
-  default: 'bg-glass border border-premium',
-  elevated: 'bg-glass shadow-card border border-premium',
-  outlined: 'bg-glass border-2 border-premium',
+  default: 'bg-secondary-900/50 border border-accent-gold/30 backdrop-blur-xl',
+  elevated: 'bg-secondary-900/70 shadow-card border border-accent-gold/30 backdrop-blur-xl',
+  outlined: 'bg-secondary-900/50 border-2 border-accent-gold/30 backdrop-blur-xl',
 };
 
 const cardPadding = {
@@ -42,7 +42,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
             'rounded-2xl transition-all duration-300 backdrop-blur-xl',
             cardVariants[variant],
             cardPadding[padding],
-            'cursor-pointer hover:border-accent-gold hover:shadow-glow',
+            'cursor-pointer hover:border-accent-gold hover:shadow-glow hover:bg-secondary-900/80',
             className
           )}
           whileHover={{ 
