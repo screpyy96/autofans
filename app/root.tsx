@@ -1,16 +1,20 @@
+import type { ReactNode } from "react";
 import {
-  isRouteErrorResponse,
   Links,
   Meta,
   Outlet,
   Scripts,
   ScrollRestoration,
+  useRouteError,
+  isRouteErrorResponse,
 } from "react-router";
-
-import type { Route } from "./+types/root";
+import type { LinksFunction } from "react-router";
+// AppProvider is no longer needed with Zustand
+import { MainLayout } from "~/components/layout/MainLayout";
+import { useAppInitialization } from "~/hooks/useAppInitialization";
 import "./app.css";
 
-export const links: Route.LinksFunction = () => [
+export const links: LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
     rel: "preconnect",
@@ -23,16 +27,17 @@ export const links: Route.LinksFunction = () => [
   },
 ];
 
-export function Layout({ children }: { children: React.ReactNode }) {
+export function Layout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="ro">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="theme-color" content="#121212" />
         <Meta />
         <Links />
       </head>
-      <body>
+      <body className="font-sans antialiased">
         {children}
         <ScrollRestoration />
         <Scripts />
@@ -41,35 +46,70 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function App() {
-  return <Outlet />;
-}
-
-export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
-  let message = "Oops!";
-  let details = "An unexpected error occurred.";
-  let stack: string | undefined;
+// Error boundary for route-level errors
+export function ErrorBoundary() {
+  const error = useRouteError();
 
   if (isRouteErrorResponse(error)) {
-    message = error.status === 404 ? "404" : "Error";
-    details =
-      error.status === 404
-        ? "The requested page could not be found."
-        : error.statusText || details;
-  } else if (import.meta.env.DEV && error && error instanceof Error) {
-    details = error.message;
-    stack = error.stack;
+    return (
+      <div className="min-h-screen bg-premium-gradient flex items-center justify-center p-4">
+        <div className="bg-glass backdrop-blur-xl border-premium rounded-3xl p-8 w-full text-center">
+          <h1 className="text-4xl font-bold text-white mb-4">
+            {error.status}
+          </h1>
+          <h2 className="text-xl font-semibold text-gray-300 mb-4">
+            {error.status === 404 ? 'Pagina nu a fost găsită' : 'Eroare de server'}
+          </h2>
+          <p className="text-gray-400 mb-6">
+            {error.status === 404 
+              ? 'Pagina pe care o căutați nu există sau a fost mutată.'
+              : 'A apărut o eroare pe server. Vă rugăm să încercați din nou mai târziu.'
+            }
+          </p>
+          <button
+            onClick={() => window.location.href = '/'}
+            className="bg-gold-gradient hover:bg-gold-gradient text-secondary-900 px-6 py-3 rounded-2xl font-medium transition-all duration-300 hover:shadow-glow"
+          >
+            Înapoi acasă
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <main className="pt-16 p-4 container mx-auto">
-      <h1>{message}</h1>
-      <p>{details}</p>
-      {stack && (
-        <pre className="w-full p-4 overflow-x-auto">
-          <code>{stack}</code>
-        </pre>
-      )}
-    </main>
+    <div className="min-h-screen bg-premium-gradient flex items-center justify-center p-4">
+      <div className="bg-glass backdrop-blur-xl border-premium rounded-3xl p-8 max-w-lg w-full text-center">
+        <h1 className="text-2xl font-bold text-white mb-4">
+          Oops! Ceva nu a mers bine
+        </h1>
+        <p className="text-gray-400 mb-6">
+          Ne pare rău, dar a apărut o eroare neașteptată.
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="bg-gold-gradient hover:bg-gold-gradient text-secondary-900 px-6 py-3 rounded-2xl font-medium transition-all duration-300 hover:shadow-glow mr-3"
+        >
+          Reîncarcă pagina
+        </button>
+        <button
+          onClick={() => window.location.href = '/'}
+          className="bg-glass border-premium hover:bg-gold-gradient hover:text-secondary-900 text-white px-6 py-3 rounded-2xl font-medium transition-all duration-300"
+        >
+          Înapoi acasă
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default function App() {
+  // Initialize app once at the root level
+  useAppInitialization();
+  
+  return (
+    <MainLayout>
+      <Outlet />
+    </MainLayout>
   );
 }

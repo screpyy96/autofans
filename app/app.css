@@ -1,15 +1,194 @@
 @import "tailwindcss";
 
 @theme {
+  /* Typography */
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono", 
+    Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  /* Custom Color Palette - Tech Blue */
+  --color-primary-50: #e9f2ff;
+  --color-primary-100: #d4e6ff;
+  --color-primary-200: #a8cdff;
+  --color-primary-300: #7cb4ff;
+  --color-primary-400: #4e98fb;
+  --color-primary-500: #1A73E8; /* Electric Blue */
+  --color-primary-600: #1558c0;
+  --color-primary-700: #0f4aa4;
+  --color-primary-800: #0b3a82;
+  --color-primary-900: #082c63;
+  --color-primary-950: #061f46;
+
+  --color-secondary-50: #f8fafc;
+  --color-secondary-100: #f1f5f9;
+  --color-secondary-200: #e2e8f0;
+  --color-secondary-300: #cbd5e1;
+  --color-secondary-400: #94a3b8;
+  --color-secondary-500: #64748b;
+  --color-secondary-600: #475569;
+  --color-secondary-700: #334155;
+  --color-secondary-800: #1e293b;
+  --color-secondary-900: #0f172a;
+  --color-secondary-950: #020617;
+
+  /* Accent Colors - Premium Gold with modern touch */
+  --color-accent-gold: #FFD700; /* Classic Gold */
+  --color-accent-gold-hover: #FFA500; /* Orange Gold for hover states */
+  --color-accent-silver: #c0c0c0;
+  --color-accent-bronze: #cd7f32;
+
+  /* Custom Spacing Scale */
+  --spacing-xs: 0.25rem;    /* 4px */
+  --spacing-sm: 0.5rem;     /* 8px */
+  --spacing-md: 1rem;       /* 16px */
+  --spacing-lg: 1.5rem;     /* 24px */
+  --spacing-xl: 2rem;       /* 32px */
+  --spacing-2xl: 3rem;      /* 48px */
+  --spacing-3xl: 4rem;      /* 64px */
+
+  /* Custom Border Radius */
+  --radius-sm: 0.5rem;      /* 8px */
+  --radius-md: 0.75rem;     /* 12px */
+  --radius-lg: 1.5rem;      /* 24px */
+
+  /* Custom Shadows */
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-card-hover: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-modal: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-glow: 0 0 20px rgba(26, 115, 232, 0.45); /* Blue glow */
 }
 
 html,
 body {
-  @apply bg-white dark:bg-gray-950;
+  /* Leave global colors neutral; main pages set backgrounds explicitly */
+  @apply bg-white text-gray-900;
+}
 
-  @media (prefers-color-scheme: dark) {
-    color-scheme: dark;
+/* Custom utility classes */
+.bg-premium-gradient {
+  /* Dark premium background with subtle blue undertone */
+  background: linear-gradient(135deg, #0F172A 0%, #121212 60%, #0B1220 100%);
+}
+
+.bg-gold-gradient {
+  /* CTA gradient: Electric Blue -> Premium Gold */
+  background: linear-gradient(135deg, #1A73E8 0%, #FFD700 100%);
+}
+
+.bg-glass {
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.border-premium {
+  border-color: rgba(26, 115, 232, 0.35);
+}
+
+.border-premium-hover:hover {
+  border-color: rgba(26, 115, 232, 0.6);
+}
+
+/* Skip link for accessibility */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: var(--color-accent-gold);
+  color: var(--color-secondary-900);
+  padding: 8px;
+  text-decoration: none;
+  border-radius: 4px;
+  z-index: 1000;
+}
+
+.skip-link:focus {
+  top: 6px;
+}
+
+.text-accent-gold {
+  /* Premium Gold color for text */
+  color: var(--color-accent-gold);
+}
+
+.hover-text-accent-gold:hover {
+  color: var(--color-accent-gold-hover);
+}
+
+.text-glow {
+  text-shadow: 0 0 20px rgba(26, 115, 232, 0.6);
+}
+
+/* Premium animation helpers for custom utilities */
+.hover-text-glow:hover {
+  text-shadow: 0 0 20px rgba(26, 115, 232, 0.6);
+}
+.group:hover .group-hover-text-glow {
+  text-shadow: 0 0 20px rgba(26, 115, 232, 0.6);
+}
+
+.shadow-glow {
+  box-shadow: var(--shadow-glow);
+}
+.hover-shadow-glow:hover {
+  box-shadow: var(--shadow-glow);
+}
+.group:hover .group-hover-shadow-glow {
+  box-shadow: var(--shadow-glow);
+}
+
+/* Hero specific styles */
+.hero-title {
+  font-size: clamp(2.5rem, 8vw, 5rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.hero-title-perfect {
+  font-size: clamp(3rem, 10vw, 6rem);
+  line-height: 0.9;
+  letter-spacing: -0.03em;
+}
+
+/* Animation utilities */
+.animate-slide-down {
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
   }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+/* Scrollbar styling */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }

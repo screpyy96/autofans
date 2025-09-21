@@ -1,0 +1,82 @@
+/* Range Slider Styles */
+.slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: none;
+}
+
+.slider-thumb::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #d4af37 0%, #1A73E8 100%);
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 8px 18px rgba(26, 115, 232, 0.35);
+  cursor: pointer;
+  pointer-events: all;
+  position: relative;
+  z-index: 1;
+}
+
+.slider-thumb::-moz-range-thumb {
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #d4af37 0%, #1A73E8 100%);
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 8px 18px rgba(26, 115, 232, 0.35);
+  cursor: pointer;
+  pointer-events: all;
+  position: relative;
+  z-index: 1;
+  border: none;
+}
+
+.slider-thumb::-webkit-slider-thumb:hover {
+  background: linear-gradient(135deg, #f4d03f 0%, #2c5fe2 100%);
+  transform: scale(1.08);
+  transition: all 0.2s ease;
+}
+
+.slider-thumb::-moz-range-thumb:hover {
+  background: linear-gradient(135deg, #f4d03f 0%, #2c5fe2 100%);
+  transform: scale(1.08);
+  transition: all 0.2s ease;
+}
+
+.slider-thumb::-webkit-slider-thumb:active {
+  background: linear-gradient(135deg, #facc15 0%, #1d4ed8 100%);
+  transform: scale(1.14);
+}
+
+.slider-thumb::-moz-range-thumb:active {
+  background: linear-gradient(135deg, #facc15 0%, #1d4ed8 100%);
+  transform: scale(1.14);
+}
+
+/* Firefox specific styles */
+.slider-thumb::-moz-range-track {
+  background: transparent;
+  border: none;
+}
+
+.slider-thumb::-moz-focus-outer {
+  border: 0;
+}
+
+/* Remove default focus outline */
+.slider-thumb:focus {
+  outline: none;
+}
+
+.slider-thumb:focus::-webkit-slider-thumb {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.35);
+}
+
+.slider-thumb:focus::-moz-range-thumb {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.35);
+}
