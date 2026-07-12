@@ -214,6 +214,32 @@ create policy "owners can read listing contacts"
 on public.listing_contacts for select to authenticated
 using (exists (select 1 from public.listings where listings.id = listing_contacts.listing_id and listings.owner_id = auth.uid()));
 
+-- Aggregated seller metrics do not expose other users' favorite rows.
+create or replace function public.get_seller_listing_metrics()
+returns table (
+  listing_id bigint,
+  view_count bigint,
+  contact_count bigint,
+  favorite_count bigint
+)
+language sql
+stable
+security definer
+set search_path = public, auth
+as $$
+  select
+    l.id as listing_id,
+    (select count(*) from public.listing_views v where v.listing_id = l.id) as view_count,
+    (select count(*) from public.listing_contacts c where c.listing_id = l.id) as contact_count,
+    (select count(*) from public.favorites f where f.listing_id = l.id) as favorite_count
+  from public.listings l
+  where l.owner_id = auth.uid();
+$$;
+
+revoke all on function public.get_seller_listing_metrics() from public;
+revoke all on function public.get_seller_listing_metrics() from anon;
+grant execute on function public.get_seller_listing_metrics() to authenticated;
+
 -- Saved searches RLS
 drop policy if exists "saved searches by owner" on public.saved_searches;
 create policy "saved searches by owner"

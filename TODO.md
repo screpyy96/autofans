@@ -20,15 +20,15 @@
 
 ## Etapa 4 · Price Score
 
-- [ ] Preț comparat cu piața locală
-- [ ] Recomandare de negociere
-- [ ] Cost lunar estimat
+- [x] Preț comparat cu anunțuri similare publicate
+- [x] Recomandare de negociere când prețul este peste piață
+- [x] Cost lunar estimat cu ipoteze explicite
 
 ## Etapa 5 · Seller Dashboard
 
-- [ ] Vizualizări, favorite și contacte reale
-- [ ] Conversie vizualizare → contact
-- [ ] Recomandări de preț
+- [x] Vizualizări, favorite și contacte reale
+- [x] Conversie vizualizare → contact
+- [x] Recomandări de preț și optimizare anunț
 
 ## Etapa 6 · Search premium
 

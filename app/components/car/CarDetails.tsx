@@ -42,6 +42,8 @@ import {
 import type { Car } from '~/types';
 import { useCurrency } from '~/stores/useAppStore';
 import { TrustScoreBadge } from './TrustScoreBadge';
+import { PriceScoreCard } from './PriceScoreCard';
+import type { PriceScore } from '~/utils/priceScore';
 
 export interface CarDetailsProps {
   car: Car;
@@ -54,6 +56,7 @@ export interface CarDetailsProps {
   onSimilarCarClick?: (carId: string) => void;
   isFavorited?: boolean;
   isInComparison?: boolean;
+  priceScore?: PriceScore;
   className?: string;
 }
 
@@ -170,6 +173,7 @@ export function CarDetails({
   onSimilarCarClick,
   isFavorited = false,
   isInComparison = false,
+  priceScore,
   className
 }: CarDetailsProps) {
   useCurrency(); // Subscribe to currency changes to trigger details page re-renders
@@ -250,6 +254,8 @@ export function CarDetails({
               </Card>
             ))}
           </div>
+
+          {priceScore && <PriceScoreCard score={priceScore} />}
 
           {/* Description Section */}
           <Card variant="elevated" padding="lg" className="bg-glass border-white/10">

@@ -14,9 +14,22 @@ import { mapListingToCar } from '~/utils/listingMapper';
 import { signListingImages } from '~/utils/listingImages';
 
 export function meta({ }: Route.MetaArgs) {
+  const title = "AutoFans.ro - Platforma Premium de Anunțuri Auto";
+  const description = "Cumpără sau vinde mașina ta rapid și sigur. Pe Autofans.ro găsești mii de anunțuri auto din toată țara, verificate manual.";
+  const image = "https://autofans.ro/hero_background.jpg";
+
   return [
-    { title: "AutoFans.ro - Anunțuri Auto Second-Hand și Noi în România" },
-    { name: "description", content: "Cumpără sau vinde mașina ta rapid și sigur. Pe Autofans.ro găsești mii de anunțuri auto din toată țara, verificate manual." },
+    { title },
+    { name: "description", content: description },
+    { property: "og:title", content: title },
+    { property: "og:description", content: description },
+    { property: "og:image", content: image },
+    { property: "og:type", content: "website" },
+    { property: "og:site_name", content: "AutoFans.ro" },
+    { name: "twitter:card", content: "summary_large_image" },
+    { name: "twitter:title", content: title },
+    { name: "twitter:description", content: description },
+    { name: "twitter:image", content: image }
   ];
 }
 

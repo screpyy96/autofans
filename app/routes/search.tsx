@@ -17,9 +17,22 @@ import { getSupabaseServerClient } from '~/lib/supabase.server';
 import { searchService } from '~/services/searchService';
 
 export function meta({}: any) {
+  const title = "Căutare Mașini Auto Second-Hand și Noi | AutoFans";
+  const description = "Caută și găsește mașina perfectă din mii de anunțuri verificate pe AutoFans.ro. Filtrează după preț, an, marcă, model și locație.";
+  const image = "https://autofans.ro/hero_background.jpg";
+
   return [
-    { title: "Căutare Mașini - AutoFans" },
-    { name: "description", content: "Caută și găsește mașina perfectă din peste 15,000 de anunțuri verificate." },
+    { title },
+    { name: "description", content: description },
+    { property: "og:title", content: title },
+    { property: "og:description", content: description },
+    { property: "og:image", content: image },
+    { property: "og:type", content: "website" },
+    { property: "og:site_name", content: "AutoFans.ro" },
+    { name: "twitter:card", content: "summary_large_image" },
+    { name: "twitter:title", content: title },
+    { name: "twitter:description", content: description },
+    { name: "twitter:image", content: image }
   ];
 }
 

@@ -24,10 +24,26 @@ import {
 import { formatRelativeTime } from '~/utils/helpers';
 
 export function meta({ data }: Route.MetaArgs) {
-  const sellerName = (data as any)?.seller?.display_name || 'Vânzător';
+  const seller = (data as any)?.seller;
+  const sellerName = seller?.display_name || 'Vânzător Auto';
+  const isDealer = seller?.role === 'dealer';
+
+  const title = `Profil ${sellerName} - ${isDealer ? 'Dealer' : 'Vânzător'} pe AutoFans.ro`;
+  const description = `Vezi cele mai noi anunțuri auto și recenziile pentru ${sellerName} pe platforma noastră. Cumpără mașina ta direct de la un vânzător de încredere.`;
+  const image = seller?.avatar_url || "https://autofans.ro/hero_background.jpg";
+
   return [
-    { title: `Profil ${sellerName} - AutoFans` },
-    { name: "description", content: `Vezi anunțurile active și recenziile pentru ${sellerName} pe AutoFans.` },
+    { title },
+    { name: "description", content: description },
+    { property: "og:title", content: title },
+    { property: "og:description", content: description },
+    { property: "og:image", content: image },
+    { property: "og:type", content: "profile" },
+    { property: "og:site_name", content: "AutoFans.ro" },
+    { name: "twitter:card", content: "summary_large_image" },
+    { name: "twitter:title", content: title },
+    { name: "twitter:description", content: description },
+    { name: "twitter:image", content: image }
   ];
 }
 

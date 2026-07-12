@@ -13,11 +13,31 @@ import { FuelType, TransmissionType } from "~/types";
 import { useComparison } from '~/stores/useAppStore';
 import { mapListingStatus } from '~/utils/listingMapper';
 import { calculateTrustScore } from '~/utils/trustScore';
+import { calculatePriceScore } from '~/utils/priceScore';
 
-export function meta({ params }: Route.MetaArgs) {
+export function meta({ data }: Route.MetaArgs) {
+  const listing = data?.listing as any;
+  if (!listing) return [{ title: "Anunț invalid - AutoFans" }];
+
+  const title = `${listing.make} ${listing.model} ${listing.year} - ${listing.price?.toLocaleString('ro-RO')} ${listing.currency} | AutoFans`;
+  const description = listing.description ? (listing.description.substring(0, 150) + "...") : `Cumpără ${listing.make} ${listing.model} din ${listing.year} la prețul de ${listing.price} ${listing.currency}.`;
+
+  // Use signed URL if available, otherwise fallback to path if public, or default image
+  const mainImageObj = Array.isArray(listing.images) ? listing.images[0] : undefined;
+  const mainImage = data?.signedMap?.[mainImageObj?.path] || mainImageObj?.url || "https://autofans.ro/hero_background.jpg";
+
   return [
-    { title: "Detalii mașină - AutoFans" },
-    { name: "description", content: "Vezi detaliile anunțului auto pe AutoFans." },
+    { title },
+    { name: "description", content: description },
+    { property: "og:title", content: title },
+    { property: "og:description", content: description },
+    { property: "og:image", content: mainImage },
+    { property: "og:type", content: "product" },
+    { property: "og:site_name", content: "AutoFans.ro" },
+    { name: "twitter:card", content: "summary_large_image" },
+    { name: "twitter:title", content: title },
+    { name: "twitter:description", content: description },
+    { name: "twitter:image", content: mainImage }
   ];
 }
 
@@ -42,15 +62,31 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
       listing = byId.data;
     }
 
-    let sellerProfile = null;
-    if (listing?.owner_id) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id, email, display_name, phone, avatar_url, role, is_verified, created_at')
-        .eq('id', listing.owner_id)
-        .single();
-      sellerProfile = profile;
-    }
+    const [sellerProfileResult, comparablesResult] = listing
+      ? await Promise.all([
+          listing.owner_id
+            ? supabase
+                .from('profiles')
+                .select('id, email, display_name, phone, avatar_url, role, is_verified, created_at')
+                .eq('id', listing.owner_id)
+                .single()
+            : Promise.resolve({ data: null }),
+          listing.make && listing.model && listing.year
+            ? supabase
+                .from('listings')
+                .select('id, price, currency, year, mileage')
+                .eq('status', 'published')
+                .eq('make', listing.make)
+                .eq('model', listing.model)
+                .neq('id', listing.id)
+                .gte('year', Number(listing.year) - 3)
+                .lte('year', Number(listing.year) + 3)
+                .limit(60)
+            : Promise.resolve({ data: [] }),
+        ])
+      : [{ data: null }, { data: [] }];
+    const sellerProfile = sellerProfileResult.data;
+    const priceScore = listing ? calculatePriceScore(listing, comparablesResult.data || []) : null;
 
     let signedMap: Record<string, string> = {};
     if (listing?.images?.length) {
@@ -69,10 +105,10 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
       }
     }
 
-    return { listing: listing ?? null, signedMap, sellerProfile };
+    return { listing: listing ?? null, signedMap, sellerProfile, priceScore };
   } catch (e) {
     console.error('car.$id loader error:', e);
-    return { listing: null, signedMap: {}, sellerProfile: null };
+    return { listing: null, signedMap: {}, sellerProfile: null, priceScore: null };
   }
 }
 
@@ -243,6 +279,7 @@ export default function CarDetail({ params }: Route.ComponentProps) {
     <div className="mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl">
       <CarDetails
         car={car}
+        priceScore={data.priceScore}
         onContactSeller={handleContactSeller}
         onScheduleViewing={handleScheduleViewing}
         onAddToCompare={handleAddToCompare}
