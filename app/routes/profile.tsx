@@ -42,17 +42,49 @@ export async function loader({ request }: LoaderFunctionArgs) {
   }
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, role, email, display_name, avatar_url')
+    .select('id, role, email, display_name, avatar_url, phone, is_verified, created_at')
     .eq('id', user.id)
     .single();
   return { profile };
 }
 
 export default function Profile() {
-  const data = useLoaderData<typeof loader>();
-  const role = (data as any)?.profile?.role as 'buyer' | 'seller' | undefined;
+  const profile = (data as any)?.profile;
+  const role = profile?.role as 'buyer' | 'seller' | undefined;
+  
   const [activeTab, setActiveTab] = useState<'overview' | 'listings' | 'settings'>('overview');
   const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
+
+  // Profile fields state
+  const [displayName, setDisplayName] = useState(profile?.display_name || '');
+  const [phone, setPhone] = useState(profile?.phone || '');
+  const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || '');
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const handleSaveChanges = async () => {
+    setIsSaving(true);
+    setSaveMessage(null);
+    try {
+      const { getSupabaseBrowserClient } = await import('~/lib/supabase.client');
+      const supabase = getSupabaseBrowserClient();
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          display_name: displayName,
+          phone: phone,
+          avatar_url: avatarUrl
+        })
+        .eq('id', profile.id);
+      
+      if (error) throw error;
+      setSaveMessage({ type: 'success', text: 'Modificările au fost salvate cu succes!' });
+    } catch (e: any) {
+      setSaveMessage({ type: 'error', text: e.message || 'A apărut o eroare la salvare.' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   // Notification preferences state (persisted in localStorage)
   const [notifPrefs, setNotifPrefs] = useState<NotificationPreferencesType>(() => {
@@ -88,19 +120,19 @@ export default function Profile() {
     }
   };
 
-  // Mock user data
+  // Dynamic user data from profile
   const user = {
-    name: 'Ion Popescu',
-    email: 'ion.popescu@email.com',
-    phone: '+40721123456',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-    isVerified: true,
-    memberSince: '2023',
+    name: displayName || profile?.display_name || 'Utilizator AutoFans',
+    email: profile?.email || 'email@autofans.ro',
+    phone: phone || profile?.phone || 'Adaugă telefon în Setări',
+    avatar: avatarUrl || profile?.avatar_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+    isVerified: !!profile?.is_verified,
+    memberSince: profile?.created_at ? new Date(profile.created_at).getFullYear().toString() : '2026',
     stats: {
-      listings: 3,
+      listings: role === 'seller' ? 3 : 0,
       favorites: 12,
-      views: 1250,
-      contacts: 45
+      views: role === 'seller' ? 1250 : 0,
+      contacts: role === 'seller' ? 45 : 0
     }
   };
 
@@ -184,6 +216,7 @@ export default function Profile() {
               variant="outline"
               size="sm"
               className="flex items-center gap-2 text-sm sm:text-base border-white/20 hover:bg-white/5"
+              onClick={() => setActiveTab('settings')}
             >
               <Edit className="h-4 w-4" />
               Editează
@@ -351,6 +384,17 @@ export default function Profile() {
                 <CardTitle className="text-white">Informații personale</CardTitle>
               </CardHeader>
               <CardContent>
+                {saveMessage && (
+                  <div className={cn(
+                    "mb-6 p-4 rounded-xl text-sm font-semibold border",
+                    saveMessage.type === 'success' 
+                      ? "bg-green-500/10 text-green-400 border-green-500/20"
+                      : "bg-red-500/10 text-red-400 border-red-500/20"
+                  )}>
+                    {saveMessage.text}
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -358,37 +402,56 @@ export default function Profile() {
                     </label>
                     <input
                       type="text"
-                      value={user.name}
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      placeholder="Introdu numele tău complet"
                       className="w-full px-3 py-2 sm:py-3 bg-white/5 border border-white/20 text-white rounded-lg focus:ring-2 focus:ring-accent-gold focus:border-accent-gold transition-all text-sm sm:text-base"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Email (Nu poate fi schimbat)
+                    </label>
+                    <input
+                      type="email"
+                      value={user.email}
+                      className="w-full px-3 py-2 sm:py-3 bg-white/5 border border-white/20 text-gray-400 rounded-lg text-sm sm:text-base cursor-not-allowed opacity-80"
                       readOnly
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      value={user.email}
-                      className="w-full px-3 py-2 sm:py-3 bg-white/5 border border-white/20 text-white rounded-lg focus:ring-2 focus:ring-accent-gold focus:border-accent-gold transition-all text-sm sm:text-base"
-                      readOnly
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
                       Telefon
                     </label>
                     <input
                       type="tel"
-                      value={user.phone}
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="Introdu numărul tău de telefon"
                       className="w-full px-3 py-2 sm:py-3 bg-white/5 border border-white/20 text-white rounded-lg focus:ring-2 focus:ring-accent-gold focus:border-accent-gold transition-all text-sm sm:text-base"
-                      readOnly
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      URL Imagine Profil (Avatar)
+                    </label>
+                    <input
+                      type="url"
+                      value={avatarUrl}
+                      onChange={(e) => setAvatarUrl(e.target.value)}
+                      placeholder="Introdu URL-ul imaginii de profil"
+                      className="w-full px-3 py-2 sm:py-3 bg-white/5 border border-white/20 text-white rounded-lg focus:ring-2 focus:ring-accent-gold focus:border-accent-gold transition-all text-sm sm:text-base"
                     />
                   </div>
                 </div>
                 <div className="mt-6">
-                  <Button variant="primary" className="bg-gold-gradient text-secondary-900 hover:shadow-glow">
-                    Salvează modificările
+                  <Button 
+                    variant="primary" 
+                    onClick={handleSaveChanges} 
+                    disabled={isSaving}
+                    className="bg-gold-gradient text-secondary-900 hover:shadow-glow font-semibold"
+                  >
+                    {isSaving ? 'Se salvează...' : 'Salvează modificările'}
                   </Button>
                 </div>
               </CardContent>
