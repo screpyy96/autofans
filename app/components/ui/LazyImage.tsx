@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { cn } from '~/lib/utils';
 
 interface LazyImageProps {
@@ -27,45 +27,7 @@ export function LazyImage({
   srcSet,
 }: LazyImageProps) {
   const [isLoaded, setIsLoaded] = useState(false);
-  const [isInView, setIsInView] = useState(priority);
   const [hasError, setHasError] = useState(false);
-  const wrapperRef = useRef<HTMLDivElement | null>(null);
-  const imgRef = useRef<HTMLImageElement | null>(null);
-
-  useEffect(() => {
-    if (priority) {
-      setIsInView(true);
-      return;
-    }
-
-    if (!('IntersectionObserver' in window)) {
-      setIsInView(true);
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setIsInView(true);
-            observer.disconnect();
-          }
-        });
-      },
-      {
-        rootMargin: '100px',
-        threshold: 0.1,
-      }
-    );
-
-    if (wrapperRef.current) {
-      observer.observe(wrapperRef.current);
-    }
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [priority]);
 
   const handleLoad = () => {
     setIsLoaded(true);
@@ -78,7 +40,7 @@ export function LazyImage({
   };
 
   return (
-    <div ref={wrapperRef} className={cn('relative overflow-hidden', className)}>
+    <div className={cn('relative overflow-hidden', className)}>
       {/* Placeholder */}
       {!isLoaded && !hasError && (
         <div className="absolute inset-0 bg-secondary-700 animate-pulse">
@@ -120,23 +82,20 @@ export function LazyImage({
       )}
 
       {/* Actual image */}
-      {isInView && (
-        <img
-          ref={imgRef}
-          src={src}
-          srcSet={srcSet}
-          sizes={sizes}
-          alt={alt}
-          className={cn(
-            'w-full h-full object-cover transition-all duration-500',
-            isLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-105'
-          )}
-          onLoad={handleLoad}
-          onError={handleError}
-          loading={priority ? 'eager' : 'lazy'}
-          decoding="async"
-        />
-      )}
+      <img
+        src={src}
+        srcSet={srcSet}
+        sizes={sizes}
+        alt={alt}
+        className={cn(
+          'w-full h-full object-cover transition-all duration-500',
+          isLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-105'
+        )}
+        onLoad={handleLoad}
+        onError={handleError}
+        loading={priority ? 'eager' : 'lazy'}
+        decoding="async"
+      />
     </div>
   );
 }

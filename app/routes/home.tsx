@@ -23,24 +23,28 @@ export function meta({ }: Route.MetaArgs) {
 export async function loader({ request }: LoaderFunctionArgs) {
   try {
     const { supabase } = getSupabaseServerClient(request);
-    const { count: publishedCount } = await supabase
-      .from('listings')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'published');
+    const [publishedCountResult, brandRowsResult, listingsResult] = await Promise.all([
+      supabase
+        .from('listings')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'published'),
+      supabase
+        .from('listings')
+        .select('make')
+        .eq('status', 'published')
+        .not('make', 'is', null)
+        .limit(500),
+      supabase
+        .from('listings')
+        .select('id, slug, owner_id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, vin, vin_verified, history_checked, images, created_at, city, county')
+        .eq('status', 'published')
+        .order('created_at', { ascending: false })
+        .limit(6),
+    ]);
 
-    const { data: brandRows } = await supabase
-      .from('listings')
-      .select('make')
-      .eq('status', 'published')
-      .not('make', 'is', null)
-      .limit(500);
-
-    const { data: listings } = await supabase
-      .from('listings')
-      .select('id, slug, owner_id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, vin, vin_verified, history_checked, images, created_at, city, county')
-      .eq('status', 'published')
-      .order('created_at', { ascending: false })
-      .limit(6);
+    const publishedCount = publishedCountResult.count;
+    const brandRows = brandRowsResult.data;
+    const listings = listingsResult.data;
 
     const signedMap = await signListingImages(supabase, listings || []);
     
@@ -119,7 +123,10 @@ function HomeContent() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {/* Card 1 */}
             <div className="md:col-span-2 bg-glass border border-white/10 rounded-2xl overflow-hidden shadow-sm hover:shadow-glow hover:border-accent-gold/50 transition-all duration-300 flex flex-col group">
-              <img src="/card_buying.jpg" alt="Cumpără mașini" className="w-full h-48 object-cover opacity-90 group-hover:opacity-100 transition-opacity" />
+              <picture className="block h-48 w-full">
+                <source srcSet="/card_buying.webp" type="image/webp" />
+                <img src="/card_buying.jpg" alt="Cumpără mașini" width={1200} height={896} loading="lazy" decoding="async" className="h-full w-full object-cover opacity-90 transition-opacity group-hover:opacity-100" />
+              </picture>
               <div className="p-6 flex flex-col flex-1">
                 <h3 className="text-xl font-bold mb-2 text-white group-hover:text-accent-gold transition-colors">Cumpără cu încredere</h3>
                 <p className="text-gray-400 mb-6 flex-1">
@@ -133,7 +140,10 @@ function HomeContent() {
 
             {/* Card 2 */}
             <div className="bg-glass border border-white/10 rounded-2xl overflow-hidden shadow-sm hover:shadow-glow hover:border-accent-gold/50 transition-all duration-300 flex flex-col group">
-              <img src="/card_selling.jpg" alt="Vinde mașina" className="w-full h-48 object-cover opacity-90 group-hover:opacity-100 transition-opacity" />
+              <picture className="block h-48 w-full">
+                <source srcSet="/card_selling.webp" type="image/webp" />
+                <img src="/card_selling.jpg" alt="Vinde mașina" width={1200} height={896} loading="lazy" decoding="async" className="h-full w-full object-cover opacity-90 transition-opacity group-hover:opacity-100" />
+              </picture>
               <div className="p-6 flex flex-col flex-1">
                 <h3 className="text-xl font-bold mb-2 text-white group-hover:text-accent-gold transition-colors">Vinde mașina ta simplu</h3>
                 <p className="text-gray-400 mb-6 flex-1">
@@ -147,7 +157,10 @@ function HomeContent() {
 
             {/* Card 3 */}
             <div className="bg-glass border border-white/10 rounded-2xl overflow-hidden shadow-sm hover:shadow-glow hover:border-accent-gold/50 transition-all duration-300 flex flex-col group">
-              <img src="/card_experience.jpg" alt="Experiența completă" className="w-full h-48 object-cover opacity-90 group-hover:opacity-100 transition-opacity" />
+              <picture className="block h-48 w-full">
+                <source srcSet="/card_experience.webp" type="image/webp" />
+                <img src="/card_experience.jpg" alt="Experiența completă" width={1200} height={896} loading="lazy" decoding="async" className="h-full w-full object-cover opacity-90 transition-opacity group-hover:opacity-100" />
+              </picture>
               <div className="p-6 flex flex-col flex-1">
                 <h3 className="text-xl font-bold mb-2 text-white group-hover:text-accent-gold transition-colors">Experiența completă</h3>
                 <p className="text-gray-400 mb-6 flex-1">

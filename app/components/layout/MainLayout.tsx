@@ -14,7 +14,6 @@ import {
   Bell,
   LayoutDashboard
 } from 'lucide-react';
-import { Button } from '~/components/ui/Button';
 import { PremiumFooter } from '~/components/layout/PremiumFooter';
 import { NotificationBell } from '~/components/ui/NotificationBell';
 import { useNotifications } from '~/hooks/useNotifications';
@@ -195,15 +194,13 @@ export function MainLayout({ children }: MainLayoutProps) {
                 />
               )}
 
-              <Link to="/create-listing">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="hidden sm:flex bg-glass backdrop-blur-sm border-premium hover:bg-gold-gradient hover:text-secondary-900 hover:border-transparent transition-all duration-300 hover:shadow-glow hover:scale-105"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Adaugă anunț
-                </Button>
+              <Link
+                to="/create-listing"
+                aria-label="Adaugă anunț"
+                className="hidden sm:inline-flex items-center justify-center rounded-xl border-2 border-accent-gold/30 bg-glass px-3 py-1.5 text-sm font-medium text-accent-gold backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:border-transparent hover:bg-gold-gradient hover:text-secondary-900 hover:shadow-glow focus:outline-none focus:ring-2 focus:ring-accent-gold focus:ring-offset-2 focus:ring-offset-secondary-800"
+              >
+                <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
+                <span>Adaugă anunț</span>
               </Link>
 
               {/* Auth */}
@@ -255,10 +252,11 @@ export function MainLayout({ children }: MainLayoutProps) {
                   )}
                 </div>
               ) : (
-                <Link to={`/login?next=${nextParam}`}>
-                  <Button variant="primary" size="sm" className="hidden sm:inline-flex">
-                    Autentificare
-                  </Button>
+                <Link
+                  to={`/login?next=${nextParam}`}
+                  className="hidden sm:inline-flex items-center justify-center rounded-xl bg-gold-gradient px-3 py-1.5 text-sm font-medium text-secondary-900 transition-transform hover:scale-[1.02] hover:shadow-glow focus:outline-none focus:ring-2 focus:ring-accent-gold focus:ring-offset-2 focus:ring-offset-secondary-800"
+                >
+                  Autentificare
                 </Link>
               )}
             </div>
@@ -409,10 +407,9 @@ export function MainLayout({ children }: MainLayoutProps) {
                       <Link
                         to={`/login?next=${nextParam}`}
                         onClick={() => setIsBottomDrawerOpen(false)}
+                        className="inline-flex w-full items-center justify-center rounded-xl bg-gold-gradient px-3 py-2.5 text-sm font-bold text-secondary-900 transition-all hover:shadow-glow focus:outline-none focus:ring-2 focus:ring-accent-gold focus:ring-offset-2 focus:ring-offset-secondary-800"
                       >
-                        <Button variant="primary" size="sm" className="w-full bg-gold-gradient text-secondary-900 hover:shadow-glow font-bold py-2.5">
-                          Intră în cont
-                        </Button>
+                        Intră în cont
                       </Link>
                     </div>
                   )}

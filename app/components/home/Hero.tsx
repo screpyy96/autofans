@@ -12,11 +12,18 @@ export function Hero({ onSearch }: HeroProps) {
       {/* Background and Overlay Wrapper */}
       <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none">
         {/* Background Image */}
-        <img
-          src="/hero_background.jpg"
-          alt="Familie fericită pe plajă cu o mașină"
-          className="absolute inset-0 w-full h-full object-cover object-center"
-        />
+        <picture className="absolute inset-0 h-full w-full">
+          <source srcSet="/hero_background.webp" type="image/webp" />
+          <img
+            src="/hero_background.jpg"
+            alt="Familie fericită pe plajă cu o mașină"
+            width={1376}
+            height={768}
+            fetchPriority="high"
+            decoding="async"
+            className="absolute inset-0 h-full w-full object-cover object-center"
+          />
+        </picture>
         
         {/* Overlay gradient to ensure text readability if needed */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
