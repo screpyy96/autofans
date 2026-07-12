@@ -12,7 +12,8 @@ import {
   ChevronDown,
   LogOut,
   Bell,
-  LayoutDashboard
+  LayoutDashboard,
+  Newspaper
 } from 'lucide-react';
 import { PremiumFooter } from '~/components/layout/PremiumFooter';
 import { NotificationBell } from '~/components/ui/NotificationBell';
@@ -29,6 +30,7 @@ interface MainLayoutProps {
 const baseNavigation = [
   { name: 'Acasă', href: '/', icon: Home },
   { name: 'Căutare', href: '/search', icon: Search },
+  { name: 'Blog', href: '/blog', icon: Newspaper },
   { name: 'Favorite', href: '/favorites', icon: Heart },
   { name: 'Contul meu', href: '/profile', icon: User },
 ];

@@ -1,6 +1,6 @@
 import { Link, useLoaderData, useNavigate } from 'react-router';
 import type { LoaderFunctionArgs } from 'react-router';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { SearchHeader } from '~/components/search';
 import { FilterPanel } from '~/components/search/FilterPanel';
 import { CarGrid } from '~/components/car/CarGrid';
@@ -15,6 +15,7 @@ import { mapListingToCar } from '~/utils/listingMapper';
 import { signListingImages } from '~/utils/listingImages';
 import { getSupabaseServerClient } from '~/lib/supabase.server';
 import { searchService } from '~/services/searchService';
+import { parseNaturalSearch } from '~/utils/naturalSearch';
 
 export function meta({}: any) {
   const title = "Căutare Mașini Auto Second-Hand și Noi | AutoFans";
@@ -73,6 +74,7 @@ function SearchContent() {
 
   const { filters, updateFilters, resetFilters, hasActiveFilters, activeFilterCount } = useFilters();
   const { activeSort, viewMode, setActiveSort, setViewMode } = useSortAndView();
+  const naturalSearch = useMemo(() => parseNaturalSearch(filters.query || ''), [filters.query]);
 
   const dbCars: Car[] = (data?.dbListings || []).map((listing: any) => mapListingToCar(listing, data.signedMap));
 
@@ -86,8 +88,8 @@ function SearchContent() {
     }
     try {
       const result = await searchService.searchCars(
-        filters.query || '',
-        { ...filters, sortBy: activeSort as any },
+        naturalSearch.remainingQuery,
+        { ...filters, ...naturalSearch.filters, sortBy: activeSort as any },
         currentPage,
         12,
         allCars
@@ -175,6 +177,13 @@ function SearchContent() {
           viewMode={viewMode}
           setViewMode={setViewMode}
         />
+
+        {naturalSearch.summary.length > 0 && (
+          <div className="mb-5 flex flex-wrap items-center gap-2 text-sm text-gray-300">
+            <span>Am înțeles:</span>
+            {naturalSearch.summary.map((item) => <Badge key={item} variant="secondary" className="border-accent-gold/30 bg-accent-gold/10 text-accent-gold">{item}</Badge>)}
+          </div>
+        )}
 
         <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
           {/* Filters Sidebar */}

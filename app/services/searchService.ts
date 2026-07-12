@@ -45,6 +45,12 @@ const POPULAR_QUERIES = [
   'hybrid cars'
 ];
 
+const normalizeLocation = (value: string) => value
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase()
+  .replace(/[^a-z0-9]/g, '');
+
 class SearchService {
   // Generate search suggestions based on query
   async getSuggestions(options: SearchSuggestionOptions): Promise<SearchSuggestion[]> {
@@ -237,6 +243,13 @@ class SearchService {
     if (filters.transmission?.length) {
       filteredCars = filteredCars.filter(car => 
         filters.transmission!.includes(car.transmission)
+      );
+    }
+
+    if (filters.location?.city) {
+      filteredCars = filteredCars.filter(car =>
+        normalizeLocation(car.location.city) === normalizeLocation(filters.location!.city) ||
+        normalizeLocation(car.location.county) === normalizeLocation(filters.location!.county || '')
       );
     }
 

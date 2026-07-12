@@ -32,7 +32,7 @@
 
 ## Etapa 6 · Search premium
 
-- [ ] Căutare naturală
+- [x] Căutare naturală pentru marcă, combustibil, transmisie, preț, an și oraș
 - [ ] Hartă și rază geografică
 - [ ] Alerte pentru anunțuri și scăderi de preț
 - [ ] Recomandări personalizate

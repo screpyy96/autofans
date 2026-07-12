@@ -50,6 +50,11 @@ export function PremiumFooter({ navigation }: PremiumFooterProps) {
             <h3 className="font-semibold text-white mb-4">Suport</h3>
             <ul className="space-y-2">
               <li>
+                <Link to="/blog" className="text-gray-400 hover:text-accent-gold transition-colors duration-300 hover:translate-x-1 inline-block">
+                  Blog & Noutăți
+                </Link>
+              </li>
+              <li>
                 <Link to="/help" className="text-gray-400 hover:text-accent-gold transition-colors duration-300 hover:translate-x-1 inline-block">
                   Ajutor
                 </Link>
