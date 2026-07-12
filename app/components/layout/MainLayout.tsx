@@ -18,6 +18,7 @@ import { Button } from '~/components/ui/Button';
 import { PremiumFooter } from '~/components/layout/PremiumFooter';
 import { NotificationBell } from '~/components/ui/NotificationBell';
 import { useNotifications } from '~/hooks/useNotifications';
+import { useSyncFavorites } from '~/hooks/useSyncFavorites';
 import { useUser, useComparison, useCurrency } from '~/stores/useAppStore';
 import { cn } from '~/lib/utils';
 import React from 'react';
@@ -70,6 +71,9 @@ export function MainLayout({ children }: MainLayoutProps) {
   const nextParam = encodeURIComponent(location.pathname || '/');
   const isCarDetailsPage = location.pathname.startsWith('/car/');
 
+  // Sync favorites when user logs in
+  useSyncFavorites(authUser?.id);
+
   // Handle mobile menu keyboard navigation
   const handleMobileMenuKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
@@ -92,7 +96,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   }, [authUser]);
 
   return (
-    <div className="min-h-screen bg-premium-gradient">
+    <div className="flex flex-col min-h-screen bg-premium-gradient">
       
 
       {/* Header */}

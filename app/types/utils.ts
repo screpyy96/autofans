@@ -2,7 +2,6 @@
 export * from './index';
 export * from '../utils/typeGuards';
 export * from '../utils/helpers';
-export * from '../data/mockData';
 export * from '../constants';
 
 // Additional utility types for React components

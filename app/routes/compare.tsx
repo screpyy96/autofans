@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
 import type { Route } from "./+types/compare";
+import type { LoaderFunctionArgs } from 'react-router';
 import { ComparisonTable } from '~/components/ui/ComparisonTable';
 import { CarCard } from '~/components/car/CarCard';
 import { Button } from '~/components/ui/Button';
 import { Card } from '~/components/ui/Card';
 import { Badge } from '~/components/ui/Badge';
 import { ArrowLeft, Plus, X, Download, Share2 } from 'lucide-react';
-import { Link } from 'react-router';
-import { mockCars } from '~/data/mockData';
-import type { Car } from '~/types';
+import { Link, useLoaderData } from 'react-router';
+import { getSupabaseServerClient } from '~/lib/supabase.server';
+import type { Car, Image } from '~/types';
+import { FuelType, TransmissionType, ListingStatus } from '~/types';
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -17,46 +19,89 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-export default function Compare() {
-  const [comparisonCars, setComparisonCars] = useState<Car[]>([]);
-  const [availableCars] = useState(mockCars.slice(0, 6));
+export async function loader({ request }: LoaderFunctionArgs) {
+  const ids = new URL(request.url).searchParams.get('cars')?.split(',').filter(Boolean) || [];
+  if (!ids.length) return { listings: [], signedMap: {} as Record<string, string> };
 
-  useEffect(() => {
-    // Get comparison cars from URL params or localStorage
-    const urlParams = new URLSearchParams(window.location.search);
-    const carIds = urlParams.get('cars')?.split(',') || [];
-    
-    if (carIds.length > 0) {
-      const cars = mockCars.filter(car => carIds.includes(car.id));
-      setComparisonCars(cars);
-    } else {
-      // Try to get from localStorage
-      const saved = localStorage.getItem('autofans_comparison');
-      if (saved) {
-        const savedIds = JSON.parse(saved);
-        const cars = mockCars.filter(car => savedIds.includes(car.id));
-        setComparisonCars(cars);
+  try {
+    const { supabase } = getSupabaseServerClient(request);
+    const { data: listings } = await supabase
+      .from('listings')
+      .select('id, slug, owner_id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, body_type, images, created_at, owners, service_history, engine_size, power, doors, seats, condition_overall, condition_exterior, condition_interior, condition_engine, condition_transmission, has_accidents, features, city, county')
+      .in('id', ids)
+      .eq('status', 'published');
+
+    const paths = (listings || []).flatMap((listing: any) => {
+      const images = Array.isArray(listing.images) ? listing.images : [];
+      const main = images.find((image: any) => image?.isMain) || images[0];
+      return main?.path ? [main.path] : [];
+    });
+
+    const signedMap: Record<string, string> = {};
+    if (paths.length) {
+      const { data: signed } = await supabase.storage.from('listing-images').createSignedUrls(paths, 60 * 60);
+      for (const item of signed || []) {
+        if (item?.path && item?.signedUrl) signedMap[item.path] = item.signedUrl;
       }
     }
-  }, []);
 
-  const addCarToComparison = (car: Car) => {
-    if (comparisonCars.length >= 3) {
-      alert('Poți compara maximum 3 mașini simultan.');
-      return;
-    }
-    
-    if (comparisonCars.find(c => c.id === car.id)) {
-      return;
-    }
+    return { listings: listings || [], signedMap };
+  } catch (error) {
+    console.error('compare loader error:', error);
+    return { listings: [], signedMap: {} as Record<string, string> };
+  }
+}
 
-    const newComparison = [...comparisonCars, car];
-    setComparisonCars(newComparison);
-    
-    // Save to localStorage
-    const carIds = newComparison.map(c => c.id);
-    localStorage.setItem('autofans_comparison', JSON.stringify(carIds));
+function mapListingToCar(listing: any, signedMap: Record<string, string>): Car {
+  const images: Image[] = (Array.isArray(listing.images) ? listing.images : [])
+    .map((image: any, index: number) => ({
+      id: String(index),
+      url: signedMap[image?.path] || '',
+      thumbnailUrl: signedMap[image?.path] || '',
+      alt: listing.title,
+      order: index,
+      isMain: !!image?.isMain,
+    }))
+    .filter((image: Image) => !!image.url);
+
+  return {
+    id: String(listing.id),
+    slug: listing.slug || String(listing.id),
+    title: listing.title || `${listing.make} ${listing.model}`,
+    brand: listing.make || '—',
+    model: listing.model || '—',
+    year: listing.year || new Date().getFullYear(),
+    mileage: listing.mileage || 0,
+    fuelType: (listing.fuel_type as FuelType) || FuelType.PETROL,
+    transmission: (listing.transmission as TransmissionType) || TransmissionType.MANUAL,
+    price: Number(listing.price || 0),
+    currency: listing.currency || 'EUR',
+    negotiable: false,
+    location: { id: 'loc-1', city: listing.city || 'București', county: listing.county || 'București', country: 'RO' },
+    images: images.length ? images : [{ id: '0', url: '/placeholder-car.jpg', thumbnailUrl: '/placeholder-car.jpg', alt: listing.title, order: 0, isMain: true }],
+    specifications: { engineSize: listing.engine_size || 0, power: listing.power || 0, doors: listing.doors || 4, seats: listing.seats || 5 },
+    features: listing.features || [],
+    condition: { overall: 3 as any, exterior: 3 as any, interior: 3 as any, engine: 3 as any, transmission: 3 as any, hasAccidents: !!listing.has_accidents },
+    seller: { id: listing.owner_id || 'unknown', type: 'individual', name: 'Vânzător', email: '', phone: '', location: { id: 'loc-1', city: listing.city || 'București', county: listing.county || 'București', country: 'RO' }, isVerified: false },
+    description: listing.description || '',
+    createdAt: listing.created_at ? new Date(listing.created_at) : new Date(),
+    updatedAt: listing.created_at ? new Date(listing.created_at) : new Date(),
+    status: ListingStatus.ACTIVE,
+    viewCount: 0,
+    favoriteCount: 0,
+    contactCount: 0,
+    owners: listing.owners || 1,
+    serviceHistory: !!listing.service_history,
   };
+}
+
+export default function Compare() {
+  const data = useLoaderData<typeof loader>();
+  const [comparisonCars, setComparisonCars] = useState<Car[]>([]);
+
+  useEffect(() => {
+    setComparisonCars(data.listings.map((listing: any) => mapListingToCar(listing, data.signedMap)));
+  }, [data]);
 
   const removeCarFromComparison = (carId: string) => {
     const newComparison = comparisonCars.filter(car => car.id !== carId);
@@ -122,7 +167,7 @@ export default function Compare() {
   };
 
   const handleView = (carId: string) => {
-    window.location.href = `/car/${carId}`;
+    window.location.href = `/car/${encodeURIComponent(carId)}`;
   };
 
   return (
@@ -251,28 +296,6 @@ export default function Compare() {
               </div>
             </Card>
 
-            {/* Suggested Cars */}
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                Mașini populare pentru comparație
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {availableCars.map((car) => (
-                  <div key={car.id} className="relative">
-                    <CarCard
-                      car={car}
-                      onFavorite={handleFavorite}
-                      onCompare={() => addCarToComparison(car)}
-                      onContact={handleContact}
-                      onView={handleView}
-                      variant="grid"
-                      isFavorited={false}
-                      isInComparison={false}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         )}
     </div>

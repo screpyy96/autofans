@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import type { Route } from "./+types/car.$slug";
 import { type LoaderFunctionArgs, useLoaderData } from "react-router";
 import { getSupabaseServerClient } from "~/lib/supabase.server";
@@ -79,6 +79,7 @@ export default function CarDetail({ params }: Route.ComponentProps) {
   const [isFavorited, setIsFavorited] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
+  const contactRecorded = useRef(false);
 
   let car: Car | undefined = undefined;
   if (data?.listing) {
@@ -149,6 +150,24 @@ export default function CarDetail({ params }: Route.ComponentProps) {
 
   const similarCars: Car[] = [];
 
+  const listingId = car?.id;
+  useEffect(() => {
+    if (!listingId || typeof window === 'undefined') return;
+    const viewedKey = `autofans:viewed:${listingId}`;
+    if (sessionStorage.getItem(viewedKey)) return;
+    sessionStorage.setItem(viewedKey, '1');
+
+    void import('~/lib/supabase.client').then(({ getSupabaseBrowserClient }) => {
+      const supabase = getSupabaseBrowserClient();
+      let sessionId = localStorage.getItem('autofans_visitor_session');
+      if (!sessionId) {
+        sessionId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        localStorage.setItem('autofans_visitor_session', sessionId);
+      }
+      return supabase.from('listing_views').insert({ listing_id: Number(listingId), session_id: sessionId });
+    }).catch((error) => console.warn('Unable to record listing view:', error));
+  }, [listingId]);
+
   const { isInComparison, addToComparison, removeFromComparison } = useComparison();
 
   if (!car) {
@@ -169,6 +188,17 @@ export default function CarDetail({ params }: Route.ComponentProps) {
 
   const handleContactSeller = () => {
     setShowContactModal(true);
+  };
+
+  const recordContact = async () => {
+    if (contactRecorded.current || !listingId) return;
+    contactRecorded.current = true;
+    try {
+      const { getSupabaseBrowserClient } = await import('~/lib/supabase.client');
+      await getSupabaseBrowserClient().from('listing_contacts').insert({ listing_id: Number(listingId), contact_type: 'seller' });
+    } catch (error) {
+      console.warn('Unable to record listing contact:', error);
+    }
   };
 
   const handleScheduleViewing = () => {
@@ -241,6 +271,9 @@ export default function CarDetail({ params }: Route.ComponentProps) {
               country: 'RO'
             }
           }}
+          onSendMessage={async () => { await recordContact(); }}
+          onScheduleCall={async () => { await recordContact(); }}
+          onWhatsAppContact={() => { void recordContact(); }}
         />
       )}
     </div>

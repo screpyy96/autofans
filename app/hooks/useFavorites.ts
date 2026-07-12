@@ -19,9 +19,6 @@ export const useFavorites = (userId?: string): UseFavoritesReturn => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Mock favorite car IDs for demo
-  const mockFavoriteIds = ['car-1', 'car-2', 'car-3'];
-
   const loadFavorites = async () => {
     if (!userId) return;
     
@@ -29,14 +26,8 @@ export const useFavorites = (userId?: string): UseFavoritesReturn => {
     setError(null);
     
     try {
-      // Simulate API call to get favorite IDs
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setFavoriteIds(mockFavoriteIds);
-      
-      // Simulate API call to get favorite cars data
-      // In a real app, this would fetch the actual car data
-      const mockFavoriteCars: Car[] = []; // Would be populated with actual data
-      setFavorites(mockFavoriteCars);
+      setFavoriteIds([]);
+      setFavorites([]);
     } catch (err) {
       setError('Eroare la încărcarea favoritelor');
     } finally {
@@ -48,9 +39,6 @@ export const useFavorites = (userId?: string): UseFavoritesReturn => {
     setError(null);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
       setFavoriteIds(prev => [...prev, carId]);
       
       // In a real app, you would also fetch the car data and add it to favorites array
@@ -65,9 +53,6 @@ export const useFavorites = (userId?: string): UseFavoritesReturn => {
     setError(null);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
       setFavoriteIds(prev => prev.filter(id => id !== carId));
       setFavorites(prev => prev.filter(car => car.id !== carId));
     } catch (err) {

@@ -1,13 +1,16 @@
-import { Link } from 'react-router';
+import { Link, useLoaderData } from 'react-router';
 import type { Route } from "./+types/home";
-import { Search, Car, Shield, Clock, TrendingUp } from 'lucide-react';
+import type { LoaderFunctionArgs } from 'react-router';
+import { Search, Car as CarIcon, Shield, Clock, TrendingUp, FileText, ShieldCheck, Calculator, Tag, Plus } from 'lucide-react';
 import { Button } from '~/components/ui/Button';
 import { Card } from '~/components/ui/Card';
 import { Hero } from '~/components/home/Hero';
 import { RouteErrorBoundary } from '~/components/error';
-import { mockCars } from '~/data/mockData';
 import { CarCard } from '~/components/car/CarCard';
 import { useFavorites, useComparison } from '~/stores/useAppStore';
+import { getSupabaseServerClient } from '~/lib/supabase.server';
+import type { Car, Image } from '~/types';
+import { FuelType, TransmissionType, ListingStatus } from '~/types';
 
 export function meta({ }: Route.MetaArgs) {
   return [
@@ -16,7 +19,88 @@ export function meta({ }: Route.MetaArgs) {
   ];
 }
 
+export async function loader({ request }: LoaderFunctionArgs) {
+  try {
+    const { supabase } = getSupabaseServerClient(request);
+    const { count: publishedCount } = await supabase
+      .from('listings')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'published');
+
+    const { data: brandRows } = await supabase
+      .from('listings')
+      .select('make')
+      .eq('status', 'published')
+      .not('make', 'is', null)
+      .limit(500);
+
+    const { data: listings } = await supabase
+      .from('listings')
+      .select('id, slug, owner_id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, images, created_at, city, county')
+      .eq('status', 'published')
+      .order('created_at', { ascending: false })
+      .limit(6);
+
+    const paths = (listings || []).flatMap((listing: any) => {
+      const images = Array.isArray(listing.images) ? listing.images : [];
+      const main = images.find((image: any) => image?.isMain) || images[0];
+      return main?.path ? [main.path] : [];
+    });
+    const signedMap: Record<string, string> = {};
+    if (paths.length) {
+      const { data: signed } = await supabase.storage.from('listing-images').createSignedUrls(paths, 60 * 60);
+      for (const item of signed || []) {
+        if (item?.path && item?.signedUrl) signedMap[item.path] = item.signedUrl;
+      }
+    }
+    
+    // Calculate brand frequencies
+    const brandCounts = (brandRows || []).reduce((acc: Record<string, number>, row: any) => {
+      if (row.make) acc[row.make] = (acc[row.make] || 0) + 1;
+      return acc;
+    }, {});
+    
+    const brands = Object.entries(brandCounts)
+      .map(([name, count]) => ({ name, count: count as number }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 8);
+
+    return { listings: listings || [], signedMap, publishedCount: publishedCount || 0, brands };
+  } catch (error) {
+    console.error('home loader error:', error);
+    return { listings: [], signedMap: {} as Record<string, string>, publishedCount: 0, brands: [] };
+  }
+}
+
+function mapListingToCar(listing: any, signedMap: Record<string, string>): Car {
+  const images: Image[] = (Array.isArray(listing.images) ? listing.images : [])
+    .map((image: any, index: number) => ({
+      id: String(index), url: signedMap[image?.path] || '', thumbnailUrl: signedMap[image?.path] || '',
+      alt: listing.title, order: index, isMain: !!image?.isMain,
+    }))
+    .filter((image: Image) => !!image.url);
+
+  return {
+    id: String(listing.id), slug: listing.slug || String(listing.id),
+    title: listing.title || `${listing.make} ${listing.model}`,
+    brand: listing.make || '—', model: listing.model || '—', year: listing.year || new Date().getFullYear(),
+    mileage: listing.mileage || 0, fuelType: (listing.fuel_type as FuelType) || FuelType.PETROL,
+    transmission: (listing.transmission as TransmissionType) || TransmissionType.MANUAL,
+    price: Number(listing.price || 0), currency: listing.currency || 'EUR', negotiable: false,
+    location: { id: 'loc-1', city: listing.city || 'București', county: listing.county || 'București', country: 'RO' },
+    images: images.length ? images : [{ id: '0', url: '/placeholder-car.jpg', thumbnailUrl: '/placeholder-car.jpg', alt: listing.title, order: 0, isMain: true }],
+    specifications: { engineSize: 0, power: 0, doors: 4, seats: 5 }, features: [],
+    condition: { overall: 3 as any, exterior: 3 as any, interior: 3 as any, engine: 3 as any, transmission: 3 as any, hasAccidents: false },
+    seller: { id: listing.owner_id || 'unknown', type: 'individual', name: 'Vânzător', email: '', phone: '', location: { id: 'loc-1', city: listing.city || 'București', county: listing.county || 'București', country: 'RO' }, isVerified: false },
+    description: listing.description || '', createdAt: listing.created_at ? new Date(listing.created_at) : new Date(),
+    updatedAt: listing.created_at ? new Date(listing.created_at) : new Date(), status: ListingStatus.ACTIVE,
+    viewCount: 0, favoriteCount: 0, contactCount: 0, owners: 1, serviceHistory: false,
+  };
+}
+
 function HomeContent() {
+  const data = useLoaderData<typeof loader>();
+  const recentCars = data.listings.map((listing: any) => mapListingToCar(listing, data.signedMap));
   const { favorites, addToFavorites, removeFromFavorites, isFavorited } = useFavorites();
   const { comparisonCars, addToComparison, removeFromComparison, isInComparison } = useComparison();
 
@@ -49,15 +133,70 @@ function HomeContent() {
   };
 
   const stats = [
-    { label: 'Mașini active', value: '15.234', icon: Car },
-    { label: 'Utilizatori verificați', value: '8.567', icon: Shield },
-    { label: 'Anunțuri vândute', value: '3.421', icon: TrendingUp },
-    { label: 'Timp mediu vânzare', value: '12 zile', icon: Clock },
+    { label: 'Anunțuri active', value: data.publishedCount.toLocaleString('ro-RO'), icon: CarIcon },
+    { label: 'Mărci disponibile', value: String(data.brands.length), icon: Shield },
+    { label: 'Adăugate recent', value: String(recentCars.length), icon: TrendingUp },
+    { label: 'Platformă', value: 'LIVE', icon: Clock },
   ];
 
   return (
     <>
       <Hero onSearch={handleSearch} />
+
+      {/* Info Cards Section */}
+      <section className="py-16 w-full bg-glass/10 backdrop-blur-md text-white border-b border-white/5">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-bold mb-2">
+              Descoperă mai multe de la AutoFans
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            {/* Card 1 */}
+            <div className="md:col-span-2 bg-glass border border-white/10 rounded-2xl overflow-hidden shadow-sm hover:shadow-glow hover:border-accent-gold/50 transition-all duration-300 flex flex-col group">
+              <img src="/card_buying.jpg" alt="Cumpără mașini" className="w-full h-48 object-cover opacity-90 group-hover:opacity-100 transition-opacity" />
+              <div className="p-6 flex flex-col flex-1">
+                <h3 className="text-xl font-bold mb-2 text-white group-hover:text-accent-gold transition-colors">Cumpără cu încredere</h3>
+                <p className="text-gray-400 mb-6 flex-1">
+                  Prețul pe care îl vezi este prețul final. Descoperă mii de mașini verificate și alege-o pe cea perfectă pentru tine.
+                </p>
+                <Link to="/search" className="inline-block text-center text-accent-gold border border-accent-gold hover:bg-accent-gold/10 font-bold py-2.5 px-6 rounded-xl transition-colors">
+                  Caută mașini
+                </Link>
+              </div>
+            </div>
+
+            {/* Card 2 */}
+            <div className="bg-glass border border-white/10 rounded-2xl overflow-hidden shadow-sm hover:shadow-glow hover:border-accent-gold/50 transition-all duration-300 flex flex-col group">
+              <img src="/card_selling.jpg" alt="Vinde mașina" className="w-full h-48 object-cover opacity-90 group-hover:opacity-100 transition-opacity" />
+              <div className="p-6 flex flex-col flex-1">
+                <h3 className="text-xl font-bold mb-2 text-white group-hover:text-accent-gold transition-colors">Vinde mașina ta simplu</h3>
+                <p className="text-gray-400 mb-6 flex-1">
+                  Adaugă un anunț în doar câteva minute și alege cea mai bună variantă de a vinde rapid și sigur pe platforma noastră.
+                </p>
+                <Link to="/create-listing" className="inline-block text-center text-accent-gold border border-accent-gold hover:bg-accent-gold/10 font-bold py-2.5 px-6 rounded-xl transition-colors">
+                  Vinde mașina
+                </Link>
+              </div>
+            </div>
+
+            {/* Card 3 */}
+            <div className="bg-glass border border-white/10 rounded-2xl overflow-hidden shadow-sm hover:shadow-glow hover:border-accent-gold/50 transition-all duration-300 flex flex-col group">
+              <img src="/card_experience.jpg" alt="Experiența completă" className="w-full h-48 object-cover opacity-90 group-hover:opacity-100 transition-opacity" />
+              <div className="p-6 flex flex-col flex-1">
+                <h3 className="text-xl font-bold mb-2 text-white group-hover:text-accent-gold transition-colors">Experiența completă</h3>
+                <p className="text-gray-400 mb-6 flex-1">
+                  Vezi mașinile salvate, urmărește progresul anunțurilor tale și reia exact de unde ai rămas pe orice dispozitiv.
+                </p>
+                <Link to="/login" className="inline-block text-center text-accent-gold border border-accent-gold hover:bg-accent-gold/10 font-bold py-2.5 px-6 rounded-xl transition-colors">
+                  Autentificare
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Brands Section */}
       <section className="py-16 bg-glass/20 backdrop-blur-md w-full border-b border-white/5">
@@ -70,23 +209,17 @@ function HomeContent() {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4">
-            {[
-              { name: 'Dacia', count: '1.420 anunțuri' },
-              { name: 'Volkswagen', count: '2.890 anunțuri' },
-              { name: 'BMW', count: '2.110 anunțuri' },
-              { name: 'Audi', count: '1.780 anunțuri' },
-              { name: 'Mercedes-Benz', count: '1.450 anunțuri' },
-              { name: 'Ford', count: '1.230 anunțuri' },
-              { name: 'Opel', count: '980 anunțuri' },
-              { name: 'Skoda', count: '890 anunțuri' },
-            ].map((brand) => (
+            {data.brands.map((brand) => (
               <Link
                 key={brand.name}
-                to={`/search?q=${brand.name}`}
+                to={`/search?q=${encodeURIComponent(brand.name)}`}
                 className="flex flex-col items-center justify-center p-5 rounded-2xl bg-glass border border-white/10 hover:border-accent-gold transition-all duration-300 hover:shadow-glow hover:-translate-y-1 text-center group"
               >
+                <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mb-3 group-hover:bg-accent-gold/20 transition-colors">
+                  <CarIcon className="w-5 h-5 text-gray-400 group-hover:text-accent-gold transition-colors" />
+                </div>
                 <span className="text-base font-bold text-white mb-1 group-hover:text-accent-gold transition-colors">{brand.name}</span>
-                <span className="text-xs text-gray-400">{brand.count}</span>
+                <span className="text-xs text-gray-400">{brand.count} anunțuri</span>
               </Link>
             ))}
           </div>
@@ -110,18 +243,22 @@ function HomeContent() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {mockCars.map((car) => (
-            <CarCard
-              key={car.id}
-              car={car}
-              onFavorite={handleFavorite}
-              onCompare={handleCompare}
-              onContact={handleContact}
-              onView={handleView}
-              isFavorited={isFavorited(car.id)}
-              isInComparison={isInComparison(car.id)}
-            />
-          ))}
+          {recentCars.length > 0 ? recentCars.map((car) => (
+              <CarCard
+                key={car.id}
+                car={car}
+                onFavorite={handleFavorite}
+                onCompare={handleCompare}
+                onContact={handleContact}
+                onView={handleView}
+                isFavorited={isFavorited(car.id)}
+                isInComparison={isInComparison(car.id)}
+              />
+            )) : (
+              <div className="col-span-full rounded-2xl border border-white/10 bg-glass p-10 text-center text-gray-300">
+                Nu există încă anunțuri publicate.
+              </div>
+            )}
         </div>
       </section>
 
@@ -145,51 +282,60 @@ function HomeContent() {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-glass backdrop-blur-xl w-full">
+      <section className="py-20 bg-glass backdrop-blur-xl w-full border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-white mb-6">
-              De ce să alegi AutoFans.ro?
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-2">
+              Esențiale pentru cumpărători
             </h2>
-            <p className="text-xl text-gray-300 leading-relaxed max-w-3xl mx-auto">
-              Punem accent pe transparență și utilitate, oferindu-ți instrumentele necesare pentru a vinde sau cumpăra rapid, fără bătăi de cap.
-            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-            <Card variant="elevated" padding="lg" className="text-center bg-glass border-premium hover:border-accent-gold transition-all duration-300 group">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-accent-gold/20 rounded-full mb-8 group-hover:bg-accent-gold/30 transition-all duration-300">
-                <Shield className="h-10 w-10 text-accent-gold" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+            <Card variant="outline" className="text-center bg-glass border-white/10 hover:border-accent-gold/50 transition-all duration-300 p-8 rounded-2xl flex flex-col items-center justify-start group">
+              <div className="mb-6 group-hover:scale-110 transition-transform duration-300">
+                <FileText className="h-12 w-12 text-accent-gold stroke-[1.5]" />
               </div>
-              <h3 className="text-2xl font-semibold text-white mb-6">
-                Anunțuri Verificate
+              <h3 className="text-lg font-bold text-white mb-3">
+                Verifică istoricul auto
               </h3>
-              <p className="text-gray-400 leading-relaxed">
-                Fiecare anunț este moderat manual de echipa noastră înainte de publicare pentru a elimina tentativele de fraudă și datele eronate.
+              <p className="text-sm text-gray-400 leading-relaxed">
+                Ai liniște sufletească deplină înainte de a cumpăra următoarea mașină.
               </p>
             </Card>
 
-            <Card variant="elevated" padding="lg" className="text-center bg-glass border-premium hover:border-accent-gold transition-all duration-300 group">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-accent-gold/20 rounded-full mb-8 group-hover:bg-accent-gold/30 transition-all duration-300">
-                <Search className="h-10 w-10 text-accent-gold" />
+            <Card variant="outline" className="text-center bg-glass border-white/10 hover:border-accent-gold/50 transition-all duration-300 p-8 rounded-2xl flex flex-col items-center justify-start group">
+              <div className="mb-6 group-hover:scale-110 transition-transform duration-300">
+                <ShieldCheck className="h-12 w-12 text-accent-gold stroke-[1.5]" />
               </div>
-              <h3 className="text-2xl font-semibold text-white mb-6">
-                Filtre Inteligente
+              <h3 className="text-lg font-bold text-white mb-3">
+                Sfaturi de siguranță
               </h3>
-              <p className="text-gray-400 leading-relaxed">
-                Găsești exact ce cauți după criterii detaliate: buget, an de fabricație, motorizare, transmisie, combustibil sau locație geografică.
+              <p className="text-sm text-gray-400 leading-relaxed">
+                Recomandări și ghiduri despre cum să cumperi și să vinzi vehicule în siguranță.
               </p>
             </Card>
 
-            <Card variant="elevated" padding="lg" className="text-center bg-glass border-premium hover:border-accent-gold transition-all duration-300 group">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-accent-gold/20 rounded-full mb-8 group-hover:bg-accent-gold/30 transition-all duration-300">
-                <Clock className="h-10 w-10 text-accent-gold" />
+            <Card variant="outline" className="text-center bg-glass border-white/10 hover:border-accent-gold/50 transition-all duration-300 p-8 rounded-2xl flex flex-col items-center justify-start group">
+              <div className="mb-6 group-hover:scale-110 transition-transform duration-300">
+                <Calculator className="h-12 w-12 text-accent-gold stroke-[1.5]" />
               </div>
-              <h3 className="text-2xl font-semibold text-white mb-6">
-                Fără Intermediari
+              <h3 className="text-lg font-bold text-white mb-3">
+                Finanțare și Credit
               </h3>
-              <p className="text-gray-400 leading-relaxed">
-                Cumpărătorii iau legătura direct cu proprietarii sau dealerii autorizați. Fără taxe ascunse sau comisioane reținute din tranzacție.
+              <p className="text-sm text-gray-400 leading-relaxed">
+                Descoperă cât poți împrumuta și găsește pachetul de rate potrivit pentru tine.
+              </p>
+            </Card>
+
+            <Card variant="outline" className="text-center bg-glass border-white/10 hover:border-accent-gold/50 transition-all duration-300 p-8 rounded-2xl flex flex-col items-center justify-start group">
+              <div className="mb-6 group-hover:scale-110 transition-transform duration-300">
+                <Tag className="h-12 w-12 text-accent-gold stroke-[1.5]" />
+              </div>
+              <h3 className="text-lg font-bold text-white mb-3">
+                Vânzare rapidă
+              </h3>
+              <p className="text-sm text-gray-400 leading-relaxed">
+                Fără bătăi de cap. Găsește cumpărători reali și vinde mașina ta la prețul corect.
               </p>
             </Card>
           </div>
@@ -207,16 +353,19 @@ function HomeContent() {
             Adaugă un anunț acum sau caută în miile de oferte active de pe Autofans.ro
           </p>
           <div className="flex flex-col sm:flex-row gap-6 justify-center">
-            <Link to="/search">
-              <Button variant="secondary" size="lg" className="bg-secondary-900 text-white hover:bg-secondary-800 hover:shadow-lg transition-all duration-300">
-                <Search className="h-5 w-5 mr-2" />
-                Caută Anunțuri
-              </Button>
+            <Link 
+              to="/search" 
+              className="inline-flex items-center justify-center bg-secondary-900 text-white hover:bg-secondary-800 hover:shadow-lg transition-all duration-300 px-8 py-4 rounded-xl font-bold text-lg"
+            >
+              <Search className="h-5 w-5 mr-2" />
+              Caută Anunțuri
             </Link>
-            <Link to="/create-listing">
-              <Button variant="ghost" size="lg" className="text-secondary-900 border-secondary-900 hover:bg-secondary-900/10 transition-all duration-300 font-bold">
-                Pune Anunț Gratuit
-              </Button>
+            <Link 
+              to="/create-listing" 
+              className="inline-flex items-center justify-center text-secondary-900 border-2 border-secondary-900 hover:bg-secondary-900/10 transition-all duration-300 px-8 py-4 rounded-xl font-bold text-lg"
+            >
+              <Plus className="h-5 w-5 mr-2" />
+              Pune Anunț Gratuit
             </Link>
           </div>
         </div>

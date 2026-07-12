@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, redirect, Form, useLoaderData } from 'react-router';
 import type { LoaderFunctionArgs } from 'react-router';
 import { getSupabaseServerClient } from '~/lib/supabase.server';
@@ -25,6 +25,8 @@ import {
   Star
 } from 'lucide-react';
 import { cn } from '~/lib/utils';
+import { useFavorites } from '~/stores/useAppStore';
+import { getSupabaseBrowserClient } from '~/lib/supabase.client';
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -73,16 +75,67 @@ export async function loader({ request }: LoaderFunctionArgs) {
     }
   }
 
-  const { count: favoritesCount } = await supabase
-    .from('favorites')
-    .select('listing_id', { count: 'exact', head: true })
-    .eq('user_id', user.id);
+  const [{ count: favoritesCount }, { data: favoriteRows }] = await Promise.all([
+    supabase.from('favorites').select('listing_id', { count: 'exact', head: true }).eq('user_id', user.id),
+    supabase.from('favorites').select('listing_id, created_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(3),
+  ]);
 
-  return { profile, listings, thumbs, favoritesCount: favoritesCount || 0, userAuth: user };
+  let favoriteListings: any[] = [];
+  const favoriteIds = (favoriteRows || []).map((row: any) => row.listing_id);
+  if (favoriteIds.length) {
+    const { data: favoriteData } = await supabase
+      .from('listings')
+      .select('id, slug, title, price, currency, status, make, model, year, city, county')
+      .in('id', favoriteIds);
+    const byId = new Map((favoriteData || []).map((listing: any) => [listing.id, listing]));
+    favoriteListings = favoriteIds.map((id: number) => byId.get(id)).filter(Boolean);
+  }
+
+  const listingIds = listings.map((listing) => listing.id);
+  let viewsCount = 0;
+  let contactsCount = 0;
+  if (listingIds.length) {
+    const [{ count: views }, { count: contacts }] = await Promise.all([
+      supabase.from('listing_views').select('id', { count: 'exact', head: true }).in('listing_id', listingIds),
+      supabase.from('listing_contacts').select('id', { count: 'exact', head: true }).in('listing_id', listingIds),
+    ]);
+    viewsCount = views || 0;
+    contactsCount = contacts || 0;
+  }
+
+  return { profile, listings, thumbs, favoriteListings, favoritesCount: favoritesCount || 0, viewsCount, contactsCount, userAuth: user };
 }
 
 export default function Profile() {
-  const { profile, listings = [], thumbs = {}, favoritesCount = 0, userAuth } = useLoaderData<typeof loader>();
+  const { profile, listings = [], thumbs = {}, favoriteListings = [], favoritesCount = 0, viewsCount = 0, contactsCount = 0, userAuth } = useLoaderData<typeof loader>();
+  const { favorites: localFavoriteIds } = useFavorites();
+  const [recentFavoriteListings, setRecentFavoriteListings] = useState<any[]>(favoriteListings);
+
+  useEffect(() => {
+    let cancelled = false;
+    setRecentFavoriteListings(favoriteListings);
+    if (!localFavoriteIds.length) return;
+
+    const loadLocalFavorites = async () => {
+      try {
+        const supabase = getSupabaseBrowserClient();
+        const { data, error } = await supabase
+          .from('listings')
+          .select('id, slug, title, price, currency, status, make, model, city, county')
+          .in('id', localFavoriteIds.slice(-3).reverse());
+        if (error) throw error;
+        if (!cancelled && data?.length) {
+          const byId = new Map(data.map((listing: any) => [listing.id, listing]));
+          setRecentFavoriteListings(localFavoriteIds.slice(-3).reverse().map((id) => byId.get(Number(id)) || byId.get(id)).filter(Boolean));
+        }
+      } catch (error) {
+        console.warn('Unable to load recent local favorites:', error);
+      }
+    };
+
+    void loadLocalFavorites();
+    return () => { cancelled = true; };
+  }, [favoriteListings, localFavoriteIds]);
   const role = profile?.role as 'buyer' | 'seller' | undefined;
   
   const [activeTab, setActiveTab] = useState<'overview' | 'listings' | 'settings'>('overview');
@@ -198,10 +251,10 @@ export default function Profile() {
     isVerified: !!profile?.is_verified,
     memberSince: profile?.created_at ? new Date(profile.created_at).getFullYear().toString() : '2026',
     stats: {
-      listings: listings.length,
-      favorites: favoritesCount,
-      views: role === 'seller' ? 125 : 0,
-      contacts: role === 'seller' ? 12 : 0
+      listings: listings.filter((listing) => listing.status === 'published').length,
+      favorites: Math.max(favoritesCount, localFavoriteIds.length),
+      views: viewsCount,
+      contacts: contactsCount
     }
   };
 
@@ -386,25 +439,25 @@ export default function Profile() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors">
-                    <div className="min-w-0 flex-1">
-                      <h4 className="font-medium text-white truncate">Audi A4 2.0 TDI</h4>
-                      <p className="text-sm text-gray-300 mt-1">32.000 RON • Cluj-Napoca</p>
-                    </div>
-                    <Badge variant="success" size="sm" className="bg-green-500/10 text-green-400 border-green-500/20">
-                      Disponibil
-                    </Badge>
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors">
-                    <div className="min-w-0 flex-1">
-                      <h4 className="font-medium text-white truncate">VW Golf 1.6 TDI</h4>
-                      <p className="text-sm text-gray-300 mt-1">18.500 RON • Timișoara</p>
-                    </div>
-                    <Badge variant="success" size="sm" className="bg-green-500/10 text-green-400 border-green-500/20">
-                      Disponibil
-                    </Badge>
-                  </div>
+                  {recentFavoriteListings.length > 0 ? recentFavoriteListings.map((listing: any) => (
+                    <Link
+                      key={listing.id}
+                      to={`/car/${encodeURIComponent(listing.slug || listing.id)}`}
+                      className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-medium text-white truncate">{listing.title || `${listing.make} ${listing.model}`}</h4>
+                        <p className="text-sm text-gray-300 mt-1">
+                          {Number(listing.price || 0).toLocaleString('ro-RO')} {listing.currency || 'EUR'} • {listing.city || 'Locație nespecificată'}
+                        </p>
+                      </div>
+                      <Badge variant="success" size="sm" className="bg-green-500/10 text-green-400 border-green-500/20">
+                        {listing.status === 'published' ? 'Disponibil' : listing.status}
+                      </Badge>
+                    </Link>
+                  )) : (
+                    <p className="py-6 text-center text-gray-400">Nu ai favorite salvate încă.</p>
+                  )}
 
                   <div className="text-center py-4">
                     <Link to="/create-listing">

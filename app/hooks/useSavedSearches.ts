@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import type { SavedSearch, FilterState } from '../types';
-import { FuelType } from '../types';
 
 interface UseSavedSearchesReturn {
   savedSearches: SavedSearch[];
@@ -17,32 +16,6 @@ export const useSavedSearches = (userId?: string): UseSavedSearchesReturn => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Mock data for demo purposes
-  const mockSavedSearches: SavedSearch[] = [
-    {
-      id: 'search-1',
-      name: 'BMW Seria 3 sub 30.000 RON',
-      filters: {
-        brand: ['BMW'],
-        model: ['Seria 3'],
-        priceRange: { min: 0, max: 30000 }
-      },
-      alertsEnabled: true,
-      createdAt: new Date('2024-01-15'),
-      lastNotified: new Date('2024-02-01')
-    },
-    {
-      id: 'search-2',
-      name: 'Mașini diesel 2018-2022',
-      filters: {
-        fuelType: [FuelType.DIESEL],
-        yearRange: { min: 2018, max: 2022 }
-      },
-      alertsEnabled: false,
-      createdAt: new Date('2024-01-20')
-    }
-  ];
-
   const loadSavedSearches = async () => {
     if (!userId) return;
     
@@ -50,9 +23,7 @@ export const useSavedSearches = (userId?: string): UseSavedSearchesReturn => {
     setError(null);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setSavedSearches(mockSavedSearches);
+      setSavedSearches([]);
     } catch (err) {
       setError('Eroare la încărcarea căutărilor salvate');
     } finally {
@@ -72,9 +43,6 @@ export const useSavedSearches = (userId?: string): UseSavedSearchesReturn => {
         createdAt: new Date()
       };
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
       setSavedSearches(prev => [newSearch, ...prev]);
     } catch (err) {
       setError('Eroare la salvarea căutării');
@@ -86,9 +54,6 @@ export const useSavedSearches = (userId?: string): UseSavedSearchesReturn => {
     setError(null);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
       setSavedSearches(prev => 
         prev.map(search => 
           search.id === searchId 

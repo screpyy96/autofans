@@ -123,7 +123,6 @@ export const useAppStore = create<AppStore>()(
             set((state) => {
               state.user = null;
               state.isAuthenticated = false;
-              state.favorites = [];
               state.comparisonCars = [];
               state.savedSearches = [];
               state.recentSearches = [];
@@ -405,13 +404,6 @@ export const useFavorites = () => {
   const removeFromFavorites = useAppStore((state) => state.removeFromFavorites);
   const isFavorited = useAppStore((state) => state.isFavorited);
 
-  // Debug logging - only in development
-  if (process.env.NODE_ENV === 'development') {
-    useAppStore.subscribe((state) => {
-      console.log('❤️ Favorites state changed:', state.favorites);
-    });
-  }
-
   return { favorites, addToFavorites, removeFromFavorites, isFavorited };
 };
 
@@ -422,13 +414,6 @@ export const useComparison = () => {
   const clearComparison = useAppStore((state) => state.clearComparison);
   const isInComparison = useAppStore((state) => state.isInComparison);
   const canAddToComparison = useAppStore((state) => state.canAddToComparison);
-
-  // Debug logging - only in development
-  if (process.env.NODE_ENV === 'development') {
-    useAppStore.subscribe((state) => {
-      console.log('🔄 Comparison state changed:', state.comparisonCars);
-    });
-  }
 
   return { comparisonCars, addToComparison, removeFromComparison, clearComparison, isInComparison, canAddToComparison };
 };

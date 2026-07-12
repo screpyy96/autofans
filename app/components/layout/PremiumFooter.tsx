@@ -13,7 +13,7 @@ export interface PremiumFooterProps {
 export function PremiumFooter({ navigation }: PremiumFooterProps) {
   return (
     <footer 
-      className="bg-glass backdrop-blur-xl border-t border-premium mt-16 relative"
+      className="bg-glass backdrop-blur-xl border-t border-premium relative"
       role="contentinfo"
     >
       <div className="mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -50,14 +50,14 @@ export function PremiumFooter({ navigation }: PremiumFooterProps) {
             <h3 className="font-semibold text-white mb-4">Suport</h3>
             <ul className="space-y-2">
               <li>
-                <a href="#" className="text-gray-400 hover:text-accent-gold transition-colors duration-300 hover:translate-x-1 inline-block">
+                <Link to="/help" className="text-gray-400 hover:text-accent-gold transition-colors duration-300 hover:translate-x-1 inline-block">
                   Ajutor
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-gray-400 hover:text-accent-gold transition-colors duration-300 hover:translate-x-1 inline-block">
+                <Link to="/contact" className="text-gray-400 hover:text-accent-gold transition-colors duration-300 hover:translate-x-1 inline-block">
                   Contact
-                </a>
+                </Link>
               </li>
               <li>
                 <Link to="/termeni-si-conditii" className="text-gray-400 hover:text-accent-gold transition-colors duration-300 hover:translate-x-1 inline-block">
