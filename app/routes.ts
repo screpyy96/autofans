@@ -2,6 +2,8 @@ import { type RouteConfig, index, route } from "@react-router/dev/routes";
 
 export default [
   // Core routes - loaded immediately
+  route("/sitemap.xml", "routes/sitemap.ts"),
+  route("/robots.txt", "routes/robots.ts"),
   index("routes/home.tsx"),
   route("/search", "routes/search.tsx"),
   route("/login", "routes/login.tsx", { lazy: true }),
