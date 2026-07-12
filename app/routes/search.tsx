@@ -134,12 +134,16 @@ function SearchContent() {
           {/* Filters Sidebar */}
           {showFilters && (
             <div className="w-full flex-shrink-0 lg:w-80 lg:max-w-sm">
+              <div className="bg-red-500/20 p-2 mb-2 text-white text-xs">
+                DEBUG: showFilters = {showFilters.toString()}
+              </div>
               <FilterPanel
                 filters={filters}
                 onFiltersChange={handleFilterChange}
                 onReset={resetFilters}
                 onClose={() => setShowFilters(false)}
                 onApply={() => setShowFilters(false)}
+                isCollapsed={false}
               />
             </div>
           )}

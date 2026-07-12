@@ -3,12 +3,14 @@ import type { Car, LoanCalculatorParams, LoanCalculatorResult } from '../../type
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { formatCurrency } from '../../utils/helpers';
+import { useCurrency } from '../../stores/useAppStore';
 
 interface LoanCalculatorProps {
   car: Car;
 }
 
 export const LoanCalculator: React.FC<LoanCalculatorProps> = ({ car }) => {
+  useCurrency(); // Subscribe to currency switches
   const [params, setParams] = useState<LoanCalculatorParams>({
     carPrice: car.price,
     downPayment: Math.round(car.price * 0.2), // 20% default
@@ -142,28 +144,28 @@ export const LoanCalculator: React.FC<LoanCalculatorProps> = ({ car }) => {
             <div className="bg-white rounded-lg p-4">
               <div className="text-sm text-gray-600">Rata lunară</div>
               <div className="text-2xl font-bold text-blue-600">
-                {formatCurrency(result.monthlyPayment)}
+                {formatCurrency(result.monthlyPayment, car.currency)}
               </div>
             </div>
 
             <div className="bg-white rounded-lg p-4">
               <div className="text-sm text-gray-600">Suma finanțată</div>
               <div className="text-xl font-semibold text-gray-900">
-                {formatCurrency(result.loanAmount)}
+                {formatCurrency(result.loanAmount, car.currency)}
               </div>
             </div>
 
             <div className="bg-white rounded-lg p-4">
               <div className="text-sm text-gray-600">Total dobândă</div>
               <div className="text-xl font-semibold text-orange-600">
-                {formatCurrency(result.totalInterest)}
+                {formatCurrency(result.totalInterest, car.currency)}
               </div>
             </div>
 
             <div className="bg-white rounded-lg p-4">
               <div className="text-sm text-gray-600">Cost total</div>
               <div className="text-xl font-semibold text-gray-900">
-                {formatCurrency(result.totalAmount)}
+                {formatCurrency(result.totalAmount, car.currency)}
               </div>
             </div>
           </div>
@@ -173,21 +175,21 @@ export const LoanCalculator: React.FC<LoanCalculatorProps> = ({ car }) => {
             <div className="text-sm text-gray-600 space-y-1">
               <div className="flex justify-between">
                 <span>Preț mașină:</span>
-                <span>{formatCurrency(params.carPrice)}</span>
+                <span>{formatCurrency(params.carPrice, car.currency)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Avans:</span>
-                <span>-{formatCurrency(params.downPayment)}</span>
+                <span>-{formatCurrency(params.downPayment, car.currency)}</span>
               </div>
               {params.tradeInValue && params.tradeInValue > 0 && (
                 <div className="flex justify-between">
                   <span>Trade-in:</span>
-                  <span>-{formatCurrency(params.tradeInValue)}</span>
+                  <span>-{formatCurrency(params.tradeInValue, car.currency)}</span>
                 </div>
               )}
               <div className="flex justify-between font-medium border-t pt-1">
                 <span>Suma de finanțat:</span>
-                <span>{formatCurrency(result.loanAmount)}</span>
+                <span>{formatCurrency(result.loanAmount, car.currency)}</span>
               </div>
             </div>
           </div>

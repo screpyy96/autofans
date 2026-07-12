@@ -2,7 +2,6 @@ import { SearchBar } from '~/components/search/SearchBar';
 import { SortControls } from '~/components/search';
 import type { ViewMode } from '~/components/search';
 import { Button } from '~/components/ui/Button';
-import { Card } from '~/components/ui/Card';
 import { Badge } from '~/components/ui/Badge';
 import { Filter, X } from 'lucide-react';
 import { cn } from '~/lib/utils';
@@ -37,75 +36,52 @@ export function SearchHeader({
   setViewMode,
 }: SearchHeaderProps) {
   return (
-    <div className="mb-8 sm:mb-12">
-      {/* Clean Header Section */}
-      <div className="text-center mb-8">
+    <div className="mb-6 sm:mb-10 w-full">
+      
+      {/* Title Section (Hidden on mobile to save space, visible on desktop) */}
+      <div className="hidden sm:block text-center mb-8">
         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-4 tracking-tight">
           Caută mașini
         </h1>
-        <p className="text-lg text-gray-300 mx-auto  leading-relaxed">
+        <p className="text-lg text-gray-300 mx-auto leading-relaxed">
           Găsește mașina perfectă din peste{' '}
           <span className="text-accent-gold font-semibold">15,000</span>{' '}
           de anunțuri verificate
         </p>
       </div>
 
-      {/* Clean Search Container - Similar to Hero */}
-      <div className="rounded-[26px] border border-white/10 bg-white/5 p-1 backdrop-blur-xl shadow-[0_20px_60px_rgba(10,18,36,0.4)]">
-        <div className="rounded-[24px] border border-white/10 bg-secondary-900/40 shadow-inner overflow-hidden">
+      {/* Main Container with Glassmorphism */}
+      <div className="rounded-[22px] border border-white/10 bg-white/5 p-1 backdrop-blur-xl shadow-[0_20px_60px_rgba(10,18,36,0.4)]">
+        <div className="rounded-[20px] border border-white/10 bg-secondary-900/40 shadow-inner overflow-hidden">
           
-          {/* Content */}
-          <div className="relative p-8 sm:p-10 lg:p-12 space-y-8">
-            {/* Search Bar Section */}
-            <div className="flex flex-col xl:flex-row xl:items-center xl:gap-12">
-              <div className="w-full xl:flex-1">
-                <SearchBar
-                  onSearch={onSearch}
-                  placeholder="Caută după marcă, model, oraș..."
-                  className="w-full"
-                />
-              </div>
-
-              {/* Clean Results Info */}
-              <div className="flex w-full flex-col gap-3 mt-6 xl:mt-0 xl:w-auto xl:items-end xl:text-right">
-                <div className="flex flex-wrap items-center gap-3 justify-center xl:justify-end">
-                  {/* Results Badge */}
-                  <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 font-semibold text-white backdrop-blur-sm">
-                    <div className="w-2 h-2 bg-accent-gold rounded-full"></div>
-                    {displayedCarsCount} rezultate
-                  </span>
-                  
-                  {/* Comparison Badge */}
-                  {comparisonCarsCount > 0 && (
-                    <span className="inline-flex items-center gap-2 rounded-full border border-accent-gold/30 bg-accent-gold/15 px-4 py-2 font-semibold text-accent-gold backdrop-blur-sm">
-                      <div className="w-2 h-2 bg-accent-gold rounded-full animate-pulse"></div>
-                      {comparisonCarsCount} în comparație
-                    </span>
-                  )}
-                </div>
-                
-                {/* Status Indicator */}
-                <p className="text-xs text-white/50 sm:text-sm">
-                  <span className="inline-block w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
-                  Actualizat automat după aplicarea filtrelor
-                </p>
-              </div>
+          {/* Content (Compact padding on mobile, standard on desktop) */}
+          <div className="p-4 sm:p-6 lg:p-8 space-y-4">
+            
+            {/* Search Input field */}
+            <div className="w-full">
+              <SearchBar
+                onSearch={onSearch}
+                placeholder="Caută după marcă, model, oraș..."
+                className="w-full"
+              />
             </div>
 
-            {/* Clean Controls Section */}
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pt-4 border-t border-white/10">
-              <div className="flex flex-wrap items-center gap-3">
+            {/* Controls Row (Filters, sorting, grid/list view toggle) */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-3.5 border-t border-white/5">
+              
+              {/* Left actions: Filters Toggle, Reset, and Count */}
+              <div className="flex flex-wrap items-center gap-2">
                 <Button
                   variant={showFilters ? "primary" : "outline"}
                   onClick={() => setShowFilters(!showFilters)}
                   className={cn(
-                    "flex items-center gap-2 rounded-xl border-2 transition-all duration-200",
+                    "flex items-center gap-2 rounded-xl border text-xs py-2 px-3.5 transition-all",
                     showFilters
-                      ? "bg-gold-gradient text-secondary-900 shadow-lg shadow-accent-gold/25 border-accent-gold"
-                      : "bg-white/10 text-white hover:bg-accent-gold/10 border-white/20 hover:border-accent-gold/50"
+                      ? "bg-gold-gradient text-secondary-900 border-transparent shadow-glow font-bold"
+                      : "bg-white/5 text-white border-white/10 hover:border-accent-gold/40 hover:bg-accent-gold/5 font-semibold"
                   )}
                 >
-                  <Filter className="h-4 w-4" />
+                  <Filter className="h-3.5 w-3.5 text-accent-gold" />
                   Filtre
                   {activeFilterCount > 0 && (
                     <Badge variant="secondary" size="sm" className="bg-red-500/20 text-red-300 border-red-500/30">
@@ -117,15 +93,28 @@ export function SearchHeader({
                 {hasActiveFilters && (
                   <button
                     onClick={resetFilters}
-                    className="inline-flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-300 transition-all duration-200 hover:bg-red-500/20 hover:border-red-500/30"
+                    className="inline-flex items-center gap-1 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-[10px] sm:text-xs font-semibold text-red-300 hover:bg-red-500/20 transition-colors"
                   >
-                    <X className="h-4 w-4" />
-                    Șterge filtrele
+                    <X className="h-3 w-3" />
+                    Șterge
                   </button>
+                )}
+
+                {/* Inline Count Indicator */}
+                <span className="text-xs text-gray-400 ml-1.5 font-medium">
+                  {displayedCarsCount} {displayedCarsCount === 1 ? 'mașină găsită' : 'mașini găsite'}
+                </span>
+                
+                {/* Comparison Badge (small inline) */}
+                {comparisonCarsCount > 0 && (
+                  <Badge variant="primary" className="bg-accent-gold/15 text-accent-gold border-accent-gold/20 text-[10px] py-0.5 px-2">
+                    {comparisonCarsCount} în comparație
+                  </Badge>
                 )}
               </div>
 
-              <div className="sm:ml-auto">
+              {/* Right actions: Sorting Dropdown & Layout Grid/List Toggle */}
+              <div className="flex items-center gap-2.5 sm:ml-auto">
                 <SortControls
                   activeSort={activeSort}
                   onSortChange={setActiveSort}
@@ -138,7 +127,9 @@ export function SearchHeader({
                   compact={true}
                 />
               </div>
+
             </div>
+
           </div>
         </div>
       </div>

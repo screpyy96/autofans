@@ -119,7 +119,7 @@ const ResultsPerPageSelector: React.FC<ResultsPerPageSelectorProps> = ({
   ];
 
   return (
-    <div className="flex items-center space-x-2">
+    <div className="hidden sm:flex items-center space-x-2">
       {!compact && (
         <span className="text-sm text-white/70 whitespace-nowrap">
           Rezultate pe pagină:

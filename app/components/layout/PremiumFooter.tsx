@@ -60,14 +60,14 @@ export function PremiumFooter({ navigation }: PremiumFooterProps) {
                 </a>
               </li>
               <li>
-                <a href="#" className="text-gray-400 hover:text-accent-gold transition-colors duration-300 hover:translate-x-1 inline-block">
+                <Link to="/termeni-si-conditii" className="text-gray-400 hover:text-accent-gold transition-colors duration-300 hover:translate-x-1 inline-block">
                   Termeni și condiții
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-gray-400 hover:text-accent-gold transition-colors duration-300 hover:translate-x-1 inline-block">
+                <Link to="/politica-de-confidentialitate" className="text-gray-400 hover:text-accent-gold transition-colors duration-300 hover:translate-x-1 inline-block">
                   Politica de confidențialitate
-                </a>
+                </Link>
               </li>
             </ul>
           </div>

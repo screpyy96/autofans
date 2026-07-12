@@ -114,8 +114,8 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-[70vh] w-full flex items-center justify-center p-6">
-      <div className="bg-glass backdrop-blur-xl border-premium rounded-3xl p-8 w-full max-w-xl min-w-[340px] text-left">
+    <div className="min-h-[calc(100vh-130px)] md:min-h-[70vh] w-full flex items-start md:items-center justify-center p-0 md:p-6 bg-premium-gradient">
+      <div className="w-full max-w-xl p-8 md:p-10 md:rounded-3xl md:border md:border-white/10 md:bg-glass md:backdrop-blur-xl text-left">
         <h1 className="text-2xl font-bold text-white mb-2">
           {mode === "login" && "Autentificare"}
           {mode === "register" && "Creează cont"}
@@ -164,7 +164,17 @@ export default function Login() {
             {error && <p className="text-red-400 text-sm">{error}</p>}
             {message && <p className="text-green-400 text-sm">{message}</p>}
             <Button type="submit" loading={loading} className="w-full bg-gold-gradient text-secondary-900">Creează cont</Button>
-            <p className="text-xs text-gray-400">Prin crearea contului, ești de acord cu <a className="text-accent-gold hover:underline" href="#">Termenii</a> și <a className="text-accent-gold hover:underline" href="#">Politica de confidențialitate</a>.</p>
+            <p className="text-xs text-gray-400">
+              Prin crearea contului, ești de acord cu{" "}
+              <Link className="text-accent-gold hover:underline font-semibold" to="/termeni-si-conditii">
+                Termenii și Condițiile
+              </Link>{" "}
+              și{" "}
+              <Link className="text-accent-gold hover:underline font-semibold" to="/politica-de-confidentialitate">
+                Politica de Confidențialitate
+              </Link>
+              .
+            </p>
           </form>
         )}
 

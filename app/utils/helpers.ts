@@ -11,15 +11,38 @@ import {
   TransmissionType, 
   ConditionType
 } from '../types';
+import { useAppStore } from '../stores/useAppStore';
 
 // Price formatting helpers
-export function formatPrice(price: number, currency: string = 'RON'): string {
+export function formatPrice(price: number, listingCurrency: string = 'RON'): string {
+  let targetCurrency = 'RON';
+  
+  try {
+    const storeState = useAppStore.getState();
+    if (storeState && storeState.currency) {
+      targetCurrency = storeState.currency;
+    }
+  } catch (e) {
+    targetCurrency = listingCurrency;
+  }
+
+  let displayPrice = price;
+  const exchangeRate = 5.0; // 1 EUR = 5 RON
+
+  if (listingCurrency !== targetCurrency) {
+    if (listingCurrency === 'EUR' && targetCurrency === 'RON') {
+      displayPrice = price * exchangeRate;
+    } else if (listingCurrency === 'RON' && targetCurrency === 'EUR') {
+      displayPrice = price / exchangeRate;
+    }
+  }
+
   return new Intl.NumberFormat('ro-RO', {
     style: 'currency',
-    currency: currency,
+    currency: targetCurrency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(price);
+  }).format(displayPrice);
 }
 
 export function formatCurrency(amount: number, currency: string = 'RON'): string {

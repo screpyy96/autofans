@@ -12,6 +12,7 @@ interface AppState {
   isLoading: boolean;
   error: string | null;
   theme: 'light' | 'dark' | 'auto';
+  currency: 'EUR' | 'RON';
   
   // Data state
   favorites: string[];
@@ -38,6 +39,8 @@ interface AppActions {
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   setTheme: (theme: 'light' | 'dark' | 'auto') => void;
+  setCurrency: (currency: 'EUR' | 'RON') => void;
+  toggleCurrency: () => void;
   
   // Favorites actions
   addToFavorites: (carId: string) => void;
@@ -83,6 +86,7 @@ const initialState: AppState = {
   isLoading: false,
   error: null,
   theme: 'auto',
+  currency: 'RON',
   favorites: [],
   comparisonCars: [],
   savedSearches: [],
@@ -151,6 +155,16 @@ export const useAppStore = create<AppStore>()(
                   root.classList.toggle('dark', theme === 'dark');
                 }
               }
+            }),
+
+          setCurrency: (currency) =>
+            set((state) => {
+              state.currency = currency;
+            }),
+
+          toggleCurrency: () =>
+            set((state) => {
+              state.currency = state.currency === 'RON' ? 'EUR' : 'RON';
             }),
 
           // Favorites actions
@@ -380,6 +394,7 @@ export const useAppStore = create<AppStore>()(
           user: state.user,
           isAuthenticated: state.isAuthenticated,
           theme: state.theme,
+          currency: state.currency,
           favorites: state.favorites,
           comparisonCars: state.comparisonCars,
           savedSearches: state.savedSearches,
@@ -483,4 +498,12 @@ export const useTheme = () => {
   const setTheme = useAppStore((state) => state.setTheme);
   
   return { theme, setTheme };
+};
+
+export const useCurrency = () => {
+  const currency = useAppStore((state) => state.currency);
+  const setCurrency = useAppStore((state) => state.setCurrency);
+  const toggleCurrency = useAppStore((state) => state.toggleCurrency);
+  
+  return { currency, setCurrency, toggleCurrency };
 };

@@ -16,6 +16,8 @@ export default [
   route("/compare", "routes/compare.tsx", { lazy: true }),
   route("/dashboard", "routes/dashboard.tsx", { lazy: true }),
   route("/dashboard/listings", "routes/dashboard.listings.tsx", { lazy: true }),
+  route("/termeni-si-conditii", "routes/terms.tsx", { lazy: true }),
+  route("/politica-de-confidentialitate", "routes/privacy.tsx", { lazy: true }),
   
   // Demo routes (pentru dezvoltare) - always lazy
   route("/demo/design-system", "routes/design-system.tsx", { lazy: true }),

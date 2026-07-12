@@ -80,20 +80,21 @@ const RangeSlider: React.FC<RangeSliderProps> = ({
   const maxPercent = ((maxValue - min) / (max - min)) * 100;
 
   return (
-    <div className={cn("space-y-3", className)}>
-      <div className="relative h-2">
-        <div className="absolute inset-0 rounded-full bg-white/25" />
-        <div className="absolute inset-0 rounded-full bg-gradient-to-r from-white/45 via-white/15 to-transparent" aria-hidden="true" />
-        {/* Active range */}
+    <div className={cn("space-y-3.5", className)}>
+      <div className="relative h-2.5 flex items-center">
+        {/* Track background */}
+        <div className="absolute left-0 right-0 h-1.5 rounded-full bg-white/10 border border-white/5" />
+        
+        {/* Active range track with Gold Gradient */}
         <div 
-          className="absolute h-2 rounded-full bg-gradient-to-r from-accent-gold via-primary-400 to-primary-700 shadow-[0_0_12px_rgba(212,175,55,0.35)]"
+          className="absolute h-1.5 rounded-full bg-gold-gradient shadow-[0_0_12px_rgba(212,175,55,0.45)] z-10"
           style={{
             left: `${minPercent}%`,
             width: `${Math.max(0, maxPercent - minPercent)}%`
           }}
         ></div>
         
-        {/* Min slider */}
+        {/* Min slider thumb */}
         <input
           type="range"
           min={min}
@@ -101,10 +102,10 @@ const RangeSlider: React.FC<RangeSliderProps> = ({
           value={minValue}
           step={step}
           onChange={handleMinChange}
-          className="absolute w-full h-2 bg-transparent appearance-none cursor-pointer slider-thumb"
+          className="absolute w-full h-1 bg-transparent appearance-none pointer-events-none z-20 focus:outline-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-4.5 [&::-webkit-slider-thumb]:h-4.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent-gold [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-secondary-950 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-[0_0_8px_rgba(212,175,55,0.6)] [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:hover:scale-125 [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-4.5 [&::-moz-range-thumb]:h-4.5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-accent-gold [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-secondary-950 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:shadow-[0_0_8px_rgba(212,175,55,0.6)] [&::-moz-range-thumb]:transition-transform [&::-moz-range-thumb]:hover:scale-125"
         />
         
-        {/* Max slider */}
+        {/* Max slider thumb */}
         <input
           type="range"
           min={min}
@@ -112,14 +113,14 @@ const RangeSlider: React.FC<RangeSliderProps> = ({
           value={maxValue}
           step={step}
           onChange={handleMaxChange}
-          className="absolute w-full h-2 bg-transparent appearance-none cursor-pointer slider-thumb"
+          className="absolute w-full h-1 bg-transparent appearance-none pointer-events-none z-20 focus:outline-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-4.5 [&::-webkit-slider-thumb]:h-4.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent-gold [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-secondary-950 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-[0_0_8px_rgba(212,175,55,0.6)] [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:hover:scale-125 [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-4.5 [&::-moz-range-thumb]:h-4.5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-accent-gold [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-secondary-950 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:shadow-[0_0_8px_rgba(212,175,55,0.6)] [&::-moz-range-thumb]:transition-transform [&::-moz-range-thumb]:hover:scale-125"
         />
       </div>
       
       {/* Value display */}
-      <div className="flex justify-between text-[11px] font-semibold uppercase tracking-wide text-white/60">
-        <span className="tabular-nums drop-shadow">{formatValue(minValue)}</span>
-        <span className="tabular-nums drop-shadow">{formatValue(maxValue)}</span>
+      <div className="flex justify-between text-[11px] font-bold uppercase tracking-wide text-white/50">
+        <span className="tabular-nums bg-white/5 border border-white/5 px-2 py-0.5 rounded-lg">{formatValue(minValue)}</span>
+        <span className="tabular-nums bg-white/5 border border-white/5 px-2 py-0.5 rounded-lg">{formatValue(maxValue)}</span>
       </div>
     </div>
   );
@@ -409,7 +410,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
     return (
       <div
         className={cn(
-          "rounded-3xl border border-primary-700/40 bg-secondary-900/70 text-white shadow-[0_20px_50px_rgba(8,12,24,0.55)] backdrop-blur-xl",
+          "rounded-3xl border border-white/20 bg-secondary-900/90 text-white shadow-2xl backdrop-blur-xl",
           className
         )}
       >
@@ -454,12 +455,12 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-3xl border border-primary-700/40 bg-secondary-900/70 text-white shadow-[0_25px_60px_rgba(8,12,24,0.55)] backdrop-blur-xl",
+        "relative overflow-hidden rounded-3xl border border-white/20 bg-secondary-900/90 text-white shadow-2xl backdrop-blur-xl",
         className
       )}
       style={{ minHeight: isMobile ? 'auto' : 'auto', maxHeight: isMobile ? '80vh' : 'none' }}
     >
-      <div className="pointer-events-none absolute -top-24 right-10 h-40 w-40 rounded-full bg-primary-600/25 blur-3xl" aria-hidden="true" />
+      <div className="pointer-events-none absolute -top-24 right-10 h-40 w-40 rounded-full bg-blue-600/25 blur-3xl" aria-hidden="true" />
       <div className="pointer-events-none absolute -bottom-28 left-6 h-36 w-36 rounded-full bg-accent-gold/25 blur-3xl" aria-hidden="true" />
 
       {/* Header */}
@@ -721,7 +722,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
               Închide
             </Button>
             <Button
-              className="flex-1 bg-gold-gradient text-secondary-900 hover:shadow-glow"
+              className="flex-1 bg-gold-gradient text-secondary-900 hover:shadow-lg"
               onClick={() => {
                 onApply?.();
                 if (onClose) onClose();

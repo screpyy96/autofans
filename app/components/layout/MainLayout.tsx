@@ -1,20 +1,24 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useRouteLoaderData } from 'react-router';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
+  Home,
   Search,
   Heart,
   User,
   Menu,
   X,
   Plus,
-  ChevronDown
+  ChevronDown,
+  LogOut,
+  Bell,
+  LayoutDashboard
 } from 'lucide-react';
 import { Button } from '~/components/ui/Button';
 import { PremiumFooter } from '~/components/layout/PremiumFooter';
 import { NotificationBell } from '~/components/ui/NotificationBell';
 import { useNotifications } from '~/hooks/useNotifications';
-import { useUser, useComparison } from '~/stores/useAppStore';
+import { useUser, useComparison, useCurrency } from '~/stores/useAppStore';
 import { cn } from '~/lib/utils';
 import React from 'react';
 
@@ -23,18 +27,23 @@ interface MainLayoutProps {
 }
 
 const baseNavigation = [
-  { name: 'Acasă', href: '/', icon: Search },
+  { name: 'Acasă', href: '/', icon: Home },
   { name: 'Căutare', href: '/search', icon: Search },
   { name: 'Favorite', href: '/favorites', icon: Heart },
   { name: 'Contul meu', href: '/profile', icon: User },
 ];
 
 export function MainLayout({ children }: MainLayoutProps) {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isBottomDrawerOpen, setIsBottomDrawerOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const location = useLocation();
   const { user } = useUser();
   const { comparisonCars } = useComparison();
+  const { currency, toggleCurrency } = useCurrency();
+  const [hasHydrated, setHasHydrated] = useState(false);
+  useEffect(() => {
+    setHasHydrated(true);
+  }, []);
   const {
     notifications,
     unreadCount,
@@ -59,17 +68,19 @@ export function MainLayout({ children }: MainLayoutProps) {
   const authUser = rootData?.user ?? null;
   const profile = (rootData as any)?.profile ?? null;
   const nextParam = encodeURIComponent(location.pathname || '/');
+  const isCarDetailsPage = location.pathname.startsWith('/car/');
 
   // Handle mobile menu keyboard navigation
   const handleMobileMenuKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
-      setMobileMenuOpen(false);
+      setIsBottomDrawerOpen(false);
     }
   };
 
-  // Close user menu on route change
+  // Close menus and drawer on route change
   React.useEffect(() => {
     setUserMenuOpen(false);
+    setIsBottomDrawerOpen(false);
   }, [location.pathname]);
 
   // Build navigation dynamically (hide "Contul meu" when logged out)
@@ -100,12 +111,6 @@ export function MainLayout({ children }: MainLayoutProps) {
                 alt="AutoFans Logo"
                 className="h-12 w-auto"
               />
-              <div className="flex flex-col">
-                <span className="text-2xl font-bold text-white group-hover:text-glow transition-all duration-300">
-                  AutoFans
-                </span>
-                <span className="text-xs text-accent-gold font-medium -mt-1 tracking-wider">PREMIUM CARS</span>
-              </div>
             </Link>
 
             {/* Desktop Navigation */}
@@ -153,6 +158,23 @@ export function MainLayout({ children }: MainLayoutProps) {
 
             {/* Right side actions */}
             <div className="flex items-center gap-3">
+              {/* Currency Toggle */}
+              <button
+                onClick={toggleCurrency}
+                className="flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-xl bg-glass border border-white/10 hover:border-accent-gold/45 text-xs font-bold text-accent-gold shadow-md active:scale-95 transition-all select-none min-h-[32px] min-w-[50px]"
+                title="Schimbă valuta (EUR / RON)"
+                disabled={!hasHydrated}
+              >
+                {hasHydrated ? (
+                  <>
+                    <span>{currency}</span>
+                    <span className="text-[10px] text-gray-400 font-normal ml-0.5">⇄</span>
+                  </>
+                ) : (
+                  <div className="h-3.5 w-7 bg-white/10 rounded animate-pulse" />
+                )}
+              </button>
+
               {/* Notification Bell */}
               <NotificationBell
                 notifications={notifications}
@@ -230,115 +252,260 @@ export function MainLayout({ children }: MainLayoutProps) {
                   </Button>
                 </Link>
               )}
-
-              {/* Mobile menu button */}
-              <button
-                className="md:hidden p-3 rounded-2xl text-gray-300 hover:text-white hover:bg-white/5 transition-all duration-300 focus:outline-none"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                aria-expanded={mobileMenuOpen}
-                aria-controls="mobile-menu"
-                aria-label={mobileMenuOpen ? "Închide meniul" : "Deschide meniul"}
-              >
-                {mobileMenuOpen ? (
-                  <X className="h-5 w-5" aria-hidden="true" />
-                ) : (
-                  <Menu className="h-5 w-5" aria-hidden="true" />
-                )}
-              </button>
             </div>
           </div>
         </div>
-
-        {/* Mobile Navigation */}
-        {mobileMenuOpen && (
-          <div 
-            id="mobile-menu"
-            className="md:hidden border-t border-white/20 bg-secondary-900/90 backdrop-blur-xl animate-slide-down"
-            role="navigation"
-            aria-label="Navigare mobilă"
-            onKeyDown={handleMobileMenuKeyDown}
-          >
-            <div className="px-4 py-4 space-y-2">
-              {/* Mobile Notification Bell */}
-              <div className="flex items-center justify-between px-4 py-3 rounded-2xl bg-white/5 border border-white/20">
-                <span className="text-base font-medium text-gray-300">Notificări</span>
-                <NotificationBell
-                  notifications={notifications}
-                  unreadCount={unreadCount}
-                  onNotificationClick={handleNotificationClick}
-                  onMarkAsRead={markAsRead}
-                  onMarkAllAsRead={markAllAsRead}
-                  onClearAll={clearAll}
-                />
-              </div>
-
-              {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={cn(
-                    'flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-all duration-300 border border-transparent',
-                    isActive(item.href)
-                      ? 'text-white bg-white/5 border-white/20'
-                      : 'text-gray-300 hover:text-white hover:bg-white/5 hover:border-white/20'
-                  )}
-                  onClick={() => setMobileMenuOpen(false)}
-                  aria-current={isActive(item.href) ? 'page' : undefined}
-                >
-                  <item.icon className="h-5 w-5" aria-hidden="true" />
-                  {item.name}
-                </Link>
-              ))}
-
-              <div className="pt-4 border-t border-white/20">
-                <Link to="/create-listing" onClick={() => setMobileMenuOpen(false)}>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    className="w-full bg-gold-gradient text-secondary-900 shadow-glow hover:shadow-lg transition-all duration-300"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Adaugă anunț
-                  </Button>
-                </Link>
-                {/* Mobile auth actions */}
-                <div className="mt-3">
-                  {authUser ? (
-                    <div className="grid grid-cols-2 gap-2">
-                      <Link to="/profile" onClick={() => setMobileMenuOpen(false)}>
-                        <Button variant="outline" size="sm" className="w-full">
-                          Profil
-                        </Button>
-                      </Link>
-                      <Link to="/logout" onClick={() => setMobileMenuOpen(false)}>
-                        <Button variant="outline" size="sm" className="w-full">
-                          Ieșire
-                        </Button>
-                      </Link>
-                    </div>
-                  ) : (
-                    <Link to={`/login?next=${nextParam}`} onClick={() => setMobileMenuOpen(false)}>
-                      <Button variant="primary" size="sm" className="w-full bg-gold-gradient text-secondary-900 hover:shadow-lg transition-all duration-300">
-                        Autentificare
-                      </Button>
-                    </Link>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </header>
 
       {/* Main Content */}
       <main 
         id="main-content"
-        className="flex-1"
+        className="flex-1 pb-24 md:pb-0"
         role="main"
         tabIndex={-1}
       >
         {children}
       </main>
+
+      {/* Bottom Navigation Bar (Mobile only) */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-secondary-950/80 backdrop-blur-xl border-t border-white/10 px-4 py-2 pb-safe shadow-[0_-8px_30px_rgb(0,0,0,0.4)]">
+        <div className="flex justify-around items-center h-12">
+          {/* Acasă */}
+          <Link
+            to="/"
+            className={cn(
+              "flex flex-col items-center gap-1 text-[10px] font-medium transition-all duration-300",
+              location.pathname === '/' ? "text-accent-gold" : "text-gray-400 hover:text-white"
+            )}
+          >
+            <Home className="h-5 w-5" />
+            <span>Acasă</span>
+          </Link>
+
+          {/* Căutare */}
+          <Link
+            to="/search"
+            className={cn(
+              "flex flex-col items-center gap-1 text-[10px] font-medium transition-all duration-300",
+              location.pathname.startsWith('/search') ? "text-accent-gold" : "text-gray-400 hover:text-white"
+            )}
+          >
+            <Search className="h-5 w-5" />
+            <span>Căutare</span>
+          </Link>
+
+          {/* Adaugă (Floating Central button) */}
+          <Link
+            to="/create-listing"
+            className="flex flex-col items-center justify-center -translate-y-4"
+          >
+            <div className="h-12 w-12 rounded-full bg-gold-gradient flex items-center justify-center shadow-glow border-2 border-secondary-950 text-secondary-900 active:scale-95 transition-transform duration-200">
+              <Plus className="h-6 w-6 stroke-[3]" />
+            </div>
+            <span className="text-[10px] font-medium text-gray-400 mt-1">Adaugă</span>
+          </Link>
+
+          {/* Favorite */}
+          <Link
+            to="/favorites"
+            className={cn(
+              "flex flex-col items-center gap-1 text-[10px] font-medium transition-all duration-300",
+              location.pathname.startsWith('/favorites') ? "text-accent-gold" : "text-gray-400 hover:text-white"
+            )}
+          >
+            <Heart className="h-5 w-5" />
+            <span>Favorite</span>
+          </Link>
+
+          {/* Meniu (Opens Drawer) */}
+          <button
+            onClick={() => setIsBottomDrawerOpen(true)}
+            className={cn(
+              "flex flex-col items-center gap-1 text-[10px] font-medium transition-all duration-300 focus:outline-none",
+              isBottomDrawerOpen ? "text-accent-gold" : "text-gray-400 hover:text-white"
+            )}
+          >
+            <Menu className="h-5 w-5" />
+            <span>Meniu</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Bottom Drawer Sheet (Mobile only) */}
+      <AnimatePresence>
+        {isBottomDrawerOpen && (
+          <div className="md:hidden fixed inset-0 z-50 flex items-end justify-center">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsBottomDrawerOpen(false)}
+              className="absolute inset-0 bg-black/75 backdrop-blur-sm"
+            />
+
+            {/* Drawer Sheet */}
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 220 }}
+              className="relative w-full max-h-[85vh] bg-glass border-t border-white/10 rounded-t-[2rem] shadow-modal z-10 flex flex-col overflow-hidden animate-none"
+            >
+              {/* Drag Indicator Pill */}
+              <div className="w-full flex justify-center py-3">
+                <div className="w-12 h-1.5 rounded-full bg-white/20" />
+              </div>
+
+              {/* Drawer Content */}
+              <div className="flex-1 overflow-y-auto px-6 pb-12 pt-2">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-bold text-white">Meniu AutoFans</h3>
+                  <button
+                    onClick={() => setIsBottomDrawerOpen(false)}
+                    className="p-2 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-colors"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                {/* User Info / Auth Card */}
+                <div className="mb-6 bg-glass border border-white/10 rounded-2xl p-4">
+                  {authUser ? (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {profile?.avatar_url || authUser.user_metadata?.avatar_url || authUser.user_metadata?.picture ? (
+                          <img
+                            src={(profile?.avatar_url || authUser.user_metadata?.avatar_url || authUser.user_metadata?.picture) as string}
+                            alt="avatar"
+                            className="h-12 w-12 rounded-full border border-accent-gold/50"
+                          />
+                        ) : (
+                          <div className="h-12 w-12 rounded-full bg-gold-gradient flex items-center justify-center text-lg font-bold text-secondary-900">
+                            {(authUser.email?.[0] || 'U').toUpperCase()}
+                          </div>
+                        )}
+                        <div className="flex flex-col">
+                          <span className="text-base font-semibold text-white">
+                            {profile?.display_name || 'Utilizator AutoFans'}
+                          </span>
+                          <span className="text-xs text-gray-400 truncate max-w-[180px]">
+                            {authUser.email}
+                          </span>
+                        </div>
+                      </div>
+                      <Link
+                        to="/logout"
+                        onClick={() => setIsBottomDrawerOpen(false)}
+                        className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors"
+                        title="Deconectare"
+                      >
+                        <LogOut className="h-5 w-5" />
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="text-center py-2">
+                      <p className="text-sm text-gray-400 mb-3">Conectează-te pentru a salva favorite și adăuga anunțuri.</p>
+                      <Link
+                        to={`/login?next=${nextParam}`}
+                        onClick={() => setIsBottomDrawerOpen(false)}
+                      >
+                        <Button variant="primary" size="sm" className="w-full bg-gold-gradient text-secondary-900 hover:shadow-glow font-bold py-2.5">
+                          Intră în cont
+                        </Button>
+                      </Link>
+                    </div>
+                  )}
+                </div>
+
+                {/* Main Navigation Links in Drawer */}
+                <div className="space-y-2 mb-6">
+                  {/* Dashboard link if seller */}
+                  {profile?.role === 'seller' && (
+                    <Link
+                      to="/dashboard"
+                      onClick={() => setIsBottomDrawerOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-all border border-transparent",
+                        location.pathname.startsWith('/dashboard')
+                          ? "text-white bg-white/5 border-white/20"
+                          : "text-gray-300 hover:text-white hover:bg-white/5"
+                      )}
+                    >
+                      <LayoutDashboard className="h-5 w-5 text-accent-gold" />
+                      Dashboard Vânzător
+                    </Link>
+                  )}
+
+                  {/* Profil link if logged in */}
+                  {authUser && (
+                    <Link
+                      to="/profile"
+                      onClick={() => setIsBottomDrawerOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-all border border-transparent",
+                        location.pathname.startsWith('/profile')
+                          ? "text-white bg-white/5 border-white/20"
+                          : "text-gray-300 hover:text-white hover:bg-white/5"
+                      )}
+                    >
+                      <User className="h-5 w-5 text-accent-gold" />
+                      Profilul meu
+                    </Link>
+                  )}
+
+                  {/* Vinde anunt quick link */}
+                  <Link
+                    to="/create-listing"
+                    onClick={() => setIsBottomDrawerOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-all border border-transparent",
+                      location.pathname.startsWith('/create-listing')
+                        ? "text-white bg-white/5 border-white/20"
+                        : "text-gray-300 hover:text-white hover:bg-white/5"
+                    )}
+                  >
+                    <Plus className="h-5 w-5 text-accent-gold" />
+                    Adaugă Anunț Nou
+                  </Link>
+                </div>
+
+                {/* Notifications segment inside drawer */}
+                <div className="border-t border-white/10 pt-6">
+                  <div className="flex items-center justify-between mb-4 px-2">
+                    <div className="flex items-center gap-2">
+                      <Bell className="h-5 w-5 text-accent-gold" />
+                      <span className="text-base font-semibold text-white">Notificări</span>
+                    </div>
+                    {unreadCount > 0 && (
+                      <span className="px-2 py-0.5 text-xs font-bold bg-accent-gold text-secondary-900 rounded-full shadow-glow">
+                        {unreadCount} noi
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Notification bell trigger and quick overlay logic wrapper */}
+                  <div className="flex items-center justify-center bg-white/5 rounded-2xl py-3 border border-white/5">
+                    <NotificationBell
+                      notifications={notifications}
+                      unreadCount={unreadCount}
+                      onNotificationClick={(notif) => {
+                        handleNotificationClick(notif);
+                        setIsBottomDrawerOpen(false);
+                      }}
+                      onMarkAsRead={markAsRead}
+                      onMarkAllAsRead={markAllAsRead}
+                      onClearAll={clearAll}
+                    />
+                    <span className="text-sm text-gray-300 ml-2 font-medium">Vezi notificările recente</span>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Footer */}
       <PremiumFooter navigation={navigation} />

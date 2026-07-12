@@ -177,87 +177,44 @@ export default function CarDetail({ params }: Route.ComponentProps) {
   };
 
   return (
-    <div className="mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-3">
-            <CarDetails
-              car={car}
-              onContactSeller={handleContactSeller}
-              onScheduleViewing={handleScheduleViewing}
-              onAddToCompare={handleAddToCompare}
-              onAddToFavorites={handleAddToFavorites}
-              onShare={handleShare}
-              similarCars={similarCars}
-              onSimilarCarClick={handleSimilarCarClick}
-              isFavorited={isFavorited}
-              isInComparison={isInComparison(car.id)}
-            />
-          </div>
+    <div className="mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl">
+      <CarDetails
+        car={car}
+        onContactSeller={handleContactSeller}
+        onScheduleViewing={handleScheduleViewing}
+        onAddToCompare={handleAddToCompare}
+        onAddToFavorites={handleAddToFavorites}
+        onShare={handleShare}
+        similarCars={similarCars}
+        onSimilarCarClick={handleSimilarCarClick}
+        isFavorited={isFavorited}
+        isInComparison={isInComparison(car.id)}
+      />
 
-          {/* Sidebar */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Quick Actions */}
-            <Card variant="elevated" padding="lg">
-              <h3 className="text-lg font-semibold text-white mb-4">
-                Acțiuni rapide
-              </h3>
-              <div className="space-y-3">
-                <Button
-                  variant="primary"
-                  onClick={handleContactSeller}
-                  className="w-full flex items-center gap-2"
-                >
-                  <MessageCircle className="h-4 w-4" />
-                  Contactează vânzătorul
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowCalculator(!showCalculator)}
-                  className="w-full flex items-center gap-2"
-                >
-                  <Calculator className="h-4 w-4" />
-                  Calculator credit
-                </Button>
-              </div>
-            </Card>
-
-            {/* Loan Calculator */}
-            {showCalculator && (
-              <Card variant="elevated" padding="lg">
-                <h3 className="text-lg font-semibold text-white mb-4">
-                  Calculator credit auto
-                </h3>
-                <LoanCalculator car={car} />
-              </Card>
-            )}
-          </div>
-        </div>
-
-        {/* Contact Modal */}
-        {showContactModal && (
-          <ContactModal
-            isOpen={showContactModal}
-            onClose={() => setShowContactModal(false)}
-            car={car}
-            seller={{
-              id: 'seller-1',
-              type: 'dealer',
-              name: 'Ion Popescu',
-              phone: '+40721123456',
-              email: 'ion.popescu@email.com',
-              isVerified: true,
-              responseTime: '2 ore',
-              rating: 4.8,
-              location: {
-                id: 'loc-bucuresti',
-                city: 'București',
-                county: 'București',
-                country: 'RO'
-              }
-            }}
-          />
-        )}
-      </div>
+      {/* Contact Modal */}
+      {showContactModal && (
+        <ContactModal
+          isOpen={showContactModal}
+          onClose={() => setShowContactModal(false)}
+          car={car}
+          seller={{
+            id: 'seller-1',
+            type: 'dealer',
+            name: 'Ion Popescu',
+            phone: '+40721123456',
+            email: 'ion.popescu@email.com',
+            isVerified: true,
+            responseTime: '2 ore',
+            rating: 4.8,
+            location: {
+              id: 'loc-bucuresti',
+              city: 'București',
+              county: 'București',
+              country: 'RO'
+            }
+          }}
+        />
+      )}
+    </div>
   );
 }
