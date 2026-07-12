@@ -5,17 +5,18 @@
 - [x] Centralizează maparea `listings -> Car` pentru Home, Search, Compare și Favorites
 - [x] Centralizează semnarea imaginilor din Storage
 - [x] Înlocuiește mapările duplicate din Home, Search, Compare și Favorites
-- [ ] Uniformizează statusurile și fallback-urile pentru anunțuri
+- [x] Uniformizează statusurile și fallback-urile pentru anunțuri
 - [x] Adaugă teste pentru listing fără imagini, slug lipsă și locație lipsă
-- [ ] Verifică sincronizarea `favorites` local ↔ Supabase
-- [ ] Verifică evenimentele `listing_views` și `listing_contacts`
+- [x] Verifică sincronizarea `favorites` local ↔ Supabase
+- [x] Verifică evenimentele `listing_views` și `listing_contacts`
 
 ## Etapa 3 · Trust Score
 
-- [ ] Verificare vânzător
-- [ ] VIN și istoric auto
+- [x] Scor transparent din semnale existente
+- [x] Câmpuri VIN și istoric pregătite în schema de date
 - [ ] Detectare duplicate/fraudă
-- [ ] Badge-uri de încredere
+- [x] Badge-uri de încredere pe card și pagina mașinii
+- [ ] Flux real de verificare vânzător/VIN/istoric
 
 ## Etapa 4 · Price Score
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mapListingToCar } from '~/utils/listingMapper';
+import { mapListingStatus, mapListingToCar } from '~/utils/listingMapper';
 
 describe('mapListingToCar', () => {
   it('uses safe fallbacks when listing fields are missing', () => {
@@ -22,5 +22,12 @@ describe('mapListingToCar', () => {
 
     expect(car.slug).toBe('audi-a4');
     expect(car.images[0]).toMatchObject({ url: 'https://cdn.example/main.jpg', isMain: true });
+  });
+
+  it('normalizes database statuses to application statuses', () => {
+    expect(mapListingStatus('published')).toBe('active');
+    expect(mapListingStatus('draft')).toBe('draft');
+    expect(mapListingStatus('pending-approval')).toBe('pending_approval');
+    expect(mapListingStatus('unknown')).toBe('active');
   });
 });

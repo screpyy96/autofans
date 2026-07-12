@@ -1,7 +1,30 @@
 import type { Car, Image } from '~/types';
 import { FuelType, ListingStatus, TransmissionType } from '~/types';
+import { calculateTrustScore } from '~/utils/trustScore';
+
+export function mapListingStatus(status?: string | null): ListingStatus {
+  switch (String(status || '').toLowerCase()) {
+    case 'published':
+    case 'active':
+      return ListingStatus.ACTIVE;
+    case 'sold':
+      return ListingStatus.SOLD;
+    case 'reserved':
+      return ListingStatus.RESERVED;
+    case 'expired':
+      return ListingStatus.EXPIRED;
+    case 'draft':
+      return ListingStatus.DRAFT;
+    case 'pending_approval':
+    case 'pending-approval':
+      return ListingStatus.PENDING_APPROVAL;
+    default:
+      return ListingStatus.ACTIVE;
+  }
+}
 
 export function mapListingToCar(listing: any, signedMap: Record<string, string> = {}): Car {
+  const trust = calculateTrustScore(listing, listing.seller || listing.profile);
   const images: Image[] = (Array.isArray(listing.images) ? listing.images : [])
     .map((image: any, index: number) => ({
       id: String(index),
@@ -16,6 +39,8 @@ export function mapListingToCar(listing: any, signedMap: Record<string, string> 
   return {
     id: String(listing.id),
     slug: listing.slug || String(listing.id),
+    trustScore: trust.score,
+    trustLevel: trust.level,
     title: listing.title || `${listing.make || ''} ${listing.model || ''}`.trim() || 'Anunț auto',
     brand: listing.make || '—',
     model: listing.model || '—',
@@ -35,7 +60,7 @@ export function mapListingToCar(listing: any, signedMap: Record<string, string> 
     description: listing.description || '',
     createdAt: listing.created_at ? new Date(listing.created_at) : new Date(),
     updatedAt: listing.updated_at ? new Date(listing.updated_at) : new Date(listing.created_at || Date.now()),
-    status: ListingStatus.ACTIVE,
+    status: mapListingStatus(listing.status),
     viewCount: 0,
     favoriteCount: 0,
     contactCount: 0,

@@ -11,6 +11,8 @@ import { Calculator, MessageCircle } from 'lucide-react';
 import type { Car, Image } from '~/types';
 import { FuelType, TransmissionType } from "~/types";
 import { useComparison } from '~/stores/useAppStore';
+import { mapListingStatus } from '~/utils/listingMapper';
+import { calculateTrustScore } from '~/utils/trustScore';
 
 export function meta({ params }: Route.MetaArgs) {
   return [
@@ -26,7 +28,7 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
     const { supabase, headers } = getSupabaseServerClient(request);
     let { data: listing } = await supabase
       .from('listings')
-      .select('id, slug, owner_id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, body_type, images, created_at, owners, service_history, engine_size, power, doors, seats, condition_overall, condition_exterior, condition_interior, condition_engine, condition_transmission, has_accidents, features, city, county')
+      .select('id, slug, owner_id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, body_type, vin, vin_verified, history_checked, images, status, created_at, owners, service_history, engine_size, power, doors, seats, condition_overall, condition_exterior, condition_interior, condition_engine, condition_transmission, has_accidents, features, city, county')
       .eq('slug', slugParam)
       .maybeSingle();
 
@@ -34,7 +36,7 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
     if (!listing && (/^\d+$/.test(slugParam) || /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(slugParam))) {
       const byId = await supabase
         .from('listings')
-        .select('id, slug, owner_id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, body_type, images, created_at, owners, service_history, engine_size, power, doors, seats, condition_overall, condition_exterior, condition_interior, condition_engine, condition_transmission, has_accidents, features, city, county')
+        .select('id, slug, owner_id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, body_type, vin, vin_verified, history_checked, images, status, created_at, owners, service_history, engine_size, power, doors, seats, condition_overall, condition_exterior, condition_interior, condition_engine, condition_transmission, has_accidents, features, city, county')
         .eq('id', slugParam)
         .maybeSingle();
       listing = byId.data;
@@ -84,6 +86,7 @@ export default function CarDetail({ params }: Route.ComponentProps) {
   let car: Car | undefined = undefined;
   if (data?.listing) {
     const l = data.listing as any;
+    const trust = calculateTrustScore(l, data.sellerProfile);
     const images: Image[] = (l.images || [])
       .map((img: any, idx: number) => ({
         id: String(idx),
@@ -98,6 +101,8 @@ export default function CarDetail({ params }: Route.ComponentProps) {
     car = {
       id: String(l.id),
       slug: l.slug || '',
+      trustScore: trust.score,
+      trustLevel: trust.level,
       title: l.title || `${l.make} ${l.model}`,
       brand: l.make || '—',
       model: l.model || '—',
@@ -139,7 +144,7 @@ export default function CarDetail({ params }: Route.ComponentProps) {
       description: l.description || '',
       createdAt: l.created_at ? new Date(l.created_at) : new Date(),
       updatedAt: l.created_at ? new Date(l.created_at) : new Date(),
-      status: 'active' as any,
+      status: mapListingStatus(l.status),
       viewCount: 0,
       favoriteCount: 0,
       contactCount: 0,

@@ -15,6 +15,7 @@ import {
 import type { Car } from '~/types';
 import { useResponsive } from '~/hooks/useResponsive';
 import { useCurrency } from '~/stores/useAppStore';
+import { TrustScoreBadge } from './TrustScoreBadge';
 
 export interface CarCardProps {
   car: Car;
@@ -154,6 +155,7 @@ export function CarCard({
           <h3 className="text-base sm:text-lg font-bold text-white line-clamp-1 group-hover:text-accent-gold transition-colors duration-300">
             {car.title}
           </h3>
+          <TrustScoreBadge score={car.trustScore} level={car.trustLevel} compact />
           
           <div className="flex items-baseline gap-1.5 min-h-[28px] flex items-center">
             {hasHydrated ? (

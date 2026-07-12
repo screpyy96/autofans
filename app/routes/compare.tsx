@@ -28,7 +28,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const { supabase } = getSupabaseServerClient(request);
     const { data: listings } = await supabase
       .from('listings')
-      .select('id, slug, owner_id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, body_type, images, created_at, owners, service_history, engine_size, power, doors, seats, condition_overall, condition_exterior, condition_interior, condition_engine, condition_transmission, has_accidents, features, city, county')
+      .select('id, slug, owner_id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, body_type, vin, vin_verified, history_checked, images, created_at, owners, service_history, engine_size, power, doors, seats, condition_overall, condition_exterior, condition_interior, condition_engine, condition_transmission, has_accidents, features, city, county')
       .in('id', ids)
       .eq('status', 'published');
 

@@ -109,6 +109,8 @@ export interface Seller {
 export interface Car {
   id: string;
   slug: string;
+  trustScore?: number;
+  trustLevel?: 'verified' | 'good' | 'basic';
   title: string;
   brand: string;
   model: string;

@@ -38,7 +38,7 @@ export default function Favorites() {
         const supabase = getSupabaseBrowserClient();
         const { data: listings, error } = await supabase
           .from('listings')
-          .select('id, slug, owner_id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, images, created_at, city, county')
+          .select('id, slug, owner_id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, vin, vin_verified, history_checked, images, created_at, city, county')
           .in('id', favorites)
           .eq('status', 'published');
         if (error) throw error;

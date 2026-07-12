@@ -37,7 +37,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
     const { data: listings } = await supabase
       .from('listings')
-      .select('id, slug, owner_id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, images, created_at, city, county')
+      .select('id, slug, owner_id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, vin, vin_verified, history_checked, images, created_at, city, county')
       .eq('status', 'published')
       .order('created_at', { ascending: false })
       .limit(6);

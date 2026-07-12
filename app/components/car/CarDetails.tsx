@@ -41,6 +41,7 @@ import {
 } from '~/utils/helpers';
 import type { Car } from '~/types';
 import { useCurrency } from '~/stores/useAppStore';
+import { TrustScoreBadge } from './TrustScoreBadge';
 
 export interface CarDetailsProps {
   car: Car;
@@ -204,6 +205,7 @@ export function CarDetails({
                 <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight leading-tight">
                   {car.title}
                 </h1>
+                <TrustScoreBadge score={car.trustScore} level={car.trustLevel} />
                 
                 {/* Price block visible on mobile only */}
                 <div className="lg:hidden text-2xl font-bold text-accent-gold min-h-[36px] flex items-center">

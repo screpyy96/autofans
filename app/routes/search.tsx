@@ -30,7 +30,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     // Fetch all published listings from Supabase
     const { data: listings } = await supabase
       .from('listings')
-      .select('id, slug, owner_id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, body_type, images, created_at, city, county')
+      .select('id, slug, owner_id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, body_type, vin, vin_verified, history_checked, images, created_at, city, county')
       .eq('status', 'published')
       .order('created_at', { ascending: false });
 
