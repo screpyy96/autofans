@@ -108,6 +108,7 @@ export interface Seller {
 
 export interface Car {
   id: string;
+  slug: string;
   title: string;
   brand: string;
   model: string;

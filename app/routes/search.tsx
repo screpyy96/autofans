@@ -1,17 +1,19 @@
-import { Link } from 'react-router';
+import { Link, useLoaderData, useNavigate } from 'react-router';
+import type { LoaderFunctionArgs } from 'react-router';
 import { useState, useEffect } from 'react';
 import { SearchHeader } from '~/components/search';
 import { FilterPanel } from '~/components/search/FilterPanel';
-
 import { CarGrid } from '~/components/car/CarGrid';
 import { Badge } from '~/components/ui/Badge';
 import { Button } from '~/components/ui/Button';
-import { mockCars } from '~/data/mockData';
 import { useFilters } from '~/hooks/useFilters';
 import { useSortAndView } from '~/hooks/useSortAndView';
 import { useFavorites, useComparison, useAppInitialization } from '~/stores/useAppStore';
 import { RouteErrorBoundary } from '~/components/error';
-import type { FilterState } from '~/types';
+import type { Car, Image, FilterState } from '~/types';
+import { FuelType, TransmissionType, ListingStatus, ConditionType } from '~/types';
+import { getSupabaseServerClient } from '~/lib/supabase.server';
+import { searchService } from '~/services/searchService';
 
 export function meta({}: any) {
   return [
@@ -20,27 +22,159 @@ export function meta({}: any) {
   ];
 }
 
+export async function loader({ request }: LoaderFunctionArgs) {
+  try {
+    const { supabase, headers } = getSupabaseServerClient(request);
+
+    // Fetch all published listings from Supabase
+    const { data: listings } = await supabase
+      .from('listings')
+      .select('id, slug, owner_id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, body_type, images, created_at, city, county')
+      .eq('status', 'published')
+      .order('created_at', { ascending: false });
+
+    // Pre-sign main images
+    let signedMap: Record<string, string> = {};
+    if (listings?.length) {
+      const paths: string[] = listings
+        .map((l: any) => {
+          const imgs = l.images as any[];
+          if (imgs?.length) {
+            const main = imgs.find((i: any) => i.isMain) || imgs[0];
+            return main?.path;
+          }
+          return null;
+        })
+        .filter(Boolean);
+
+      if (paths.length) {
+        const { data: signed } = await supabase
+          .storage
+          .from('listing-images')
+          .createSignedUrls(paths, 60 * 60);
+
+        for (const item of signed || []) {
+          const it: any = item;
+          if (it?.path && it?.signedUrl) {
+            signedMap[it.path] = it.signedUrl as string;
+          }
+        }
+      }
+    }
+
+    return { dbListings: listings || [], signedMap };
+  } catch (e) {
+    console.error('search loader error:', e);
+    return { dbListings: [], signedMap: {} };
+  }
+}
+
 function SearchContent() {
+  const data = useLoaderData<typeof loader>();
+  const navigate = useNavigate();
   const [showFilters, setShowFilters] = useState(false);
-  const [displayedCars, setDisplayedCars] = useState(() => mockCars.slice(0, 12)); // Show first 12 cars initially
+  const [displayedCars, setDisplayedCars] = useState<Car[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [isSearching, setIsSearching] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const { favorites, addToFavorites, removeFromFavorites, isFavorited } = useFavorites();
   const { comparisonCars, addToComparison, removeFromComparison, isInComparison } = useComparison();
-
-  // Debug logging for comparison state
-  useEffect(() => {
-    console.log('🔍 Search page - comparisonCars:', comparisonCars);
-  }, [comparisonCars]);
-
-  // Debug logging for favorites state
-  useEffect(() => {
-    console.log('🔍 Search page - favorites:', favorites);
-  }, [favorites]);
-  const { isLoading } = useAppInitialization();
+  const { isLoading: isInitLoading } = useAppInitialization();
 
   const { filters, updateFilters, resetFilters, hasActiveFilters, activeFilterCount } = useFilters();
   const { activeSort, viewMode, setActiveSort, setViewMode } = useSortAndView();
+
+  // Map database listings to Car interface
+  const dbCars: Car[] = (data?.dbListings || []).map((l: any) => {
+    const images: Image[] = (l.images || [])
+      .map((img: any, idx: number) => {
+        const path = img.path;
+        const signedUrl = data.signedMap?.[path] || '';
+        return {
+          id: String(idx),
+          url: signedUrl,
+          thumbnailUrl: signedUrl,
+          alt: l.title,
+          order: idx,
+          isMain: !!img.isMain,
+        };
+      })
+      .filter((i: any) => !!i.url);
+
+    return {
+      id: String(l.id),
+      slug: l.slug || String(l.id),
+      title: l.title || `${l.make} ${l.model}`,
+      brand: l.make || '—',
+      model: l.model || '—',
+      year: l.year || new Date().getFullYear(),
+      mileage: l.mileage || 0,
+      fuelType: (l.fuel_type as FuelType) || FuelType.PETROL,
+      transmission: (l.transmission as TransmissionType) || TransmissionType.MANUAL,
+      price: Number(l.price || 0),
+      currency: l.currency || 'EUR',
+      negotiable: false,
+      location: { id: 'loc-1', city: l.city || 'București', county: l.county || 'București', country: 'RO' },
+      images: images.length ? images : [{ id: '0', url: '/placeholder-car.jpg', thumbnailUrl: '/placeholder-car.jpg', alt: 'car', order: 0, isMain: true }],
+      specifications: { engineSize: 0, power: 0, doors: 4, seats: 5 },
+      features: [],
+      condition: { overall: 3 as any, exterior: 3 as any, interior: 3 as any, engine: 3 as any, transmission: 3 as any, hasAccidents: false },
+      seller: {
+        id: l.owner_id || 'unknown',
+        type: 'individual',
+        name: 'Vânzător',
+        email: '',
+        phone: '',
+        location: { id: 'loc-1', city: l.city || 'București', county: l.county || 'București', country: 'RO' },
+        isVerified: false
+      },
+      description: l.description || '',
+      createdAt: l.created_at ? new Date(l.created_at) : new Date(),
+      updatedAt: l.created_at ? new Date(l.created_at) : new Date(),
+      status: ListingStatus.ACTIVE,
+      viewCount: 0,
+      favoriteCount: 0,
+      contactCount: 0,
+      owners: 1,
+      serviceHistory: false
+    };
+  });
+
+  const allCars = dbCars;
+
+  const fetchCars = async (currentPage: number, append = false) => {
+    if (append) {
+      setIsLoadingMore(true);
+    } else {
+      setIsSearching(true);
+    }
+    try {
+      const result = await searchService.searchCars(
+        filters.query || '',
+        { ...filters, sortBy: activeSort as any },
+        currentPage,
+        12,
+        allCars
+      );
+      setDisplayedCars(prev => append ? [...prev, ...result.cars] : result.cars);
+      setTotalCount(result.total);
+      setHasMore(result.hasMore);
+    } catch (e) {
+      console.error('Error searching cars:', e);
+    } finally {
+      setIsSearching(false);
+      setIsLoadingMore(false);
+    }
+  };
+
+  // Trigger search when filters or activeSort changes
+  useEffect(() => {
+    setPage(1);
+    fetchCars(1, false);
+  }, [filters, activeSort]);
 
   // Get search query from URL on mount
   useEffect(() => {
@@ -48,15 +182,11 @@ function SearchContent() {
     const query = urlParams.get('q');
     if (query) {
       updateFilters({ query });
-      // Add to recent searches
-      // This will be handled by the store automatically
     }
-  }, []); // Remove updateFilters from dependencies to prevent infinite loop
+  }, []);
 
   const handleSearch = (query: string) => {
     updateFilters({ query });
-    // Add to recent searches
-    // This will be handled by the store automatically
   };
 
   const handleFilterChange = (newFilters: FilterState) => {
@@ -84,32 +214,15 @@ function SearchContent() {
   };
 
   const handleView = (carId: string) => {
-    // Navigate to car details
-    window.location.href = `/car/${carId}`;
+    const car = allCars.find((item) => item.id === carId);
+    navigate(`/car/${encodeURIComponent(car?.slug || carId)}`);
   };
 
   const handleLoadMore = () => {
-    if (isLoadingMore) return;
-
-    setIsLoadingMore(true);
-
-    setTimeout(() => {
-      setDisplayedCars(prev => {
-        // Calculate how many more cars we need to show
-        const currentLength = prev.length;
-        const remainingSlots = Math.min(6, mockCars.length - currentLength); // Load 6 more cars
-
-        if (remainingSlots <= 0) {
-          setIsLoadingMore(false);
-          return prev;
-        }
-
-        // Add the next batch of cars (avoiding duplicates)
-        const newCars = mockCars.slice(currentLength, currentLength + remainingSlots);
-        return [...prev, ...newCars];
-      });
-      setIsLoadingMore(false);
-    }, 800);
+    if (isLoadingMore || !hasMore) return;
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchCars(nextPage, true);
   };
 
   return (
@@ -134,9 +247,6 @@ function SearchContent() {
           {/* Filters Sidebar */}
           {showFilters && (
             <div className="w-full flex-shrink-0 lg:w-80 lg:max-w-sm">
-              <div className="bg-red-500/20 p-2 mb-2 text-white text-xs">
-                DEBUG: showFilters = {showFilters.toString()}
-              </div>
               <FilterPanel
                 filters={filters}
                 onFiltersChange={handleFilterChange}
@@ -152,7 +262,7 @@ function SearchContent() {
           <div className="flex-1 min-w-0">
             <div className="mb-6 flex items-center justify-between">
               <div className="text-base text-white font-medium">
-                {displayedCars.length} mașini găsite
+                {totalCount} mașini găsite
               </div>
 
               {comparisonCars.length > 0 && (
@@ -169,7 +279,7 @@ function SearchContent() {
               )}
             </div>
 
-            {isLoading ? (
+            {isSearching || isInitLoading ? (
               <div className="flex items-center justify-center py-16">
                 <div className="text-center">
                   <div className="relative mb-6">
@@ -185,7 +295,7 @@ function SearchContent() {
                 cars={displayedCars}
                 loading={isLoadingMore}
                 onLoadMore={handleLoadMore}
-                hasMore={displayedCars.length < mockCars.length && mockCars.length > 12}
+                hasMore={hasMore}
                 onFavorite={handleFavorite}
                 onCompare={handleCompare}
                 onContact={handleContact}

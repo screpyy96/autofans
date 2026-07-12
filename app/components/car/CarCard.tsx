@@ -63,7 +63,7 @@ export function CarCard({
   const { isMobile, isTouchDevice } = useResponsive();
 
   const handleCardClick = () => {
-    onView?.(car.id);
+    onView?.(car.slug || car.id);
   };
 
   const handleActionClick = (e: React.MouseEvent, action: () => void) => {

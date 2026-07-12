@@ -143,6 +143,7 @@ const generateMockImages = (carId: string, count: number = 5): Image[] => {
 export const mockCars: Car[] = [
   {
     id: '1',
+    slug: 'bmw-seria-3-2018-ab12cd',
     title: 'BMW Seria 3 320d xDrive - Impecabilă',
     brand: 'BMW',
     model: 'Seria 3',
@@ -205,7 +206,8 @@ export const mockCars: Car[] = [
   },
   {
     id: '2',
-    title: 'Audi A4 2.0 TDI Quattro - S-Line',
+    slug: 'audi-a4-2019-ef34gh',
+    title: 'Audi A4 2.0 TDI S-tronic S-line',
     brand: 'Audi',
     model: 'A4',
     generation: 'B9',
@@ -267,7 +269,8 @@ export const mockCars: Car[] = [
   },
   {
     id: '3',
-    title: 'Volkswagen Golf 1.6 TDI - Consum mic',
+    slug: 'mercedes-benz-c-class-2020-ij56kl',
+    title: 'Mercedes-Benz C-Class C 220 d 4MATIC',
     brand: 'Volkswagen',
     model: 'Golf',
     generation: 'VII',

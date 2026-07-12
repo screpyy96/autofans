@@ -29,7 +29,7 @@ function serializeCookie(
   if (sameSite) segments.push(`SameSite=${sameSite[0].toUpperCase()}${sameSite.slice(1)}`);
   const secure = opts.secure ?? (process.env.NODE_ENV === "production");
   if (secure) segments.push("Secure");
-  if (opts.httpOnly ?? true) segments.push("HttpOnly");
+  if (opts.httpOnly) segments.push("HttpOnly");
   return segments.join("; ");
 }
 

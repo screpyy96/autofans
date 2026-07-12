@@ -338,37 +338,8 @@ export const useAppStore = create<AppStore>()(
                 }
               }
 
-              // Add some mock notifications only if not already added
-              const currentNotifications = get().notifications;
-              if (currentNotifications.length === 0) {
-                const mockNotifications = [
-                  {
-                    title: 'Mașină nouă adăugată',
-                    message: 'O mașină care îți place a fost adăugată în zona ta',
-                    type: 'new_listing' as NotificationType,
-                    priority: 'medium' as NotificationPriority,
-                    userId: 'user1',
-                  },
-                  {
-                    title: 'Reducere de preț',
-                    message: 'BMW X5 din favoritele tale a fost redus cu 2,000€',
-                    type: 'price_drop' as NotificationType,
-                    priority: 'high' as NotificationPriority,
-                    userId: 'user1',
-                  },
-                  {
-                    title: 'Mesaj nou',
-                    message: 'Ai primit un mesaj pentru anunțul tău',
-                    type: 'message' as NotificationType,
-                    priority: 'medium' as NotificationPriority,
-                    userId: 'user1',
-                  },
-                ];
+              // Notifications should be fetched from the backend later, no mock data
 
-                mockNotifications.forEach(notification => {
-                  get().addNotification(notification);
-                });
-              }
 
               set((state) => {
                 state.isLoading = false;

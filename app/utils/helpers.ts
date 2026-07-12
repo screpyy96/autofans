@@ -218,17 +218,12 @@ export function formatRelativeTime(date: Date): string {
 }
 
 // URL helpers
-export function generateCarSlug(car: Car): string {
-  const slug = `${car.brand}-${car.model}-${car.year}-${car.id}`
+export function generateUniqueSlug(make: string, model: string, year: number): string {
+  const randomStr = Math.random().toString(36).substring(2, 8);
+  const baseSlug = `${make}-${model}-${year}`
     .toLowerCase()
     .replace(/[^a-z0-9-]/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '');
-  return slug;
-}
-
-export function parseCarSlug(slug: string): { id: string } | null {
-  const parts = slug.split('-');
-  const id = parts[parts.length - 1];
-  return id ? { id } : null;
+  return `${baseSlug}-${randomStr}`;
 }

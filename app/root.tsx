@@ -18,6 +18,18 @@ import "./app.css";
 import { getSupabaseServerClient } from "~/lib/supabase.server";
 
 export const links: LinksFunction = () => [
+  {
+    rel: "icon",
+    href: "/autofans-logo-pack/icons/favicon.ico",
+  },
+  {
+    rel: "apple-touch-icon",
+    href: "/autofans-logo-pack/icons/apple-touch-icon.png",
+  },
+  {
+    rel: "manifest",
+    href: "/manifest.json",
+  },
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
     rel: "preconnect",

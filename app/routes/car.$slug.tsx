@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Route } from "./+types/car.$id";
+import type { Route } from "./+types/car.$slug";
 import { type LoaderFunctionArgs, useLoaderData } from "react-router";
 import { getSupabaseServerClient } from "~/lib/supabase.server";
 import { CarDetails } from '~/components/car/CarDetails';
@@ -8,36 +8,47 @@ import { ContactModal } from '~/components/ui/ContactModal';
 import { Card } from '~/components/ui/Card';
 import { Button } from '~/components/ui/Button';
 import { Calculator, MessageCircle } from 'lucide-react';
-import { mockCars } from '~/data/mockData';
 import type { Car, Image } from '~/types';
 import { FuelType, TransmissionType } from "~/types";
 import { useComparison } from '~/stores/useAppStore';
 
 export function meta({ params }: Route.MetaArgs) {
-  const car = mockCars.find(c => c.id === params.id);
-  
-  if (!car) {
-    return [
-      { title: "Mașină nu a fost găsită - AutoFans" },
-    ];
-  }
-
   return [
-    { title: `${car.title} - AutoFans` },
-    { name: "description", content: car.description.substring(0, 160) + "..." },
+    { title: "Detalii mașină - AutoFans" },
+    { name: "description", content: "Vezi detaliile anunțului auto pe AutoFans." },
   ];
 }
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
-  const idParam = params.id;
-  if (!idParam) return { listing: null };
+  const slugParam = params.slug;
+  if (!slugParam) return { listing: null };
   try {
     const { supabase, headers } = getSupabaseServerClient(request);
-    const { data: listing } = await supabase
+    let { data: listing } = await supabase
       .from('listings')
-      .select('id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, body_type, images, created_at')
-      .eq('id', Number(idParam))
-      .single();
+      .select('id, slug, owner_id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, body_type, images, created_at, owners, service_history, engine_size, power, doors, seats, condition_overall, condition_exterior, condition_interior, condition_engine, condition_transmission, has_accidents, features, city, county')
+      .eq('slug', slugParam)
+      .maybeSingle();
+
+    // Keep old/id links working while all new search links use the canonical slug.
+    if (!listing && (/^\d+$/.test(slugParam) || /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(slugParam))) {
+      const byId = await supabase
+        .from('listings')
+        .select('id, slug, owner_id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, body_type, images, created_at, owners, service_history, engine_size, power, doors, seats, condition_overall, condition_exterior, condition_interior, condition_engine, condition_transmission, has_accidents, features, city, county')
+        .eq('id', slugParam)
+        .maybeSingle();
+      listing = byId.data;
+    }
+
+    let sellerProfile = null;
+    if (listing?.owner_id) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, email, display_name, phone, avatar_url, role, is_verified, created_at')
+        .eq('id', listing.owner_id)
+        .single();
+      sellerProfile = profile;
+    }
 
     let signedMap: Record<string, string> = {};
     if (listing?.images?.length) {
@@ -56,10 +67,10 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
       }
     }
 
-    return { listing: listing ?? null, signedMap };
+    return { listing: listing ?? null, signedMap, sellerProfile };
   } catch (e) {
     console.error('car.$id loader error:', e);
-    return { listing: null, signedMap: {} };
+    return { listing: null, signedMap: {}, sellerProfile: null };
   }
 }
 
@@ -85,6 +96,7 @@ export default function CarDetail({ params }: Route.ComponentProps) {
 
     car = {
       id: String(l.id),
+      slug: l.slug || '',
       title: l.title || `${l.make} ${l.model}`,
       brand: l.make || '—',
       model: l.model || '—',
@@ -95,14 +107,33 @@ export default function CarDetail({ params }: Route.ComponentProps) {
       price: Number(l.price || 0),
       currency: l.currency || 'EUR',
       negotiable: false,
-      location: { id: 'loc-1', city: 'București', county: 'București', country: 'RO' },
+      location: { id: 'loc-1', city: l.city || 'București', county: l.county || 'București', country: 'RO' },
       images: images.length ? images : [{ id: '0', url: '/placeholder-car.jpg', thumbnailUrl: '/placeholder-car.jpg', alt: 'car', order: 0, isMain: true }],
-      specifications: { engineSize: 0, power: 0, doors: 4, seats: 5 },
-      features: [],
-      condition: { overall: 3 as any, exterior: 3 as any, interior: 3 as any, engine: 3 as any, transmission: 3 as any, hasAccidents: false },
+      specifications: {
+        engineSize: l.engine_size ?? 0,
+        power: l.power ?? 0,
+        doors: l.doors ?? 4,
+        seats: l.seats ?? 5,
+        bodyType: l.body_type || undefined
+      },
+      features: l.features || [],
+      condition: {
+        overall: (l.condition_overall ?? 3) as any,
+        exterior: (l.condition_exterior ?? 3) as any,
+        interior: (l.condition_interior ?? 3) as any,
+        engine: (l.condition_engine ?? 3) as any,
+        transmission: (l.condition_transmission ?? 3) as any,
+        hasAccidents: !!l.has_accidents
+      },
       seller: {
-        id: 'seller', type: 'dealer', name: 'Vânzător', email: '', phone: '',
-        location: { id: 'loc-1', city: 'București', county: 'București', country: 'RO' }, isVerified: true,
+        id: data.sellerProfile?.id || 'unknown',
+        type: data.sellerProfile?.role === 'seller' ? 'dealer' : 'individual',
+        name: data.sellerProfile?.display_name || data.sellerProfile?.email?.split('@')[0] || 'Vânzător',
+        email: data.sellerProfile?.email || '',
+        phone: data.sellerProfile?.phone || '',
+        location: { id: 'loc-1', city: 'București', county: 'București', country: 'RO' },
+        avatar: data.sellerProfile?.avatar_url || undefined,
+        isVerified: !!data.sellerProfile?.is_verified,
       },
       description: l.description || '',
       createdAt: l.created_at ? new Date(l.created_at) : new Date(),
@@ -111,15 +142,12 @@ export default function CarDetail({ params }: Route.ComponentProps) {
       viewCount: 0,
       favoriteCount: 0,
       contactCount: 0,
-      owners: 1,
-      serviceHistory: false,
+      owners: l.owners ?? 1,
+      serviceHistory: !!l.service_history,
     };
   }
 
-  if (!car) {
-    car = mockCars.find(c => c.id === params.id);
-  }
-  const similarCars = mockCars.filter(c => c.id !== params.id && c.brand === car?.brand).slice(0, 4);
+  const similarCars: Car[] = [];
 
   const { isInComparison, addToComparison, removeFromComparison } = useComparison();
 
@@ -173,7 +201,7 @@ export default function CarDetail({ params }: Route.ComponentProps) {
   };
 
   const handleSimilarCarClick = (carId: string) => {
-    window.location.href = `/car/${carId}`;
+    window.location.href = `/car/${encodeURIComponent(carId)}`;
   };
 
   return (

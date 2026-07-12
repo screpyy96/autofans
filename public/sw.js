@@ -1,6 +1,6 @@
 // Service Worker for caching strategies
-const CACHE_NAME = 'autofans-v1';
-const STATIC_CACHE = 'static-v1';
+const CACHE_NAME = 'autofans-v2';
+const STATIC_CACHE = 'static-v2';
 const DYNAMIC_CACHE = 'dynamic-v1';
 const IMAGE_CACHE = 'images-v1';
 
@@ -8,7 +8,9 @@ const IMAGE_CACHE = 'images-v1';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
-  '/favicon.ico'
+  '/autofans-logo-pack/icons/favicon.ico',
+  '/autofans-logo-pack/icons/android-chrome-192x192.png',
+  '/autofans-logo-pack/icons/autofans-icon-512.png'
 ];
 
 // Install event - cache static assets
@@ -176,7 +178,7 @@ self.addEventListener('push', (event) => {
   
   const options = {
     body: data.body,
-    icon: '/icon-192x192.png',
+    icon: '/autofans-logo-pack/icons/android-chrome-192x192.png',
     badge: '/badge-72x72.png',
     data: data.data,
     actions: data.actions || []

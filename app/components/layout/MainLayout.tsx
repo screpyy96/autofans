@@ -103,13 +103,16 @@ export function MainLayout({ children }: MainLayoutProps) {
         <div className="mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-18">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-3 group">
+            <Link
+              to="/"
+              className="group flex items-center rounded-lg bg-white px-2 py-1 shadow-[0_6px_18px_rgba(0,0,0,0.22)]"
+            >
               <motion.img
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                src="/logo.png"
+                src="/logo-header.png"
                 alt="AutoFans Logo"
-                className="h-12 w-auto"
+                className="h-10 w-auto"
               />
             </Link>
 
@@ -176,15 +179,17 @@ export function MainLayout({ children }: MainLayoutProps) {
               </button>
 
               {/* Notification Bell */}
-              <NotificationBell
-                notifications={notifications}
-                unreadCount={unreadCount}
-                onNotificationClick={handleNotificationClick}
-                onMarkAsRead={markAsRead}
-                onMarkAllAsRead={markAllAsRead}
-                onClearAll={clearAll}
-                className="hidden sm:block"
-              />
+              {authUser && (
+                <NotificationBell
+                  notifications={notifications}
+                  unreadCount={unreadCount}
+                  onNotificationClick={handleNotificationClick}
+                  onMarkAsRead={markAsRead}
+                  onMarkAllAsRead={markAllAsRead}
+                  onClearAll={clearAll}
+                  className="hidden sm:block"
+                />
+              )}
 
               <Link to="/create-listing">
                 <Button

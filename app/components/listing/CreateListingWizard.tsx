@@ -243,108 +243,69 @@ export function CreateListingWizard({
         [currentStep, formData, isStepValid]
     );
 
-    const renderProgressIndicator = () => (
-        <div className="mb-6 sm:mb-8">
-            {/* Mobile: Vertical stepper */}
-            <div className="block sm:hidden">
-                <div className="space-y-4">
+    const renderProgressIndicator = () => {
+        const progressPercent = ((currentStep + 1) / STEPS.length) * 100;
+        
+        return (
+            <div className="mb-8 bg-white/5 border border-white/5 p-4 sm:p-5 rounded-2xl">
+                {/* Step Info Row */}
+                <div className="flex items-center justify-between mb-3.5">
+                    <div className="min-w-0">
+                        <span className="text-[10px] sm:text-xs font-bold text-accent-gold uppercase tracking-wider">
+                            Pasul {currentStep + 1} din {STEPS.length}
+                        </span>
+                        <h3 className="text-base sm:text-lg font-extrabold text-white mt-0.5 truncate">
+                            {STEPS[currentStep].title}
+                        </h3>
+                    </div>
+                    <span className="text-[10px] sm:text-xs font-bold text-accent-gold bg-accent-gold/10 border border-accent-gold/20 px-2.5 py-1 rounded-lg">
+                        {Math.round(progressPercent)}% Complet
+                    </span>
+                </div>
+
+                {/* Clean Progress Bar */}
+                <div className="w-full bg-white/5 border border-white/10 h-2 rounded-full overflow-hidden relative">
+                    <motion.div 
+                        className="h-full bg-gold-gradient rounded-full"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${progressPercent}%` }}
+                        transition={{ duration: 0.3, ease: 'easeOut' }}
+                    />
+                </div>
+
+                {/* Quick Dot Indicators below progress bar */}
+                <div className="flex items-center justify-between mt-4 px-1 gap-2.5">
                     {STEPS.map((step, index) => {
-                        const status = stepStatuses[index];
                         const isActive = index === currentStep;
                         const isCompleted = index < currentStep;
-
                         return (
-                            <div key={step.id} className="flex items-center space-x-4">
-                                <motion.div
-                                    className={cn(
-                                        'w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium border flex-shrink-0',
-                                        'transition-colors duration-200',
-                                        isActive && 'bg-gold-gradient text-secondary-900 ring-2 ring-accent-gold/30 shadow-glow border-transparent',
-                                        isCompleted && 'bg-white/10 text-accent-gold border-accent-gold/40',
-                                        !isActive && !isCompleted && 'bg-white/5 text-gray-400 border-white/10'
-                                    )}
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                >
-                                    {isCompleted ? (
-                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                        </svg>
-                                    ) : (
-                                        <span>{index + 1}</span>
-                                    )}
-                                </motion.div>
-                                <div className="min-w-0 flex-1">
-                                    <p className={cn(
-                                        'text-sm font-medium truncate',
-                                        isActive && 'text-white',
-                                        isCompleted && 'text-accent-gold',
-                                        !isActive && !isCompleted && 'text-gray-400'
-                                    )}>
-                                        {step.title}
-                                    </p>
-                                    <p className="text-xs text-gray-400 mt-0.5 truncate">
-                                        {step.description}
-                                    </p>
-                                </div>
-                            </div>
+                            <button
+                                key={step.id}
+                                onClick={() => {
+                                    if (index <= currentStep || isStepValid(index - 1)) {
+                                        setCurrentStep(index);
+                                    }
+                                }}
+                                className="flex flex-col items-center flex-1 focus:outline-none group relative py-1"
+                                title={step.title}
+                                disabled={index > currentStep && !isStepValid(index - 1)}
+                            >
+                                <div className={cn(
+                                    "h-1.5 rounded-full transition-all duration-300 w-full",
+                                    isActive ? "bg-accent-gold" : "bg-white/10 group-hover:bg-white/30",
+                                    isCompleted && "bg-accent-gold/60"
+                                )} />
+                                {/* Tooltip */}
+                                <span className="absolute bottom-5 left-1/2 transform -translate-x-1/2 bg-secondary-950 text-white text-[10px] py-1 px-2.5 rounded-lg border border-white/10 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-10 shadow-lg">
+                                    {step.title}
+                                </span>
+                            </button>
                         );
                     })}
                 </div>
             </div>
-
-            {/* Desktop: Horizontal stepper */}
-            <div className="hidden sm:flex items-center justify-between">
-                {STEPS.map((step, index) => {
-                    const status = stepStatuses[index];
-                    return (
-                        <div key={step.id} className="flex items-center flex-1">
-                            <div className="flex flex-col items-center min-w-0">
-                                <motion.div
-                                    className={cn(
-                                        'w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium border flex-shrink-0',
-                                        'transition-colors duration-200',
-                                        index === currentStep && 'bg-gold-gradient text-secondary-900 ring-2 ring-accent-gold/20 shadow-sm border-transparent',
-                                        index < currentStep && 'bg-white/10 text-accent-gold border-accent-gold/30',
-                                        index > currentStep && 'bg-white/5 text-gray-400 border-white/10'
-                                    )}
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                >
-                                    {index < currentStep ? (
-                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                        </svg>
-                                    ) : (
-                                        <span>{index + 1}</span>
-                                    )}
-                                </motion.div>
-                                <div className="mt-2 text-center min-w-0">
-                                    <p className={cn(
-                                        'text-sm font-medium',
-                                        index === currentStep && 'text-white',
-                                        index < currentStep && 'text-accent-gold',
-                                        index > currentStep && 'text-gray-400'
-                                    )}>
-                                        {step.title}
-                                    </p>
-                                    <p className="text-xs text-gray-400 mt-1">
-                                        {step.description}
-                                    </p>
-                                </div>
-                            </div>
-                            {index < STEPS.length - 1 && (
-                                <div className={cn(
-                                    'flex-1 h-0.5 mx-4 min-w-[30px]',
-                                    index < currentStep ? 'bg-accent-gold' : 'bg-white/10'
-                                )} />
-                            )}
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
-    );
+        );
+    };
 
     const renderStepContent = () => {
         switch (currentStep) {
@@ -355,7 +316,7 @@ export function CreateListingWizard({
             case 2:
                 return <ConditionStep formData={formData} updateFormData={updateFormData} errors={errors} />;
             case 3:
-                return <ImagesStep formData={formData} updateFormData={updateFormData} errors={errors} />;
+                return <ImagesStep formData={formData} updateFormData={updateFormData} errors={errors} onFilesSelected={onFilesSelected} />;
             case 4:
                 return <PricingStep formData={formData} updateFormData={updateFormData} errors={errors} />;
             case 5:
@@ -366,15 +327,13 @@ export function CreateListingWizard({
     };
 
     return (
-        <div className="mx-auto p-4 sm:p-6">
-            <Card>
-                <CardHeader>
+        <div className="mx-auto">
+            <Card className="bg-glass border-white/10 shadow-2xl backdrop-blur-xl rounded-2xl overflow-hidden">
+                <CardHeader className="border-b border-white/5 pb-6">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
-                            <CardTitle>Creează anunț nou</CardTitle>
-                            <p className="text-gray-400 mt-1 text-sm sm:text-base">
-                                Completează informațiile despre mașina ta pentru a crea un anunț atractiv
-                            </p>
+                            <span className="text-xs font-bold text-accent-gold uppercase tracking-wider">Pasul {currentStep + 1} din {STEPS.length}</span>
+                            <h2 className="text-xl font-extrabold text-white mt-0.5">{STEPS[currentStep].title}</h2>
                         </div>
                         <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
                             {lastSaved && (
@@ -383,10 +342,10 @@ export function CreateListingWizard({
                                 </p>
                             )}
                             {isDraftSaving && (
-                                <p className="text-xs sm:text-sm text-accent-gold">Se salvează...</p>
+                                <p className="text-xs sm:text-sm text-accent-gold animate-pulse">Se salvează...</p>
                             )}
                             {onClose && (
-                                <Button variant="ghost" onClick={onClose} className="text-xs sm:text-sm">
+                                <Button variant="ghost" onClick={onClose} className="text-xs sm:text-sm text-white/60 hover:text-white">
                                     Închide
                                 </Button>
                             )}
@@ -394,7 +353,7 @@ export function CreateListingWizard({
                     </div>
                 </CardHeader>
 
-                <CardContent>
+                <CardContent className="p-6 sm:p-8">
                     {renderProgressIndicator()}
 
                     <AnimatePresence mode="wait">
@@ -409,34 +368,41 @@ export function CreateListingWizard({
                         </motion.div>
                     </AnimatePresence>
 
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-premium">
-                        <div className="flex items-center gap-2 sm:gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-8 pt-6 border-t border-white/5">
+                        <div className="w-full sm:w-auto flex justify-center sm:justify-start">
                             <Button
                                 variant="outline"
                                 onClick={handleSaveDraft}
                                 disabled={isDraftSaving}
-                                className="text-xs sm:text-sm"
+                                className="w-full sm:w-auto text-xs sm:text-sm border-white/10 hover:border-accent-gold/40 hover:bg-white/5 text-white"
                             >
                                 {isDraftSaving ? 'Se salvează...' : 'Salvează ca draft'}
                             </Button>
                         </div>
 
-                        <div className="flex items-center gap-2 sm:gap-4">
+                        <div className="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-3 sm:gap-4">
                             {currentStep > 0 && (
-                                <Button variant="outline" onClick={handlePrevious} className="text-xs sm:text-sm">
+                                <Button 
+                                    variant="outline" 
+                                    onClick={handlePrevious} 
+                                    className="flex-1 sm:flex-initial text-xs sm:text-sm border-white/10 hover:border-accent-gold/40 hover:bg-white/5 text-white"
+                                >
                                     Înapoi
                                 </Button>
                             )}
 
                             {currentStep < STEPS.length - 1 ? (
-                                <Button onClick={handleNext} className="text-xs sm:text-sm">
+                                <Button 
+                                    onClick={handleNext} 
+                                    className="flex-1 sm:flex-initial text-xs sm:text-sm bg-gold-gradient text-secondary-900 font-semibold hover:shadow-glow hover:scale-[1.02] active:scale-[0.98] transition-all px-5 py-2.5 rounded-xl border-none"
+                                >
                                     Continuă
                                 </Button>
                             ) : (
                                 <Button
                                     onClick={handleSubmit}
                                     disabled={isSubmitting}
-                                    className="bg-green-600 hover:bg-green-700 text-xs sm:text-sm"
+                                    className="flex-1 sm:flex-initial bg-green-600 hover:bg-green-700 text-xs sm:text-sm text-white font-semibold shadow-md active:scale-95 transition-all px-5 py-2.5 rounded-xl border-none"
                                 >
                                     {isSubmitting ? 'Se publică...' : 'Publică anunțul'}
                                 </Button>
@@ -491,7 +457,7 @@ function BasicInfoStep({ formData, updateFormData, errors }: StepProps) {
                 <h3 className="text-lg font-semibold text-white mb-4">
                     Informații de bază despre mașină
                 </h3>
-                <p className="text-white mb-6">
+                <p className="text-gray-400 text-sm sm:text-base mb-6">
                     Începe cu informațiile esențiale despre vehiculul tău
                 </p>
             </div>
@@ -594,7 +560,7 @@ function TechnicalDetailsStep({ formData, updateFormData, errors }: StepProps) {
                 <h3 className="text-lg font-semibold text-white mb-4">
                     Specificații tehnice
                 </h3>
-                <p className="text-white mb-6">
+                <p className="text-gray-400 text-sm sm:text-base mb-6">
                     Adaugă detaliile tehnice ale mașinii pentru a oferi informații complete cumpărătorilor
                 </p>
             </div>
@@ -689,7 +655,8 @@ function TechnicalDetailsStep({ formData, updateFormData, errors }: StepProps) {
                                 city: parseFloat(e.target.value) || 0
                             });
                         }}
-                        rightIcon={<span className="text-sm text-gray-300">L/100km</span>}
+                        rightIcon={<span className="text-sm text-gray-400 font-medium">L/100km</span>}
+                        className="pr-20"
                     />
                     <Input
                         label="Șosea"
@@ -704,7 +671,8 @@ function TechnicalDetailsStep({ formData, updateFormData, errors }: StepProps) {
                                 highway: parseFloat(e.target.value) || 0
                             });
                         }}
-                        rightIcon={<span className="text-sm text-gray-300">L/100km</span>}
+                        rightIcon={<span className="text-sm text-gray-400 font-medium">L/100km</span>}
+                        className="pr-20"
                     />
                     <Input
                         label="Mixt"
@@ -719,7 +687,8 @@ function TechnicalDetailsStep({ formData, updateFormData, errors }: StepProps) {
                                 combined: parseFloat(e.target.value) || 0
                             });
                         }}
-                        rightIcon={<span className="text-sm text-gray-300">L/100km</span>}
+                        rightIcon={<span className="text-sm text-gray-400 font-medium">L/100km</span>}
+                        className="pr-20"
                     />
                 </div>
             </div>
@@ -750,7 +719,7 @@ function ConditionStep({ formData, updateFormData, errors }: StepProps) {
                 <h3 className="text-lg font-semibold text-white mb-4">
                     Starea și istoricul mașinii
                 </h3>
-                <p className="text-white mb-6">
+                <p className="text-gray-400 text-sm sm:text-base mb-6">
                     Oferă informații oneste despre starea vehiculului pentru a câștiga încrederea cumpărătorilor
                 </p>
             </div>
@@ -878,7 +847,7 @@ function PricingStep({ formData, updateFormData, errors }: StepProps) {
                 <h3 className="text-lg font-semibold text-white mb-4">
                     Preț și locație
                 </h3>
-                <p className="text-white mb-6">
+                <p className="text-gray-400 text-sm sm:text-base mb-6">
                     Stabilește un preț competitiv și specifică locația pentru a atrage cumpărătorii potriviți
                 </p>
             </div>
@@ -980,7 +949,7 @@ function DescriptionStep({ formData, updateFormData, errors }: StepProps) {
                 <h3 className="text-lg font-semibold text-white mb-4">
                     Descriere și finalizare
                 </h3>
-                <p className="text-white mb-6">
+                <p className="text-gray-400 text-sm sm:text-base mb-6">
                     Creează un titlu atractiv și o descriere detaliată pentru a convinge cumpărătorii
                 </p>
             </div>
@@ -1091,10 +1060,10 @@ function DescriptionStep({ formData, updateFormData, errors }: StepProps) {
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                <h3 className="text-lg font-semibold text-white mb-4">
                     Imagini ale mașinii
                 </h3>
-                <p className="text-gray-600 mb-6">
+                <p className="text-gray-400 text-sm sm:text-base mb-6">
                     Adaugă imagini de calitate pentru a atrage cumpărătorii. Prima imagine va fi afișată ca imagine principală.
                 </p>
             </div>
@@ -1108,17 +1077,17 @@ function DescriptionStep({ formData, updateFormData, errors }: StepProps) {
             />
 
             {errors.images && (
-                <p className="text-red-600 text-sm mt-2">{errors.images}</p>
+                <p className="text-red-400 text-sm mt-2">{errors.images}</p>
             )}
 
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4">
                 <div className="flex items-start">
-                    <svg className="w-5 h-5 text-green-600 mt-0.5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-5 h-5 text-green-400 mt-0.5 mr-3" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                     </svg>
                     <div>
-                        <h4 className="text-sm font-medium text-green-900">Recomandări pentru imagini</h4>
-                        <ul className="text-sm text-green-700 mt-1 space-y-1">
+                        <h4 className="text-sm font-semibold text-green-400">Recomandări pentru imagini</h4>
+                        <ul className="text-sm text-gray-300 mt-2 space-y-1">
                             <li>• Fotografiază mașina în lumină naturală</li>
                             <li>• Include imagini din toate unghiurile (față, spate, laterale)</li>
                             <li>• Adaugă fotografii cu interiorul (bord, scaune, volan)</li>

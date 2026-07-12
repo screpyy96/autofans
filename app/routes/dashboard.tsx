@@ -205,7 +205,7 @@ export default function Dashboard() {
                     <p className="text-gray-400 text-sm">{l.status} • {new Date(l.updated_at).toLocaleString()}</p>
                   </div>
                   <div className="md:col-span-2 text-accent-gold font-semibold">€{Number(l.price).toLocaleString()}</div>
-                  <div className="md:col-span-4 flex gap-2 justify-end">
+                  <div className="md:col-span-4 flex gap-2 justify-end items-center">
                     {l.status !== 'published' ? (
                       <Form method="post">
                         <input type="hidden" name="intent" value="publish" />
@@ -216,9 +216,12 @@ export default function Dashboard() {
                       <Form method="post">
                         <input type="hidden" name="intent" value="draft" />
                         <input type="hidden" name="id" value={String(l.id)} />
-                        <Button type="submit" variant="outline" size="sm">Treci în draft</Button>
+                        <Button type="submit" variant="outline" size="sm">Draft</Button>
                       </Form>
                     )}
+                    <Link to={`/create-listing?edit=${l.id}`}>
+                      <Button variant="outline" size="sm" className="border-accent-gold/20 text-accent-gold">Editează</Button>
+                    </Link>
                     <Form method="post">
                       <input type="hidden" name="intent" value="delete" />
                       <input type="hidden" name="id" value={String(l.id)} />

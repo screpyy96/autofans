@@ -40,16 +40,49 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const next = new URL(request.url).pathname;
     return redirect(`/login?next=${encodeURIComponent(next)}`, { headers });
   }
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('id, role, email, display_name, avatar_url, phone, is_verified, created_at')
     .eq('id', user.id)
     .single();
-  return { profile };
+
+  let listings: any[] = [];
+  let thumbs: Record<number, string> = {};
+  if (profile?.role === 'seller') {
+    const { data: userListings } = await supabase
+      .from('listings')
+      .select('id, slug, title, price, status, updated_at, images')
+      .eq('owner_id', user.id)
+      .order('updated_at', { ascending: false });
+    listings = userListings || [];
+
+    const paths = listings
+      .map((l) => (l.images || []).find((i: any) => i.isMain)?.path || (l.images || [])[0]?.path)
+      .filter(Boolean) as string[];
+    if (paths.length) {
+      const { data: signed } = await supabase.storage.from('listing-images').createSignedUrls(paths, 60 * 60);
+      const map: Record<string, string> = {};
+      for (const s of signed || []) {
+        const it: any = s; if (it?.path && it?.signedUrl) map[it.path] = it.signedUrl as string;
+      }
+      listings.forEach((l) => {
+        const p = (l.images || []).find((i: any) => i.isMain)?.path || (l.images || [])[0]?.path;
+        if (p && map[p]) thumbs[l.id] = map[p];
+      });
+    }
+  }
+
+  const { count: favoritesCount } = await supabase
+    .from('favorites')
+    .select('listing_id', { count: 'exact', head: true })
+    .eq('user_id', user.id);
+
+  return { profile, listings, thumbs, favoritesCount: favoritesCount || 0, userAuth: user };
 }
 
 export default function Profile() {
-  const profile = (data as any)?.profile;
+  const { profile, listings = [], thumbs = {}, favoritesCount = 0, userAuth } = useLoaderData<typeof loader>();
   const role = profile?.role as 'buyer' | 'seller' | undefined;
   
   const [activeTab, setActiveTab] = useState<'overview' | 'listings' | 'settings'>('overview');
@@ -75,12 +108,48 @@ export default function Profile() {
           phone: phone,
           avatar_url: avatarUrl
         })
-        .eq('id', profile.id);
+        .eq('id', profile?.id);
       
       if (error) throw error;
       setSaveMessage({ type: 'success', text: 'Modificările au fost salvate cu succes!' });
     } catch (e: any) {
       setSaveMessage({ type: 'error', text: e.message || 'A apărut o eroare la salvare.' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !profile?.id) return;
+    
+    setIsSaving(true);
+    setSaveMessage(null);
+    try {
+      const { getSupabaseBrowserClient } = await import('~/lib/supabase.client');
+      const supabase = getSupabaseBrowserClient();
+      
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const path = `${profile.id}/avatars/${Date.now()}-${safeName}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('listing-images')
+        .upload(path, file, {
+          upsert: true,
+          cacheControl: '3600',
+          contentType: file.type
+        });
+        
+      if (uploadError) throw uploadError;
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('listing-images')
+        .getPublicUrl(path);
+        
+      setAvatarUrl(publicUrl);
+      setSaveMessage({ type: 'success', text: 'Imaginea de profil a fost încărcată! Apasă pe „Salvează modificările” pentru a confirma.' });
+    } catch (err: any) {
+      setSaveMessage({ type: 'error', text: err.message || 'Eroare la încărcarea imaginii.' });
     } finally {
       setIsSaving(false);
     }
@@ -123,16 +192,16 @@ export default function Profile() {
   // Dynamic user data from profile
   const user = {
     name: displayName || profile?.display_name || 'Utilizator AutoFans',
-    email: profile?.email || 'email@autofans.ro',
+    email: profile?.email || userAuth?.email || 'email@autofans.ro',
     phone: phone || profile?.phone || 'Adaugă telefon în Setări',
     avatar: avatarUrl || profile?.avatar_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
     isVerified: !!profile?.is_verified,
     memberSince: profile?.created_at ? new Date(profile.created_at).getFullYear().toString() : '2026',
     stats: {
-      listings: role === 'seller' ? 3 : 0,
-      favorites: 12,
-      views: role === 'seller' ? 1250 : 0,
-      contacts: role === 'seller' ? 45 : 0
+      listings: listings.length,
+      favorites: favoritesCount,
+      views: role === 'seller' ? 125 : 0,
+      contacts: role === 'seller' ? 12 : 0
     }
   };
 
@@ -352,29 +421,73 @@ export default function Profile() {
         )}
 
         {activeTab === 'listings' && (
-          <Card variant="elevated" padding="lg" className="text-center relative overflow-hidden">
-            {/* Background decoration */}
-            <div className="absolute inset-0 bg-gradient-to-br from-accent-gold/5 via-transparent to-transparent opacity-50" />
-            <div className="relative">
-              <div className="py-12 sm:py-16">
-                <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-accent-gold/20 to-accent-gold/10 border border-accent-gold/20 rounded-full mb-6 shadow-lg">
-                  <Car className="h-8 w-8 sm:h-10 sm:w-10 text-accent-gold" />
-                </div>
-                <h3 className="text-xl sm:text-2xl font-semibold text-white mb-4">
-                  Gestionează-ți anunțurile
-                </h3>
-                <p className="text-gray-300 mb-8 max-w-md mx-auto text-sm sm:text-base leading-relaxed">
-                  Creează și gestionează toate anunțurile tale de mașini. Adaugă primul tău anunț pentru a începe să vinzi.
-                </p>
-                <Link to="/create-listing">
-                  <Button variant="primary" className="flex items-center gap-2 mx-auto bg-gold-gradient text-secondary-900 hover:shadow-glow px-6 py-3 font-semibold">
-                    <Plus className="h-4 w-4" />
-                    Adaugă primul anunț
-                  </Button>
-                </Link>
-              </div>
+          <div className="space-y-4 text-center">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-white">Anunțurile mele</h3>
+              <Link to="/create-listing">
+                <Button className="bg-gold-gradient text-secondary-900 font-semibold flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Adaugă anunț
+                </Button>
+              </Link>
             </div>
-          </Card>
+            {listings.length === 0 ? (
+              <Card variant="elevated" padding="lg" className="text-center relative overflow-hidden">
+                {/* Background decoration */}
+                <div className="absolute inset-0 bg-gradient-to-br from-accent-gold/5 via-transparent to-transparent opacity-50" />
+                <div className="relative">
+                  <div className="py-12 sm:py-16">
+                    <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-accent-gold/20 to-accent-gold/10 border border-accent-gold/20 rounded-full mb-6 shadow-lg">
+                      <Car className="h-8 w-8 sm:h-10 sm:w-10 text-accent-gold" />
+                    </div>
+                    <h3 className="text-xl sm:text-2xl font-semibold text-white mb-4">
+                      Gestionează-ți anunțurile
+                    </h3>
+                    <p className="text-gray-300 mb-8 max-w-md mx-auto text-sm sm:text-base leading-relaxed">
+                      Creează și gestionează toate anunțurile tale de mașini. Adaugă primul tău anunț pentru a începe să vinzi.
+                    </p>
+                    <Link to="/create-listing">
+                      <Button variant="primary" className="flex items-center gap-2 mx-auto bg-gold-gradient text-secondary-900 hover:shadow-glow px-6 py-3 font-semibold">
+                        <Plus className="h-4 w-4" />
+                        Adaugă primul anunț
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {listings.map((l: any) => (
+                  <Card key={l.id} variant="elevated" padding="md" className="flex items-center gap-3">
+                    {thumbs[l.id] ? (
+                      <img src={thumbs[l.id]} alt="thumb" className="w-20 h-16 rounded-lg object-cover border border-white/10" />
+                    ) : (
+                      <div className="w-20 h-16 rounded-lg bg-white/5 border border-white/10" />
+                    )}
+                    <div className="flex-1 min-w-0 text-left">
+                      <p className="text-white font-medium truncate">{l.title}</p>
+                      <p className="text-gray-400 text-sm">
+                        {l.status === 'published' ? 'Publicat' : 'Ciornă'} • {new Date(l.updated_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-accent-gold font-semibold mr-2">€{Number(l.price).toLocaleString()}</span>
+                      <Link to={`/create-listing?edit=${l.id}`}>
+                        <Button variant="outline" size="sm" className="border-accent-gold/20 text-accent-gold">
+                          Editează
+                        </Button>
+                      </Link>
+                      <Link to={`/car/${l.slug || l.id}`}>
+                        <Button variant="outline" size="sm">
+                          Vezi
+                        </Button>
+                      </Link>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
         )}
 
         {activeTab === 'settings' && (
@@ -433,15 +546,37 @@ export default function Profile() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      URL Imagine Profil (Avatar)
+                      Imagine Profil (Avatar)
                     </label>
-                    <input
-                      type="url"
-                      value={avatarUrl}
-                      onChange={(e) => setAvatarUrl(e.target.value)}
-                      placeholder="Introdu URL-ul imaginii de profil"
-                      className="w-full px-3 py-2 sm:py-3 bg-white/5 border border-white/20 text-white rounded-lg focus:ring-2 focus:ring-accent-gold focus:border-accent-gold transition-all text-sm sm:text-base"
-                    />
+                    <div className="flex items-center gap-4 bg-white/5 border border-white/10 p-3.5 rounded-xl">
+                      {avatarUrl ? (
+                        <img 
+                          src={avatarUrl} 
+                          alt="Avatar Previzualizare" 
+                          className="h-14 w-14 rounded-full object-cover border border-accent-gold/40 shadow-sm"
+                        />
+                      ) : (
+                        <div className="h-14 w-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-400">
+                          <User className="h-6 w-6" />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleAvatarFileChange}
+                          className="hidden"
+                          id="avatar-upload-input"
+                        />
+                        <label 
+                          htmlFor="avatar-upload-input"
+                          className="inline-flex items-center px-4 py-2 bg-white/5 border border-white/20 hover:border-accent-gold/40 hover:bg-white/10 text-white text-xs font-semibold rounded-lg cursor-pointer transition-all active:scale-95"
+                        >
+                          Alege imagine
+                        </label>
+                        <p className="text-[10px] text-gray-400 mt-1.5">JPEG, PNG, WebP (max. 5MB)</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div className="mt-6">

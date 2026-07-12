@@ -11,7 +11,8 @@ export default [
   // Secondary routes - can be lazy loaded
   route("/favorites", "routes/favorites.tsx", { lazy: true }),
   route("/profile", "routes/profile.tsx", { lazy: true }),
-  route("/car/:id", "routes/car.$id.tsx"),
+  route("/car/:slug", "routes/car.$slug.tsx"),
+  route("/seller/:id", "routes/seller.$id.tsx", { lazy: true }),
   route("/create-listing", "routes/create-listing.tsx", { lazy: true }),
   route("/compare", "routes/compare.tsx", { lazy: true }),
   route("/dashboard", "routes/dashboard.tsx", { lazy: true }),

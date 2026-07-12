@@ -10,6 +10,7 @@ type Listing = {
   price: number;
   status: string;
   updated_at: string;
+  slug?: string;
   images?: { path: string; isMain?: boolean }[];
 };
 
@@ -20,7 +21,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   const { data: listings } = await supabase
     .from('listings')
-    .select('id, title, price, status, updated_at, images')
+    .select('id, slug, title, price, status, updated_at, images')
     .eq('owner_id', user.id)
     .order('updated_at', { ascending: false });
 
@@ -121,12 +122,15 @@ export default function DashboardListings() {
                     <Button type="submit" variant="outline" size="sm">Draft</Button>
                   </Form>
                 )}
+                <Link to={`/create-listing?edit=${l.id}`}>
+                  <Button variant="outline" size="sm" className="border-accent-gold/20 text-accent-gold">Editează</Button>
+                </Link>
                 <Form method="post">
                   <input type="hidden" name="intent" value="delete" />
                   <input type="hidden" name="id" value={String(l.id)} />
                   <Button type="submit" variant="danger" size="sm">Șterge</Button>
                 </Form>
-                <Link to={`/car/${l.id}`}><Button variant="outline" size="sm">Vezi</Button></Link>
+                <Link to={`/car/${l.slug || l.id}`}><Button variant="outline" size="sm">Vezi</Button></Link>
               </div>
             </Card>
           ))}

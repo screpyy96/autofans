@@ -1,7 +1,6 @@
 import type { SearchSuggestion } from '~/components/search/SearchBar';
 import type { Car, FilterState } from '~/types';
 import { SEARCH_CONFIG, POPULAR_BRANDS } from '~/constants';
-import { mockCars } from '~/data/mockData';
 
 // Search suggestion types
 export interface SearchSuggestionOptions {
@@ -18,7 +17,7 @@ export interface SearchResult {
   hasMore: boolean;
 }
 
-// Popular models by brand (mock data)
+// Popular models used for lightweight search suggestions.
 const POPULAR_MODELS: Record<string, string[]> = {
   'BMW': ['Seria 1', 'Seria 3', 'Seria 5', 'X1', 'X3', 'X5'],
   'Audi': ['A3', 'A4', 'A6', 'Q3', 'Q5', 'Q7'],
@@ -32,7 +31,7 @@ const POPULAR_MODELS: Record<string, string[]> = {
   'Toyota': ['Corolla', 'Camry', 'RAV4', 'C-HR', 'Prius', 'Highlander']
 };
 
-// Popular search queries (mock data)
+// Popular search queries used for lightweight search suggestions.
 const POPULAR_QUERIES = [
   'BMW Seria 3 diesel',
   'Audi A4 automatic',
@@ -173,11 +172,11 @@ class SearchService {
   }
 
   // Search cars based on query and filters
-  async searchCars(query: string, filters: FilterState = {}, page = 1, pageSize = 12): Promise<SearchResult> {
+  async searchCars(query: string, filters: FilterState = {}, page = 1, pageSize = 12, baseCars?: Car[]): Promise<SearchResult> {
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 200));
 
-    let filteredCars = [...mockCars];
+    let filteredCars = baseCars ? [...baseCars] : [];
 
     // Apply text search
     if (query.trim()) {

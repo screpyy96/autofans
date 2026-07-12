@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Heart,
@@ -430,20 +431,31 @@ export function CarDetails({
 
             {/* Seller Information */}
             <div className="border-t border-b border-white/5 py-4 my-6 flex items-center gap-3">
-              <div className="h-12 w-12 rounded-full bg-accent-gold/15 flex items-center justify-center border border-accent-gold/30">
-                <span className="text-base font-bold text-accent-gold">
-                  {car.seller.name.charAt(0).toUpperCase()}
-                </span>
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-white text-sm sm:text-base truncate">{car.seller.name}</span>
-                  {car.seller.isVerified && (
-                    <Shield className="h-4 w-4 text-green-500 flex-shrink-0" />
-                  )}
+              <Link to={`/seller/${car.seller.id}`} className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity">
+                {car.seller.avatar ? (
+                  <img
+                    src={car.seller.avatar}
+                    alt={car.seller.name}
+                    className="h-12 w-12 rounded-full object-cover border border-white/10 flex-shrink-0"
+                  />
+                ) : (
+                  <div className="h-12 w-12 rounded-full bg-accent-gold/15 flex items-center justify-center border border-accent-gold/30 flex-shrink-0">
+                    <span className="text-base font-bold text-accent-gold">
+                      {car.seller.name.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-white text-sm sm:text-base truncate">{car.seller.name}</span>
+                    {car.seller.isVerified && (
+                      <Shield className="h-4 w-4 text-green-500 flex-shrink-0" />
+                    )}
+                  </div>
+                  <span className="text-xs text-gray-400 capitalize">{car.seller.type === 'dealer' ? 'Dealer autorizat' : 'Persoană fizică'}</span>
+                  <span className="text-xs text-accent-gold block hover:underline mt-0.5">Vezi profil vânzător →</span>
                 </div>
-                <span className="text-xs text-gray-400 capitalize">{car.seller.type === 'dealer' ? 'Dealer autorizat' : 'Persoană fizică'}</span>
-              </div>
+              </Link>
             </div>
 
             {/* Action Buttons */}

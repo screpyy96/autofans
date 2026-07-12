@@ -70,6 +70,7 @@ create table if not exists public.listings (
   description text,
   price numeric(12,2) not null check (price >= 0),
   currency text not null default 'EUR',
+  slug text not null unique,
   make text not null,
   model text not null,
   year int check (year between 1950 and date_part('year', now())::int + 1),
