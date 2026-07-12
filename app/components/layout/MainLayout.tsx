@@ -368,16 +368,6 @@ export function MainLayout({ children }: MainLayoutProps) {
 
               {/* Drawer Content */}
               <div className="flex-1 overflow-y-auto px-6 pb-12 pt-2">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-bold text-white">Meniu AutoFans</h3>
-                  <button
-                    onClick={() => setIsBottomDrawerOpen(false)}
-                    className="p-2 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-colors"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
 
                 {/* User Info / Auth Card */}
                 <div className="mb-6 bg-glass border border-white/10 rounded-2xl p-4">
@@ -494,21 +484,14 @@ export function MainLayout({ children }: MainLayoutProps) {
                     )}
                   </div>
                   
-                  {/* Notification bell trigger and quick overlay logic wrapper */}
-                  <div className="flex items-center justify-center bg-white/5 rounded-2xl py-3 border border-white/5">
-                    <NotificationBell
-                      notifications={notifications}
-                      unreadCount={unreadCount}
-                      onNotificationClick={(notif) => {
-                        handleNotificationClick(notif);
-                        setIsBottomDrawerOpen(false);
-                      }}
-                      onMarkAsRead={markAsRead}
-                      onMarkAllAsRead={markAllAsRead}
-                      onClearAll={clearAll}
-                    />
-                    <span className="text-sm text-gray-300 ml-2 font-medium">Vezi notificările recente</span>
-                  </div>
+                  {/* Direct link to notifications page for mobile */}
+                  <Link 
+                    to="/notifications"
+                    onClick={() => setIsBottomDrawerOpen(false)}
+                    className="flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-2xl py-3 border border-white/5 transition-colors w-full"
+                  >
+                    <span className="text-sm text-gray-300 font-medium">Vezi toate notificările</span>
+                  </Link>
                 </div>
               </div>
             </motion.div>

@@ -11,6 +11,7 @@ export default [
   route("/logout", "routes/logout.tsx", { lazy: true }),
   
   // Secondary routes - can be lazy loaded
+  route("/notifications", "routes/notifications.tsx", { lazy: true }),
   route("/contact", "routes/contact.tsx", { lazy: true }),
   route("/help", "routes/help.tsx", { lazy: true }),
   route("/favorites", "routes/favorites.tsx", { lazy: true }),

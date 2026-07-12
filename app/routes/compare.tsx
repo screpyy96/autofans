@@ -11,6 +11,7 @@ import { Link, useLoaderData } from 'react-router';
 import { getSupabaseServerClient } from '~/lib/supabase.server';
 import type { Car } from '~/types';
 import { mapListingToCar } from '~/utils/listingMapper';
+import { signListingImages } from '~/utils/listingImages';
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -31,19 +32,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       .in('id', ids)
       .eq('status', 'published');
 
-    const paths = (listings || []).flatMap((listing: any) => {
-      const images = Array.isArray(listing.images) ? listing.images : [];
-      const main = images.find((image: any) => image?.isMain) || images[0];
-      return main?.path ? [main.path] : [];
-    });
-
-    const signedMap: Record<string, string> = {};
-    if (paths.length) {
-      const { data: signed } = await supabase.storage.from('listing-images').createSignedUrls(paths, 60 * 60);
-      for (const item of signed || []) {
-        if (item?.path && item?.signedUrl) signedMap[item.path] = item.signedUrl;
-      }
-    }
+    const signedMap = await signListingImages(supabase, listings || []);
 
     return { listings: listings || [], signedMap };
   } catch (error) {

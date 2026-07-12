@@ -2,11 +2,11 @@
 
 ## Etapa 2 · Model de date
 
-- [x] Centralizează maparea `listings -> Car` pentru Home și Compare
-- [ ] Centralizează semnarea imaginilor din Storage
-- [ ] Înlocuiește mapările duplicate din Home, Search, Compare și Favorites
+- [x] Centralizează maparea `listings -> Car` pentru Home, Search, Compare și Favorites
+- [x] Centralizează semnarea imaginilor din Storage
+- [x] Înlocuiește mapările duplicate din Home, Search, Compare și Favorites
 - [ ] Uniformizează statusurile și fallback-urile pentru anunțuri
-- [ ] Adaugă teste pentru listing fără imagini, slug lipsă și locație lipsă
+- [x] Adaugă teste pentru listing fără imagini, slug lipsă și locație lipsă
 - [ ] Verifică sincronizarea `favorites` local ↔ Supabase
 - [ ] Verifică evenimentele `listing_views` și `listing_contacts`
 

@@ -11,6 +11,7 @@ import { useFavorites, useComparison } from '~/stores/useAppStore';
 import { getSupabaseServerClient } from '~/lib/supabase.server';
 import type { Car } from '~/types';
 import { mapListingToCar } from '~/utils/listingMapper';
+import { signListingImages } from '~/utils/listingImages';
 
 export function meta({ }: Route.MetaArgs) {
   return [
@@ -41,18 +42,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       .order('created_at', { ascending: false })
       .limit(6);
 
-    const paths = (listings || []).flatMap((listing: any) => {
-      const images = Array.isArray(listing.images) ? listing.images : [];
-      const main = images.find((image: any) => image?.isMain) || images[0];
-      return main?.path ? [main.path] : [];
-    });
-    const signedMap: Record<string, string> = {};
-    if (paths.length) {
-      const { data: signed } = await supabase.storage.from('listing-images').createSignedUrls(paths, 60 * 60);
-      for (const item of signed || []) {
-        if (item?.path && item?.signedUrl) signedMap[item.path] = item.signedUrl;
-      }
-    }
+    const signedMap = await signListingImages(supabase, listings || []);
     
     // Calculate brand frequencies
     const brandCounts = (brandRows || []).reduce((acc: Record<string, number>, row: any) => {
@@ -265,7 +255,7 @@ function HomeContent() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-            <Card variant="outline" className="text-center bg-glass border-white/10 hover:border-accent-gold/50 transition-all duration-300 p-8 rounded-2xl flex flex-col items-center justify-start group">
+            <Card variant="outlined" className="text-center bg-glass border-white/10 hover:border-accent-gold/50 transition-all duration-300 p-8 rounded-2xl flex flex-col items-center justify-start group">
               <div className="mb-6 group-hover:scale-110 transition-transform duration-300">
                 <FileText className="h-12 w-12 text-accent-gold stroke-[1.5]" />
               </div>
@@ -277,7 +267,7 @@ function HomeContent() {
               </p>
             </Card>
 
-            <Card variant="outline" className="text-center bg-glass border-white/10 hover:border-accent-gold/50 transition-all duration-300 p-8 rounded-2xl flex flex-col items-center justify-start group">
+            <Card variant="outlined" className="text-center bg-glass border-white/10 hover:border-accent-gold/50 transition-all duration-300 p-8 rounded-2xl flex flex-col items-center justify-start group">
               <div className="mb-6 group-hover:scale-110 transition-transform duration-300">
                 <ShieldCheck className="h-12 w-12 text-accent-gold stroke-[1.5]" />
               </div>
@@ -289,7 +279,7 @@ function HomeContent() {
               </p>
             </Card>
 
-            <Card variant="outline" className="text-center bg-glass border-white/10 hover:border-accent-gold/50 transition-all duration-300 p-8 rounded-2xl flex flex-col items-center justify-start group">
+            <Card variant="outlined" className="text-center bg-glass border-white/10 hover:border-accent-gold/50 transition-all duration-300 p-8 rounded-2xl flex flex-col items-center justify-start group">
               <div className="mb-6 group-hover:scale-110 transition-transform duration-300">
                 <Calculator className="h-12 w-12 text-accent-gold stroke-[1.5]" />
               </div>
@@ -301,7 +291,7 @@ function HomeContent() {
               </p>
             </Card>
 
-            <Card variant="outline" className="text-center bg-glass border-white/10 hover:border-accent-gold/50 transition-all duration-300 p-8 rounded-2xl flex flex-col items-center justify-start group">
+            <Card variant="outlined" className="text-center bg-glass border-white/10 hover:border-accent-gold/50 transition-all duration-300 p-8 rounded-2xl flex flex-col items-center justify-start group">
               <div className="mb-6 group-hover:scale-110 transition-transform duration-300">
                 <Tag className="h-12 w-12 text-accent-gold stroke-[1.5]" />
               </div>
