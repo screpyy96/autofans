@@ -16,6 +16,8 @@ import { signListingImages } from '~/utils/listingImages';
 import { getSupabaseServerClient } from '~/lib/supabase.server';
 import { searchService } from '~/services/searchService';
 import { parseNaturalSearch } from '~/utils/naturalSearch';
+import { MapResults } from '~/components/search/MapResults';
+import { Map } from 'lucide-react';
 
 export function meta({}: any) {
   const title = "Căutare Mașini Auto Second-Hand și Noi | AutoFans";
@@ -67,6 +69,7 @@ function SearchContent() {
   const [page, setPage] = useState(1);
   const [isSearching, setIsSearching] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [showMap, setShowMap] = useState(false);
 
   const { favorites, addToFavorites, removeFromFavorites, isFavorited } = useFavorites();
   const { comparisonCars, addToComparison, removeFromComparison, isInComparison } = useComparison();
@@ -202,7 +205,7 @@ function SearchContent() {
 
           {/* Results */}
           <div className="flex-1 min-w-0">
-            <div className="mb-6 flex items-center justify-between">
+              <div className="mb-6 flex items-center justify-between">
               <div className="text-base text-white font-medium">
                 {totalCount} mașini găsite
               </div>
@@ -219,7 +222,12 @@ function SearchContent() {
                   </Link>
                 </div>
               )}
+              <Button variant="outline" size="sm" onClick={() => setShowMap((open) => !open)} className="ml-3 border-white/20 text-white">
+                <Map className="mr-1.5 h-4 w-4" />{showMap ? 'Ascunde harta' : 'Vezi harta'}
+              </Button>
             </div>
+
+            {showMap && <MapResults cars={displayedCars} onCarClick={(car) => handleView(car.id)} />}
 
             {isSearching || isInitLoading ? (
               <div className="flex items-center justify-center py-16">

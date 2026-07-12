@@ -112,7 +112,7 @@ export default function BlogPost() {
       {/* Article Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 -mt-8 relative z-10">
         <div className="bg-glass border border-white/5 rounded-3xl p-6 md:p-12 shadow-2xl">
-          <div className="prose prose-invert prose-lg max-w-none prose-headings:text-white prose-a:text-accent-gold hover:prose-a:text-yellow-400 prose-img:rounded-2xl">
+          <div className="markdown-content">
             <Markdown remarkPlugins={[remarkGfm]}>
               {post.content}
             </Markdown>

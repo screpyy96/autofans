@@ -119,7 +119,9 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    require('@tailwindcss/typography')
+  ],
 } satisfies Config;
 
 export default config;
