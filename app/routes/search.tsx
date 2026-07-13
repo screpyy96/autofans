@@ -1,6 +1,6 @@
 import { Link, useFetcher, useLoaderData, useNavigate } from 'react-router';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
-import { useState, useEffect, useMemo } from 'react';
+import { lazy, Suspense, useState, useEffect, useMemo } from 'react';
 import { SearchHeader } from '~/components/search';
 import { FilterPanel } from '~/components/search/FilterPanel';
 import { CarGrid } from '~/components/car/CarGrid';
@@ -16,8 +16,11 @@ import { signListingImages } from '~/utils/listingImages';
 import { getSupabaseServerClient } from '~/lib/supabase.server';
 import { searchService } from '~/services/searchService';
 import { parseNaturalSearch } from '~/utils/naturalSearch';
-import { MapResults } from '~/components/search/MapResults';
 import { Map } from 'lucide-react';
+
+const MapResults = lazy(() =>
+  import('~/components/search/MapResults').then(({ MapResults: MapResultsComponent }) => ({ default: MapResultsComponent }))
+);
 
 export function meta({}: any) {
   const title = "Căutare Mașini Auto Second-Hand și Noi | AutoFans";
@@ -269,7 +272,11 @@ function SearchContent() {
             {saveSearchFetcher.data?.ok && <p className="-mt-3 mb-4 text-sm text-emerald-300">Căutarea a fost salvată. Alertele sunt active.</p>}
             {saveSearchFetcher.data?.error && <p className="-mt-3 mb-4 text-sm text-red-300">{saveSearchFetcher.data.error}</p>}
 
-            {showMap && <MapResults cars={displayedCars} onCarClick={(car) => handleView(car.id)} />}
+            {showMap && (
+              <Suspense fallback={<div className="mb-6 flex h-[360px] items-center justify-center rounded-2xl border border-white/10 bg-secondary-900/70 text-sm text-gray-300">Se încarcă harta…</div>}>
+                <MapResults cars={displayedCars} onCarClick={(car) => handleView(car.id)} />
+              </Suspense>
+            )}
 
             {isSearching || isInitLoading ? (
               <div className="flex items-center justify-center py-16">

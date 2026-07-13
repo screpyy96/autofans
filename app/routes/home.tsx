@@ -54,15 +54,38 @@ function HomeContent() {
   const [catalogLoaded, setCatalogLoaded] = useState(false);
 
   useEffect(() => {
-    const controller = new AbortController();
-    fetch('/api/home', { signal: controller.signal })
-      .then((response) => response.ok ? response.json() : Promise.reject(new Error('Home catalog failed')))
-      .then(setData)
-      .catch((error) => {
-        if (error.name !== 'AbortError') console.warn('Unable to load home catalog:', error);
-      })
-      .finally(() => setCatalogLoaded(true));
-    return () => controller.abort();
+    let controller: AbortController | undefined;
+    let cancelled = false;
+
+    const loadCatalog = () => {
+      if (cancelled) return;
+      controller = new AbortController();
+      fetch('/api/home', { signal: controller.signal })
+        .then((response) => response.ok ? response.json() : Promise.reject(new Error('Home catalog failed')))
+        .then((catalog) => {
+          if (!cancelled) setData(catalog);
+        })
+        .catch((error) => {
+          if (error.name !== 'AbortError') console.warn('Unable to load home catalog:', error);
+        })
+        .finally(() => {
+          if (!cancelled) setCatalogLoaded(true);
+        });
+    };
+
+    // The hero image is the LCP element. Defer the non-critical catalog request
+    // until the browser is idle so it cannot steal bandwidth on slow mobile data.
+    const idleId = 'requestIdleCallback' in window
+      ? window.requestIdleCallback(loadCatalog, { timeout: 900 })
+      : undefined;
+    const timeoutId = idleId === undefined ? window.setTimeout(loadCatalog, 250) : undefined;
+
+    return () => {
+      cancelled = true;
+      if (idleId !== undefined) window.cancelIdleCallback(idleId);
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+      controller?.abort();
+    };
   }, []);
   const recentCars = data.listings.map((listing: any) => mapListingToCar(listing, data.signedMap));
   const recommendedCars = data.recommendations.map((item: any) => ({ car: mapListingToCar(item.listing, data.signedMap), reason: item.reason }));

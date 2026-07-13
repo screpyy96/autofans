@@ -317,9 +317,6 @@ export const useAppStore = create<AppStore>()(
             });
 
             try {
-              // Simulate initialization delay
-              await new Promise(resolve => setTimeout(resolve, 800));
-
               // Load user data if authenticated
               if (typeof window !== 'undefined') {
                 const userData = localStorage.getItem('autofans_user');

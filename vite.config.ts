@@ -9,9 +9,12 @@ export default defineConfig({
     // Code splitting optimization
     rollupOptions: {
       output: {
+        // Keep a lazy dependency lazy. Rollup otherwise hoists an empty Mapbox
+        // import into every route chunk, including the homepage.
+        hoistTransitiveImports: false,
         manualChunks: (id) => {
           if (id.includes('node_modules')) {
-            if (id.includes('mapbox-gl')) {
+            if (id.includes('mapbox')) {
               return 'mapbox-vendor';
             }
             if (id.includes('react-router')) {
@@ -23,7 +26,6 @@ export default defineConfig({
             if (id.includes('framer-motion') || id.includes('lucide-react')) {
               return 'ui-vendor';
             }
-            return 'vendor';
           }
         }
       }
