@@ -45,6 +45,21 @@ Object.defineProperty(window, 'scrollTo', {
   value: vi.fn()
 });
 
+// Framer Motion dispatches PointerEvent for keyboard activation. jsdom does
+// not provide it, even though browsers do.
+if (!window.PointerEvent) {
+  Object.defineProperty(window, 'PointerEvent', {
+    writable: true,
+    configurable: true,
+    value: window.MouseEvent,
+  });
+  Object.defineProperty(globalThis, 'PointerEvent', {
+    writable: true,
+    configurable: true,
+    value: window.MouseEvent,
+  });
+}
+
 // Mock localStorage
 const localStorageMock = {
   getItem: vi.fn(),

@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '~/lib/utils';
-import { Input } from '~/components/ui/Input';
 import { Spinner } from '~/components/ui/Spinner';
 import { SEARCH_CONFIG, POPULAR_BRANDS } from '~/constants';
 
@@ -344,6 +343,10 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             placeholder={placeholder}
             autoFocus={autoFocus}
             disabled={disabled}
+            aria-label={placeholder}
+            aria-autocomplete="list"
+            aria-expanded={isOpen}
+            aria-controls={isOpen ? 'search-suggestions' : undefined}
             className={cn(
               'block w-full pl-12 pr-16 py-3 bg-transparent border-0',
               'placeholder-white/70 text-white',
@@ -365,6 +368,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             <button
               type="button"
               onClick={handleClear}
+              aria-label="Șterge căutarea"
               className="absolute inset-y-0 right-4 flex items-center text-accent-gold hover:text-accent-gold transition-colors"
             >
               <XIcon />
@@ -377,6 +381,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         {isOpen && (suggestions.length > 0 || isLoading) && (
           <motion.div
             ref={dropdownRef}
+            id="search-suggestions"
+            role="listbox"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
@@ -406,6 +412,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                         <motion.button
                           key={suggestion.id}
                           type="button"
+                          role="option"
+                          aria-selected={globalIndex === selectedIndex}
                           onClick={() => handleSuggestionClick(suggestion)}
                           className={cn(
                             "w-full px-4 py-3 text-left hover:bg-accent-gold/10 transition-colors flex items-center text-white hover:text-accent-gold",

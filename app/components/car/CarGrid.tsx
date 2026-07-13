@@ -13,7 +13,6 @@ export interface CarGridProps {
   hasMore: boolean;
   onFavorite: (carId: string) => void;
   onCompare: (carId: string) => void;
-  onContact: (carId: string) => void;
   onView?: (carId: string) => void;
   viewMode?: 'grid' | 'list';
   favoritedCars?: string[];
@@ -150,7 +149,6 @@ export function CarGrid({
   hasMore,
   onFavorite,
   onCompare,
-  onContact,
   onView,
   viewMode = 'grid',
   favoritedCars = [],
@@ -250,7 +248,6 @@ export function CarGrid({
                 car={car}
                 onFavorite={onFavorite}
                 onCompare={onCompare}
-                onContact={onContact}
                 onView={onView}
                 variant={viewMode}
                 isFavorited={favoritedCars.includes(car.id)}

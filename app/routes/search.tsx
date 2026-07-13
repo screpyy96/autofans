@@ -188,10 +188,6 @@ function SearchContent() {
     }
   };
 
-  const handleContact = (carId: string) => {
-    alert(`Contactare vânzător pentru mașina ${carId}`);
-  };
-
   const handleView = (carId: string) => {
     const car = allCars.find((item) => item.id === carId);
     navigate(`/car/${encodeURIComponent(car?.slug || carId)}`);
@@ -297,7 +293,6 @@ function SearchContent() {
                 hasMore={hasMore}
                 onFavorite={handleFavorite}
                 onCompare={handleCompare}
-                onContact={handleContact}
                 onView={handleView}
                 viewMode={viewMode}
                 favoritedCars={favorites}

@@ -30,10 +30,4 @@ export default [
   route("/termeni-si-conditii", "routes/terms.tsx", { lazy: true }),
   route("/politica-de-confidentialitate", "routes/privacy.tsx", { lazy: true }),
   
-  // Demo routes (pentru dezvoltare) - always lazy
-  route("/demo/design-system", "routes/design-system.tsx", { lazy: true }),
-  route("/demo/layout", "routes/layout-demo.tsx", { lazy: true }),
-  route("/demo/search", "routes/search-demo.tsx", { lazy: true }),
-  route("/demo/search-system", "routes/search-system-demo.tsx", { lazy: true }),
-  route("/demo/car-listing", "routes/car-listing-demo.tsx", { lazy: true }),
 ] satisfies RouteConfig;

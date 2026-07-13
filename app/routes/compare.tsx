@@ -108,10 +108,6 @@ export default function Compare() {
     console.log('Toggle favorite for car:', carId);
   };
 
-  const handleContact = (carId: string) => {
-    alert(`Contactare vânzător pentru mașina ${carId}`);
-  };
-
   const handleView = (carId: string) => {
     window.location.href = `/car/${encodeURIComponent(carId)}`;
   };
@@ -179,7 +175,6 @@ export default function Compare() {
                     car={car}
                     onFavorite={handleFavorite}
                     onCompare={() => removeCarFromComparison(car.id)}
-                    onContact={handleContact}
                     onView={handleView}
                     variant="grid"
                     isFavorited={false}

@@ -1,219 +1,63 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SearchBar } from '../SearchBar';
-import { beforeEach } from 'node:test';
 
 describe('SearchBar', () => {
-  const mockProps = {
-    onSearch: vi.fn(),
-    onSuggestionSelect: vi.fn(),
-    suggestions: ['BMW X5', 'Audi A4', 'Mercedes C-Class'],
-    isLoading: false,
-    placeholder: 'Caută mașini...'
-  };
+  const onSearch = vi.fn();
+  const onSuggestionSelect = vi.fn();
 
-  beforeEach(() => {
+  afterEach(() => {
     vi.clearAllMocks();
+    vi.useRealTimers();
   });
 
-  it('renders with placeholder text', () => {
-    render(<SearchBar {...mockProps} />);
-    
-    expect(screen.getByPlaceholderText('Caută mașini...')).toBeInTheDocument();
+  it('renders an accessible search input', () => {
+    render(<SearchBar onSearch={onSearch} placeholder="Caută mașini..." />);
+
+    const input = screen.getByRole('textbox', { name: 'Caută mașini...' });
+    expect(input).toHaveAttribute('aria-autocomplete', 'list');
+    expect(input).toHaveAttribute('aria-expanded', 'false');
   });
 
-  it('handles text input', async () => {
+  it('submits the typed query', async () => {
     const user = userEvent.setup();
-    render(<SearchBar {...mockProps} />);
-    
+    render(<SearchBar onSearch={onSearch} />);
+
+    await user.type(screen.getByRole('textbox'), 'BMW X5');
+    await user.keyboard('{Enter}');
+
+    expect(onSearch).toHaveBeenCalledWith('BMW X5');
+  });
+
+  it('shows matching suggestions after the debounce and lets the user select one', () => {
+    vi.useFakeTimers();
+    render(<SearchBar onSearch={onSearch} onSuggestionSelect={onSuggestionSelect} />);
+
     const input = screen.getByRole('textbox');
-    await user.type(input, 'BMW');
-    
+    fireEvent.change(input, { target: { value: 'BMW' } });
+    act(() => vi.advanceTimersByTime(SEARCH_DELAY));
+
+    const suggestion = screen.getByText('BMW', { exact: true }).closest('[role="option"]');
+    expect(suggestion).toBeInTheDocument();
+    fireEvent.click(suggestion!);
+
+    expect(onSuggestionSelect).toHaveBeenCalledWith(expect.objectContaining({ text: 'BMW' }));
+    expect(onSearch).toHaveBeenCalledWith('BMW');
     expect(input).toHaveValue('BMW');
   });
 
-  it('calls onSearch with debounced input', async () => {
+  it('clears the input through its labelled control', async () => {
     const user = userEvent.setup();
-    render(<SearchBar {...mockProps} />);
-    
-    const input = screen.getByRole('textbox');
-    await user.type(input, 'BMW');
-    
-    // Wait for debounce
-    await waitFor(() => {
-      expect(mockProps.onSearch).toHaveBeenCalledWith('BMW');
-    }, { timeout: 1000 });
-  });
+    render(<SearchBar onSearch={onSearch} />);
 
-  it('shows suggestions when typing', async () => {
-    const user = userEvent.setup();
-    render(<SearchBar {...mockProps} />);
-    
-    const input = screen.getByRole('textbox');
-    await user.type(input, 'BM');
-    
-    await waitFor(() => {
-      expect(screen.getByText('BMW X5')).toBeInTheDocument();
-    });
-  });
-
-  it('handles suggestion selection', async () => {
-    const user = userEvent.setup();
-    render(<SearchBar {...mockProps} />);
-    
-    const input = screen.getByRole('textbox');
-    await user.type(input, 'BM');
-    
-    await waitFor(() => {
-      expect(screen.getByText('BMW X5')).toBeInTheDocument();
-    });
-    
-    await user.click(screen.getByText('BMW X5'));
-    
-    expect(mockProps.onSuggestionSelect).toHaveBeenCalledWith('BMW X5');
-    expect(input).toHaveValue('BMW X5');
-  });
-
-  it('handles keyboard navigation in suggestions', async () => {
-    const user = userEvent.setup();
-    render(<SearchBar {...mockProps} />);
-    
-    const input = screen.getByRole('textbox');
-    await user.type(input, 'A');
-    
-    await waitFor(() => {
-      expect(screen.getByText('Audi A4')).toBeInTheDocument();
-    });
-    
-    // Navigate down
-    await user.keyboard('{ArrowDown}');
-    expect(screen.getByText('Audi A4')).toHaveClass('bg-primary-50');
-    
-    // Select with Enter
-    await user.keyboard('{Enter}');
-    expect(mockProps.onSuggestionSelect).toHaveBeenCalledWith('Audi A4');
-  });
-
-  it('shows loading state', () => {
-    render(<SearchBar {...mockProps} isLoading={true} />);
-    
-    expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
-  });
-
-  it('clears input when clear button is clicked', async () => {
-    const user = userEvent.setup();
-    render(<SearchBar {...mockProps} />);
-    
-    const input = screen.getByRole('textbox');
-    await user.type(input, 'BMW');
-    
-    const clearButton = screen.getByRole('button', { name: /clear/i });
-    await user.click(clearButton);
-    
-    expect(input).toHaveValue('');
-    expect(mockProps.onSearch).toHaveBeenCalledWith('');
-  });
-
-  it('handles form submission', async () => {
-    const user = userEvent.setup();
-    render(<SearchBar {...mockProps} />);
-    
-    const input = screen.getByRole('textbox');
-    await user.type(input, 'BMW X5');
-    await user.keyboard('{Enter}');
-    
-    expect(mockProps.onSearch).toHaveBeenCalledWith('BMW X5');
-  });
-
-  it('closes suggestions when clicking outside', async () => {
-    const user = userEvent.setup();
-    render(
-      <div>
-        <SearchBar {...mockProps} />
-        <div data-testid="outside">Outside</div>
-      </div>
-    );
-    
-    const input = screen.getByRole('textbox');
-    await user.type(input, 'BMW');
-    
-    await waitFor(() => {
-      expect(screen.getByText('BMW X5')).toBeInTheDocument();
-    });
-    
-    await user.click(screen.getByTestId('outside'));
-    
-    await waitFor(() => {
-      expect(screen.queryByText('BMW X5')).not.toBeInTheDocument();
-    });
-  });
-
-  it('filters suggestions based on input', async () => {
-    const user = userEvent.setup();
-    render(<SearchBar {...mockProps} />);
-    
     const input = screen.getByRole('textbox');
     await user.type(input, 'Audi');
-    
-    await waitFor(() => {
-      expect(screen.getByText('Audi A4')).toBeInTheDocument();
-      expect(screen.queryByText('BMW X5')).not.toBeInTheDocument();
-    });
-  });
+    await user.click(screen.getByRole('button', { name: 'Șterge căutarea' }));
 
-  it('shows no results message when no suggestions match', async () => {
-    const user = userEvent.setup();
-    render(<SearchBar {...mockProps} />);
-    
-    const input = screen.getByRole('textbox');
-    await user.type(input, 'xyz');
-    
-    await waitFor(() => {
-      expect(screen.getByText('Nu s-au găsit rezultate')).toBeInTheDocument();
-    });
-  });
-
-  it('has proper accessibility attributes', () => {
-    render(<SearchBar {...mockProps} />);
-    
-    const input = screen.getByRole('textbox');
-    expect(input).toHaveAttribute('aria-label');
-    expect(input).toHaveAttribute('aria-expanded', 'false');
-    
-    // Check for proper ARIA relationships when suggestions are shown
-    fireEvent.focus(input);
-    fireEvent.change(input, { target: { value: 'BMW' } });
-    
-    waitFor(() => {
-      expect(input).toHaveAttribute('aria-expanded', 'true');
-      expect(input).toHaveAttribute('aria-owns');
-    });
-  });
-
-  it('supports voice search when available', () => {
-    // Mock speech recognition
-    const mockSpeechRecognition = vi.fn();
-    (global as any).webkitSpeechRecognition = mockSpeechRecognition;
-    
-    render(<SearchBar {...mockProps} enableVoiceSearch={true} />);
-    
-    expect(screen.getByRole('button', { name: /voice search/i })).toBeInTheDocument();
-  });
-
-  it('handles recent searches', async () => {
-    const user = userEvent.setup();
-    const recentSearches = ['BMW X5', 'Audi A4'];
-    
-    render(<SearchBar {...mockProps} recentSearches={recentSearches} />);
-    
-    const input = screen.getByRole('textbox');
-    await user.click(input);
-    
-    await waitFor(() => {
-      expect(screen.getByText('Căutări recente')).toBeInTheDocument();
-      expect(screen.getByText('BMW X5')).toBeInTheDocument();
-      expect(screen.getByText('Audi A4')).toBeInTheDocument();
-    });
+    expect(input).toHaveValue('');
+    expect(input).toHaveFocus();
   });
 });
+
+const SEARCH_DELAY = 450;

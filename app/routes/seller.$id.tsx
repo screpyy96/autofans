@@ -378,7 +378,6 @@ export default function SellerProfile() {
                       car={car as any}
                       onFavorite={() => {}}
                       onCompare={() => {}}
-                      onContact={() => {}}
                       onView={(carId) => navigate(`/car/${carId}`)}
                     />
                   ))}

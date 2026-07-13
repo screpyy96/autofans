@@ -21,7 +21,6 @@ export interface CarCardProps {
   car: Car;
   onFavorite: (carId: string) => void;
   onCompare: (carId: string) => void;
-  onContact: (carId: string) => void;
   onView?: (carId: string) => void;
   onClick?: (carId: string) => void;
   variant?: 'grid' | 'list';
@@ -38,7 +37,6 @@ export function CarCard({
   car,
   onFavorite,
   onCompare,
-  onContact,
   onView,
   onClick,
   variant = 'grid',
@@ -64,6 +62,7 @@ export function CarCard({
   const { isMobile, isTouchDevice } = useResponsive();
 
   const handleCardClick = () => {
+    onClick?.(car.id);
     onView?.(car.slug || car.id);
   };
 

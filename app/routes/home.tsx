@@ -112,10 +112,6 @@ function HomeContent() {
     }
   };
 
-  const handleContact = (carId: string) => {
-    alert(`Contactare vânzător pentru mașina ${carId}`);
-  };
-
   const handleView = (carId: string) => {
     const car = [...recentCars, ...recommendedCars.map((item) => item.car)].find((item) => item.id === carId);
     window.location.href = `/car/${encodeURIComponent(car?.slug || carId)}`;
@@ -240,7 +236,7 @@ function HomeContent() {
               {recommendedCars.map(({ car, reason }) => (
                 <div key={car.id} className="relative">
                   <div className="absolute left-4 top-4 z-10 rounded-full border border-accent-gold/30 bg-secondary-950/95 px-3 py-1 text-xs font-semibold text-accent-gold shadow-lg">{reason}</div>
-                  <CarCard car={car} onFavorite={handleFavorite} onCompare={handleCompare} onContact={handleContact} onView={handleView} isFavorited={isFavorited(car.id)} isInComparison={isInComparison(car.id)} />
+                  <CarCard car={car} onFavorite={handleFavorite} onCompare={handleCompare} onView={handleView} isFavorited={isFavorited(car.id)} isInComparison={isInComparison(car.id)} />
                 </div>
               ))}
             </div>
@@ -271,7 +267,6 @@ function HomeContent() {
                 car={car}
                 onFavorite={handleFavorite}
                 onCompare={handleCompare}
-                onContact={handleContact}
                 onView={handleView}
                 isFavorited={isFavorited(car.id)}
                 isInComparison={isInComparison(car.id)}

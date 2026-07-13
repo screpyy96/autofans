@@ -71,10 +71,6 @@ export default function Favorites() {
     }
   };
 
-  const handleContact = (carId: string) => {
-    alert(`Contactare vânzător pentru mașina ${carId}`);
-  };
-
   const handleView = (carId: string) => {
     window.location.href = `/car/${carId}`;
   };
@@ -120,7 +116,6 @@ export default function Favorites() {
             hasMore={false}
             onFavorite={handleFavorite}
             onCompare={handleCompare}
-            onContact={handleContact}
             onView={handleView}
             viewMode="grid"
             favoritedCars={favorites}

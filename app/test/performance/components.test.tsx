@@ -197,12 +197,10 @@ describe('Performance Tests', () => {
 
       renderWithRouter(<CarCard car={car} {...mockHandlers} />);
 
-      // Check that hover animations use transform (better performance)
-      const cardElement = screen.getByText(car.title).closest('div');
-      const computedStyle = window.getComputedStyle(cardElement!);
-      
-      // Should have transition property for smooth animations
-      expect(computedStyle.transition).toBeTruthy();
+      // jsdom does not resolve Tailwind styles, so verify the production
+      // transition utility rather than inspecting an empty computed style.
+      const cardElement = screen.getByText(car.title).closest('[class*="transition-all"]');
+      expect(cardElement).toHaveClass('transition-all');
     });
 
     it('should respect reduced motion preferences', () => {
