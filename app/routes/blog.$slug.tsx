@@ -1,21 +1,27 @@
 import { useLoaderData, Link } from "react-router";
 import type { Route } from "./+types/blog.$slug";
-import { mockBlogPosts } from "~/data/mockBlog";
-import { ArrowLeft, Calendar, Clock, Share2, Twitter, Facebook, Link as LinkIcon } from "lucide-react";
+import { blogPosts } from "~/data/blogPosts";
+import { ArrowLeft, Calendar, Clock, Share2, ShieldCheck } from "lucide-react";
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 export function meta({ data }: Route.MetaArgs) {
   const post = data?.post;
   if (!post) return [{ title: "Articol inexistent - AutoFans Blog" }];
+  const canonicalUrl = `https://autofans.ro/blog/${post.slug}`;
 
   return [
     { title: `${post.title} | AutoFans Blog` },
     { name: "description", content: post.excerpt },
+    { name: 'robots', content: 'index,follow,max-image-preview:large' },
+    { tagName: 'link', rel: 'canonical', href: canonicalUrl },
     { property: "og:title", content: post.title },
     { property: "og:description", content: post.excerpt },
     { property: "og:image", content: post.coverImage },
     { property: "og:type", content: "article" },
+    { property: 'og:url', content: canonicalUrl },
+    { property: 'article:published_time', content: post.publishedAt },
+    { property: 'article:modified_time', content: post.updatedAt },
     { name: "twitter:card", content: "summary_large_image" },
     { name: "twitter:title", content: post.title },
     { name: "twitter:description", content: post.excerpt },
@@ -24,7 +30,7 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export async function loader({ params }: Route.LoaderArgs) {
-  const post = mockBlogPosts.find(p => p.slug === params.slug);
+  const post = blogPosts.find(p => p.slug === params.slug);
   if (!post) {
     throw new Response("Not Found", { status: 404 });
   }
@@ -33,6 +39,28 @@ export async function loader({ params }: Route.LoaderArgs) {
 
 export default function BlogPost() {
   const { post } = useLoaderData<typeof loader>();
+  const canonicalUrl = `https://autofans.ro/blog/${post.slug}`;
+  const articleSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: post.title,
+    description: post.excerpt,
+    image: post.coverImage,
+    datePublished: post.publishedAt,
+    dateModified: post.updatedAt,
+    mainEntityOfPage: canonicalUrl,
+    author: { '@type': 'Person', name: post.author.name },
+    publisher: { '@type': 'Organization', name: 'AutoFans', url: 'https://autofans.ro' },
+  };
+  const faqSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: post.faqs.map((faq) => ({
+      '@type': 'Question',
+      name: faq.question,
+      acceptedAnswer: { '@type': 'Answer', text: faq.answer },
+    })),
+  };
 
   const handleShare = () => {
     if (navigator.share) {
@@ -49,6 +77,8 @@ export default function BlogPost() {
 
   return (
     <div className="min-h-screen bg-[#121212] pb-20">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
       {/* Hero Header */}
       <div className="relative h-[60vh] min-h-[400px] w-full">
         <div className="absolute inset-0">
@@ -112,11 +142,43 @@ export default function BlogPost() {
       {/* Article Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 -mt-8 relative z-10">
         <div className="bg-glass border border-white/5 rounded-3xl p-6 md:p-12 shadow-2xl">
+          <nav aria-label="Breadcrumb" className="mb-8 text-sm text-gray-400">
+            <ol className="flex flex-wrap items-center gap-2">
+              <li><Link to="/">Acasă</Link></li>
+              <li aria-hidden="true">/</li>
+              <li><Link to="/blog">Blog</Link></li>
+              <li aria-hidden="true">/</li>
+              <li className="text-gray-200" aria-current="page">{post.category}</li>
+            </ol>
+          </nav>
           <div className="markdown-content">
             <Markdown remarkPlugins={[remarkGfm]}>
               {post.content}
             </Markdown>
           </div>
+
+          <section className="mt-12 border-t border-white/10 pt-8" aria-labelledby="faq-heading">
+            <h2 id="faq-heading" className="mb-5 flex items-center gap-2 text-2xl font-bold text-white">
+              <ShieldCheck className="h-5 w-5 text-accent-gold" />
+              Întrebări frecvente
+            </h2>
+            <div className="space-y-4">
+              {post.faqs.map((faq) => (
+                <details key={faq.question} className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                  <summary className="cursor-pointer font-semibold text-white">{faq.question}</summary>
+                  <p className="mt-3 pr-6 text-gray-300">{faq.answer}</p>
+                </details>
+              ))}
+            </div>
+          </section>
+
+          <aside className="mt-10 rounded-2xl border border-accent-gold/20 bg-accent-gold/10 p-5">
+            <p className="font-semibold text-white">Cauți un exemplar verificabil?</p>
+            <p className="mt-1 text-sm text-gray-300">Folosește filtrele AutoFans, salvează anunțurile relevante și cere VIN-ul înainte de inspecție.</p>
+            <Link to="/search" className="mt-4 inline-flex rounded-lg bg-gold-gradient px-4 py-2 text-sm font-bold text-secondary-900">
+              Vezi anunțurile auto
+            </Link>
+          </aside>
           
           {/* Tags */}
           <div className="mt-12 pt-8 border-t border-white/10">

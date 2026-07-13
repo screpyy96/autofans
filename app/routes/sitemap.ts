@@ -1,5 +1,6 @@
 import type { LoaderFunctionArgs } from "react-router";
 import { getSupabaseServerClient } from "~/lib/supabase.server";
+import { blogPosts } from '~/data/blogPosts';
 
 // Adăugăm site-ul principal (în producție ar trebui să provină dintr-o variabilă de mediu)
 const DOMAIN = "https://autofans.ro";
@@ -13,6 +14,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     "/search",
     "/contact",
     "/help",
+    "/blog",
     "/termeni-si-conditii",
     "/politica-de-confidentialitate",
   ];
@@ -26,6 +28,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     sitemap += `    <loc>${DOMAIN}${page}</loc>\n`;
     sitemap += `    <changefreq>daily</changefreq>\n`;
     sitemap += `    <priority>${page === "" ? "1.0" : "0.8"}</priority>\n`;
+    sitemap += `  </url>\n`;
+  }
+
+  for (const post of blogPosts) {
+    sitemap += `  <url>\n`;
+    sitemap += `    <loc>${DOMAIN}/blog/${post.slug}</loc>\n`;
+    sitemap += `    <lastmod>${new Date(post.updatedAt).toISOString()}</lastmod>\n`;
+    sitemap += `    <changefreq>monthly</changefreq>\n`;
+    sitemap += `    <priority>0.7</priority>\n`;
     sitemap += `  </url>\n`;
   }
 

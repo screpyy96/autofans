@@ -14,7 +14,8 @@ import {
   Bell,
   MessageCircle,
   LayoutDashboard,
-  Newspaper
+  Newspaper,
+  ShieldCheck
 } from 'lucide-react';
 import { PremiumFooter } from '~/components/layout/PremiumFooter';
 import { NotificationBell } from '~/components/ui/NotificationBell';
@@ -316,16 +317,17 @@ export function MainLayout({ children }: MainLayoutProps) {
             <span className="text-[10px] font-medium text-gray-400 mt-1">Adaugă</span>
           </Link>
 
-          {/* Favorite */}
+          {/* Mesaje */}
           <Link
-            to="/favorites"
+            to={authUser ? "/messages" : `/login?next=${encodeURIComponent('/messages')}`}
             className={cn(
               "flex flex-col items-center gap-1 text-[10px] font-medium transition-all duration-300",
-              location.pathname.startsWith('/favorites') ? "text-accent-gold" : "text-gray-400 hover:text-white"
+              location.pathname.startsWith('/messages') ? "text-accent-gold" : "text-gray-400 hover:text-white"
             )}
+            aria-label={authUser ? 'Mesaje' : 'Autentifică-te pentru mesaje'}
           >
-            <Heart className="h-5 w-5" />
-            <span>Favorite</span>
+            <MessageCircle className="h-5 w-5" />
+            <span>Mesaje</span>
           </Link>
 
           {/* Meniu (Opens Drawer) */}
@@ -335,6 +337,8 @@ export function MainLayout({ children }: MainLayoutProps) {
               "flex flex-col items-center gap-1 text-[10px] font-medium transition-all duration-300 focus:outline-none",
               isBottomDrawerOpen ? "text-accent-gold" : "text-gray-400 hover:text-white"
             )}
+            aria-label="Deschide meniul"
+            aria-expanded={isBottomDrawerOpen}
           >
             <Menu className="h-5 w-5" />
             <span>Meniu</span>
@@ -468,6 +472,64 @@ export function MainLayout({ children }: MainLayoutProps) {
                   >
                     <Plus className="h-5 w-5 text-accent-gold" />
                     Adaugă Anunț Nou
+                  </Link>
+
+                  <Link
+                    to="/blog"
+                    onClick={() => setIsBottomDrawerOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-all border border-transparent",
+                      location.pathname.startsWith('/blog')
+                        ? "text-white bg-white/5 border-white/20"
+                        : "text-gray-300 hover:text-white hover:bg-white/5"
+                    )}
+                  >
+                    <Newspaper className="h-5 w-5 text-accent-gold" />
+                    Ghiduri AutoFans
+                  </Link>
+
+                  <Link
+                    to="/favorites"
+                    onClick={() => setIsBottomDrawerOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-all border border-transparent",
+                      location.pathname.startsWith('/favorites')
+                        ? "text-white bg-white/5 border-white/20"
+                        : "text-gray-300 hover:text-white hover:bg-white/5"
+                    )}
+                  >
+                    <Heart className="h-5 w-5 text-accent-gold" />
+                    Favorite
+                  </Link>
+
+                  {authUser && (
+                    <Link
+                      to="/messages"
+                      onClick={() => setIsBottomDrawerOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-all border border-transparent",
+                        location.pathname.startsWith('/messages')
+                          ? "text-white bg-white/5 border-white/20"
+                          : "text-gray-300 hover:text-white hover:bg-white/5"
+                      )}
+                    >
+                      <MessageCircle className="h-5 w-5 text-accent-gold" />
+                      Mesajele mele
+                    </Link>
+                  )}
+
+                  <Link
+                    to="/help"
+                    onClick={() => setIsBottomDrawerOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-all border border-transparent",
+                      location.pathname.startsWith('/help')
+                        ? "text-white bg-white/5 border-white/20"
+                        : "text-gray-300 hover:text-white hover:bg-white/5"
+                    )}
+                  >
+                    <ShieldCheck className="h-5 w-5 text-accent-gold" />
+                    Ajutor și siguranță
                   </Link>
                 </div>
 

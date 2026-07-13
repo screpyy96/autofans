@@ -1,6 +1,6 @@
 import { Link } from "react-router";
 import type { Route } from "./+types/blog";
-import { mockBlogPosts } from "~/data/mockBlog";
+import { blogPosts } from "~/data/blogPosts";
 import { Calendar, Clock, ChevronRight, User } from "lucide-react";
 import { Card } from "~/components/ui/Card";
 
@@ -24,8 +24,8 @@ export function meta({ }: Route.MetaArgs) {
 }
 
 export default function BlogIndex() {
-  const featuredPost = mockBlogPosts.find(p => p.isFeatured) || mockBlogPosts[0];
-  const otherPosts = mockBlogPosts.filter(p => p.id !== featuredPost.id);
+  const featuredPost = blogPosts.find(p => p.isFeatured) || blogPosts[0];
+  const otherPosts = blogPosts.filter(p => p.id !== featuredPost.id);
 
   return (
     <div className="min-h-screen bg-[#121212] pt-8 pb-20">
