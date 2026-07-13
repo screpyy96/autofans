@@ -233,14 +233,6 @@ export function MainLayout({ children }: MainLayoutProps) {
               <Link
                 to="/create-listing"
                 aria-label="Adaugă anunț"
-                className="inline-flex sm:hidden items-center justify-center rounded-xl border border-accent-gold/40 bg-accent-gold/10 p-2 text-accent-gold transition-colors hover:bg-accent-gold hover:text-secondary-900"
-              >
-                <Plus className="h-5 w-5" aria-hidden="true" />
-              </Link>
-
-              <Link
-                to="/create-listing"
-                aria-label="Adaugă anunț"
                 className="hidden sm:inline-flex items-center justify-center rounded-xl border-2 border-accent-gold/30 bg-glass px-3 py-1.5 text-sm font-medium text-accent-gold backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:border-transparent hover:bg-gold-gradient hover:text-secondary-900 hover:shadow-glow focus:outline-none focus:ring-2 focus:ring-accent-gold focus:ring-offset-2 focus:ring-offset-secondary-800"
               >
                 <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
@@ -345,16 +337,19 @@ export function MainLayout({ children }: MainLayoutProps) {
             <span>Căutare</span>
           </Link>
 
-          {/* Blog */}
+          {/* Adaugă anunț — prominent central action */}
           <Link
-            to="/blog"
+            to="/create-listing"
             className={cn(
-              "flex flex-col items-center gap-1 text-[10px] font-medium transition-all duration-300",
-              location.pathname.startsWith('/blog') ? "text-accent-gold" : "text-gray-400 hover:text-white"
+              "-mt-7 flex flex-col items-center gap-1 text-[10px] font-semibold transition-transform duration-200 hover:scale-105",
+              location.pathname.startsWith('/create-listing') ? "text-white" : "text-accent-gold"
             )}
+            aria-label="Adaugă anunț"
           >
-            <Newspaper className="h-5 w-5" />
-            <span>Blog</span>
+            <span className="flex h-12 w-12 items-center justify-center rounded-full border-4 border-secondary-950 bg-gold-gradient text-secondary-950 shadow-glow">
+              <Plus className="h-6 w-6" aria-hidden="true" />
+            </span>
+            <span>Adaugă</span>
           </Link>
 
           {/* Contact */}
@@ -534,7 +529,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                     )}
                   >
                     <Newspaper className="h-5 w-5 text-accent-gold" />
-                    Ghiduri AutoFans
+                    Blog AutoFans
                   </Link>
 
                   <Link
