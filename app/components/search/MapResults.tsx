@@ -3,12 +3,7 @@ import type { Car } from '~/types';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Button } from '~/components/ui/Button';
 import { MapPin, X } from 'lucide-react';
-
-const CITY_CENTERS: Record<string, [number, number]> = {
-  bucuresti: [26.1025, 44.4268], clujnapoca: [23.5947, 46.7712], iasi: [27.6014, 47.1585],
-  timisoara: [21.2087, 45.7489], constanta: [28.6348, 44.1598], brasov: [25.6012, 45.6579],
-};
-const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+import { coordinatesForLocation } from '~/utils/location';
 
 export function MapResults({ cars, onCarClick }: { cars: Car[]; onCarClick: (car: Car) => void }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -29,7 +24,7 @@ export function MapResults({ cars, onCarClick }: { cars: Car[]; onCarClick: (car
       const map = new mapboxgl.Map({ accessToken: token, container: containerRef.current, style: 'mapbox://styles/mapbox/standard', center: [25.0, 45.9], zoom: 5.7 });
       map.addControl(new mapboxgl.NavigationControl(), 'top-right');
       cars.forEach((car) => {
-        const point = CITY_CENTERS[normalize(car.location.city)];
+        const point = coordinatesForLocation(car.location);
         if (!point) return;
         const marker = new mapboxgl.Marker({ color: '#f4c542' })
           .setLngLat(point)

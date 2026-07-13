@@ -1,7 +1,7 @@
 import { Link, useLoaderData } from 'react-router';
 import type { Route } from "./+types/home";
 import type { LoaderFunctionArgs } from 'react-router';
-import { Search, Car as CarIcon, Shield, Clock, TrendingUp, FileText, ShieldCheck, Calculator, Tag, Plus } from 'lucide-react';
+import { Search, Car as CarIcon, Shield, Clock, TrendingUp, FileText, ShieldCheck, Calculator, Tag, Plus, Sparkles } from 'lucide-react';
 import { Button } from '~/components/ui/Button';
 import { Card } from '~/components/ui/Card';
 import { Hero } from '~/components/home/Hero';
@@ -12,6 +12,7 @@ import { getSupabaseServerClient } from '~/lib/supabase.server';
 import type { Car } from '~/types';
 import { mapListingToCar } from '~/utils/listingMapper';
 import { signListingImages } from '~/utils/listingImages';
+import { buildRecommendations } from '~/utils/recommendations';
 
 export function meta({ }: Route.MetaArgs) {
   const title = "AutoFans.ro - Platforma Premium de Anunțuri Auto";
@@ -36,6 +37,7 @@ export function meta({ }: Route.MetaArgs) {
 export async function loader({ request }: LoaderFunctionArgs) {
   try {
     const { supabase } = getSupabaseServerClient(request);
+    const { data: { user } } = await supabase.auth.getUser();
     const [publishedCountResult, brandRowsResult, listingsResult] = await Promise.all([
       supabase
         .from('listings')
@@ -49,7 +51,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         .limit(500),
       supabase
         .from('listings')
-        .select('id, slug, owner_id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, vin, vin_verified, history_checked, images, created_at, city, county')
+        .select('id, slug, owner_id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, vin, vin_verified, history_checked, images, created_at, city, county, latitude, longitude')
         .eq('status', 'published')
         .order('created_at', { ascending: false })
         .limit(6),
@@ -59,7 +61,34 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const brandRows = brandRowsResult.data;
     const listings = listingsResult.data;
 
-    const signedMap = await signListingImages(supabase, listings || []);
+    let favoriteListings: any[] = [];
+    let savedSearches: any[] = [];
+    let recommendationListings: any[] = [];
+    if (user) {
+      const [{ data: favoriteRows }, { data: searches }, { data: candidates }] = await Promise.all([
+        supabase.from('favorites').select('listing_id').eq('user_id', user.id),
+        supabase.from('saved_searches').select('name, query').eq('user_id', user.id).limit(20),
+        supabase.from('listings')
+          .select('id, slug, owner_id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, vin, vin_verified, history_checked, images, created_at, city, county, latitude, longitude, service_history, owners')
+          .eq('status', 'published')
+          .order('created_at', { ascending: false })
+          .limit(60),
+      ]);
+      const favoriteIds = (favoriteRows || []).map((row: any) => row.listing_id);
+      if (favoriteIds.length) {
+        const { data } = await supabase.from('listings')
+          .select('id, make, model, fuel_type, transmission, price, city, county, created_at')
+          .in('id', favoriteIds)
+          .eq('status', 'published');
+        favoriteListings = data || [];
+      }
+      savedSearches = searches || [];
+      recommendationListings = candidates || [];
+    }
+
+    const recommendations = buildRecommendations({ candidates: recommendationListings, favorites: favoriteListings, savedSearches, limit: 6 });
+    const allListingsForImages = [...(listings || []), ...recommendations.map((item) => item.listing)];
+    const signedMap = await signListingImages(supabase as any, allListingsForImages);
     
     // Calculate brand frequencies
     const brandCounts = (brandRows || []).reduce((acc: Record<string, number>, row: any) => {
@@ -72,16 +101,17 @@ export async function loader({ request }: LoaderFunctionArgs) {
       .sort((a, b) => b.count - a.count)
       .slice(0, 8);
 
-    return { listings: listings || [], signedMap, publishedCount: publishedCount || 0, brands };
+    return { listings: listings || [], recommendations, signedMap, publishedCount: publishedCount || 0, brands };
   } catch (error) {
     console.error('home loader error:', error);
-    return { listings: [], signedMap: {} as Record<string, string>, publishedCount: 0, brands: [] };
+    return { listings: [], recommendations: [], signedMap: {} as Record<string, string>, publishedCount: 0, brands: [] };
   }
 }
 
 function HomeContent() {
   const data = useLoaderData<typeof loader>();
   const recentCars = data.listings.map((listing: any) => mapListingToCar(listing, data.signedMap));
+  const recommendedCars = data.recommendations.map((item: any) => ({ car: mapListingToCar(item.listing, data.signedMap), reason: item.reason }));
   const { favorites, addToFavorites, removeFromFavorites, isFavorited } = useFavorites();
   const { comparisonCars, addToComparison, removeFromComparison, isInComparison } = useComparison();
 
@@ -110,7 +140,8 @@ function HomeContent() {
   };
 
   const handleView = (carId: string) => {
-    window.location.href = `/car/${carId}`;
+    const car = [...recentCars, ...recommendedCars.map((item) => item.car)].find((item) => item.id === carId);
+    window.location.href = `/car/${encodeURIComponent(car?.slug || carId)}`;
   };
 
   const stats = [
@@ -215,6 +246,30 @@ function HomeContent() {
           </div>
         </div>
       </section>
+
+      {/* Recent Listings Section */}
+      {recommendedCars.length > 0 && (
+        <section className="border-y border-accent-gold/15 bg-accent-gold/[0.04] py-20">
+          <div className="mx-auto max-w-7xl px-6">
+            <div className="mb-12 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <div className="mb-3 flex items-center gap-2 text-accent-gold"><Sparkles className="h-5 w-5" /><span className="text-sm font-bold uppercase tracking-[0.18em]">Personalizat</span></div>
+                <h2 className="text-3xl font-bold text-white">Recomandate pentru tine</h2>
+                <p className="mt-3 text-gray-400">Selectate din favoritele și căutările tale salvate.</p>
+              </div>
+              <Link to="/search"><Button variant="outline" className="border-accent-gold/45 text-accent-gold hover:bg-accent-gold/10">Explorează toate mașinile</Button></Link>
+            </div>
+            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+              {recommendedCars.map(({ car, reason }) => (
+                <div key={car.id} className="relative">
+                  <div className="absolute left-4 top-4 z-10 rounded-full border border-accent-gold/30 bg-secondary-950/95 px-3 py-1 text-xs font-semibold text-accent-gold shadow-lg">{reason}</div>
+                  <CarCard car={car} onFavorite={handleFavorite} onCompare={handleCompare} onContact={handleContact} onView={handleView} isFavorited={isFavorited(car.id)} isInComparison={isInComparison(car.id)} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Recent Listings Section */}
       <section className="py-20 w-full max-w-7xl mx-auto px-6">

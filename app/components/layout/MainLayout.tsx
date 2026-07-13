@@ -12,6 +12,7 @@ import {
   ChevronDown,
   LogOut,
   Bell,
+  MessageCircle,
   LayoutDashboard,
   Newspaper
 } from 'lucide-react';
@@ -32,6 +33,7 @@ const baseNavigation = [
   { name: 'Căutare', href: '/search', icon: Search },
   { name: 'Blog', href: '/blog', icon: Newspaper },
   { name: 'Favorite', href: '/favorites', icon: Heart },
+  { name: 'Mesaje', href: '/messages', icon: MessageCircle },
   { name: 'Contul meu', href: '/profile', icon: User },
 ];
 

@@ -46,6 +46,7 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
   if (!slugParam) return { listing: null };
   try {
     const { supabase, headers } = getSupabaseServerClient(request);
+    const { data: { user } } = await supabase.auth.getUser();
     let { data: listing } = await supabase
       .from('listings')
       .select('id, slug, owner_id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, body_type, vin, vin_verified, history_checked, images, status, created_at, owners, service_history, engine_size, power, doors, seats, condition_overall, condition_exterior, condition_interior, condition_engine, condition_transmission, has_accidents, features, city, county')
@@ -105,10 +106,10 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
       }
     }
 
-    return { listing: listing ?? null, signedMap, sellerProfile, priceScore };
+    return { listing: listing ?? null, signedMap, sellerProfile, priceScore, userId: user?.id || null };
   } catch (e) {
     console.error('car.$id loader error:', e);
-    return { listing: null, signedMap: {}, sellerProfile: null, priceScore: null };
+    return { listing: null, signedMap: {}, sellerProfile: null, priceScore: null, userId: null };
   }
 }
 
@@ -228,6 +229,14 @@ export default function CarDetail({ params }: Route.ComponentProps) {
   }
 
   const handleContactSeller = () => {
+    if (!data.userId) {
+      window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
+      return;
+    }
+    if (data.userId === data.listing?.owner_id) {
+      alert('Nu îți poți trimite mesaj propriului anunț.');
+      return;
+    }
     setShowContactModal(true);
   };
 
@@ -297,24 +306,14 @@ export default function CarDetail({ params }: Route.ComponentProps) {
           isOpen={showContactModal}
           onClose={() => setShowContactModal(false)}
           car={car}
-          seller={{
-            id: 'seller-1',
-            type: 'dealer',
-            name: 'Ion Popescu',
-            phone: '+40721123456',
-            email: 'ion.popescu@email.com',
-            isVerified: true,
-            responseTime: '2 ore',
-            rating: 4.8,
-            location: {
-              id: 'loc-bucuresti',
-              city: 'București',
-              county: 'București',
-              country: 'RO'
-            }
+          seller={car.seller}
+          onSendMessage={async (message) => {
+            await recordContact();
+            const response = await fetch('/messages', { method: 'POST', body: new URLSearchParams({ intent: 'start', listingId: car.id, body: message.message }) });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || !result.conversationId) throw new Error(result.error || 'Mesajul nu a putut fi trimis.');
+            window.location.href = `/messages?conversation=${result.conversationId}`;
           }}
-          onSendMessage={async () => { await recordContact(); }}
-          onScheduleCall={async () => { await recordContact(); }}
           onWhatsAppContact={() => { void recordContact(); }}
         />
       )}

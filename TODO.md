@@ -13,10 +13,11 @@
 ## Etapa 3 · Trust Score
 
 - [x] Scor transparent din semnale existente
-- [x] Câmpuri VIN și istoric pregătite în schema de date
-- [ ] Detectare duplicate/fraudă
+- [x] Câmpuri VIN normalizate și validate în schema de date
+- [x] Detectare duplicate VIN cu semnal privat pentru proprietarul anunțului
 - [x] Badge-uri de încredere pe card și pagina mașinii
-- [ ] Flux real de verificare vânzător/VIN/istoric
+- [x] Solicitare persistată de verificare manuală a vânzătorului
+- [ ] Aprobare internă și integrare furnizor VIN/istoric auto
 
 ## Etapa 4 · Price Score
 
@@ -33,12 +34,23 @@
 ## Etapa 6 · Search premium
 
 - [x] Căutare naturală pentru marcă, combustibil, transmisie, preț, an și oraș
-- [ ] Hartă și rază geografică
-- [ ] Alerte pentru anunțuri și scăderi de preț
-- [ ] Recomandări personalizate
+- [x] Hartă și rază geografică
+  - [x] Markere interactive și card cu acces direct la anunț
+  - [x] Filtru pe oraș și rază de 25–500 km
+  - [x] Geocodare la publicarea/editarea anunțului, cu fallback pe oraș
+  - [x] Aplică migrarea `listing_coordinates` în Supabase
+- [x] Alerte pentru anunțuri și scăderi de preț
+  - [x] Căutări salvate persistente cu opțiune de alertă email
+  - [x] Inbox de alerte în aplicație și alerte price-drop
+  - [x] Dispatcher Resend securizat și idempotent (activezi după setarea secretelor)
+- [x] Recomandări personalizate
+  - [x] Ranking din favorite și căutări salvate, fără date mock
+  - [x] Explicație transparentă pentru fiecare recomandare
 
 ## Etapa 7 · Tranzacție
 
-- [ ] Chat intern
+- [x] Chat intern
+  - [x] Conversație unică cumpărător–vânzător pentru fiecare anunț
+  - [x] Mesaje persistente, RLS și actualizare în timp real când Realtime e activ
 - [ ] Ofertă și test-drive
 - [ ] Rezervare și documente digitale

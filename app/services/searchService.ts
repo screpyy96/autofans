@@ -1,6 +1,7 @@
 import type { SearchSuggestion } from '~/components/search/SearchBar';
 import type { Car, FilterState } from '~/types';
 import { SEARCH_CONFIG, POPULAR_BRANDS } from '~/constants';
+import { distanceInKm } from '~/utils/location';
 
 // Search suggestion types
 export interface SearchSuggestionOptions {
@@ -246,11 +247,18 @@ class SearchService {
       );
     }
 
-    if (filters.location?.city) {
+    if (filters.location?.city && !filters.radius) {
       filteredCars = filteredCars.filter(car =>
         normalizeLocation(car.location.city) === normalizeLocation(filters.location!.city) ||
         normalizeLocation(car.location.county) === normalizeLocation(filters.location!.county || '')
       );
+    }
+
+    if (filters.location && filters.radius) {
+      filteredCars = filteredCars.filter((car) => {
+        const distance = distanceInKm(filters.location!, car.location);
+        return distance !== null && distance <= filters.radius!;
+      });
     }
 
     // Apply sorting

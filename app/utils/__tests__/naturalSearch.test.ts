@@ -8,3 +8,10 @@ describe('parseNaturalSearch', () => {
     expect(result.remainingQuery).toBe('in');
   });
 });
+
+it('parses a location radius without leaving location words in the text query', () => {
+  const result = parseNaturalSearch('BMW în 50 km de Cluj-Napoca');
+  expect(result.filters.location?.city).toBe('Cluj-Napoca');
+  expect(result.filters.radius).toBe(50);
+  expect(result.remainingQuery).toBe('');
+});

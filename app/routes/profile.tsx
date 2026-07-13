@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link, redirect, Form, useLoaderData } from 'react-router';
-import type { LoaderFunctionArgs } from 'react-router';
+import { Link, redirect, Form, useFetcher, useLoaderData } from 'react-router';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
 import { getSupabaseServerClient } from '~/lib/supabase.server';
 import type { Route } from "./+types/profile";
 import { Button } from '~/components/ui/Button';
@@ -75,6 +75,24 @@ export async function loader({ request }: LoaderFunctionArgs) {
     }
   }
 
+  const [{ data: verificationRequest }, { data: riskFlags }] = await Promise.all([
+    supabase
+      .from('verification_requests')
+      .select('id, kind, status, created_at, review_note')
+      .eq('user_id', user.id)
+      .eq('kind', 'seller')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    profile?.role === 'seller'
+      ? supabase
+          .from('listing_risk_flags')
+          .select('id, listing_id, flag_type, severity, created_at')
+          .is('resolved_at', null)
+          .order('created_at', { ascending: false })
+      : Promise.resolve({ data: [] }),
+  ]);
+
   const [{ count: favoritesCount }, { data: favoriteRows }] = await Promise.all([
     supabase.from('favorites').select('listing_id', { count: 'exact', head: true }).eq('user_id', user.id),
     supabase.from('favorites').select('listing_id, created_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(3),
@@ -103,11 +121,91 @@ export async function loader({ request }: LoaderFunctionArgs) {
     contactsCount = contacts || 0;
   }
 
-  return { profile, listings, thumbs, favoriteListings, favoritesCount: favoritesCount || 0, viewsCount, contactsCount, userAuth: user };
+  const listingTitleById = new Map(listings.map((listing) => [listing.id, listing.title]));
+  const openRiskFlags = (riskFlags || []).map((flag: any) => ({
+    ...flag,
+    listingTitle: listingTitleById.get(flag.listing_id) || 'Un anunț al tău',
+  }));
+
+  return {
+    profile,
+    listings,
+    thumbs,
+    favoriteListings,
+    favoritesCount: favoritesCount || 0,
+    viewsCount,
+    contactsCount,
+    verificationRequest: verificationRequest || null,
+    openRiskFlags,
+    userAuth: user,
+  };
+}
+
+export async function action({ request }: ActionFunctionArgs) {
+  const { supabase, headers } = getSupabaseServerClient(request);
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return redirect('/login?next=/profile', { headers });
+
+  const formData = await request.formData();
+  if (formData.get('intent') !== 'request-seller-verification') {
+    return Response.json({ error: 'Cerere necunoscută.' }, { status: 400 });
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, is_verified')
+    .eq('id', user.id)
+    .single();
+
+  if (profile?.role !== 'seller') {
+    return Response.json({ error: 'Doar conturile de vânzător pot solicita verificarea.' }, { status: 403 });
+  }
+
+  if (profile.is_verified) {
+    return Response.json({ ok: true, message: 'Contul tău este deja verificat.' });
+  }
+
+  const { data: existing } = await supabase
+    .from('verification_requests')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('kind', 'seller')
+    .eq('status', 'pending')
+    .maybeSingle();
+
+  if (existing) {
+    return Response.json({ ok: true, message: 'Ai deja o solicitare în analiză.' });
+  }
+
+  const { error } = await supabase
+    .from('verification_requests')
+    .insert({ user_id: user.id, kind: 'seller' });
+
+  if (error) {
+    const isDuplicateRequest = error.code === '23505';
+    return Response.json(
+      { error: isDuplicateRequest ? 'Ai deja o solicitare în analiză.' : 'Nu am putut trimite solicitarea. Încearcă din nou.' },
+      { status: isDuplicateRequest ? 409 : 400 },
+    );
+  }
+
+  return Response.json({ ok: true, message: 'Solicitarea a fost trimisă. O verificăm manual înainte de a afișa badge-ul.' });
 }
 
 export default function Profile() {
-  const { profile, listings = [], thumbs = {}, favoriteListings = [], favoritesCount = 0, viewsCount = 0, contactsCount = 0, userAuth } = useLoaderData<typeof loader>();
+  const {
+    profile,
+    listings = [],
+    thumbs = {},
+    favoriteListings = [],
+    favoritesCount = 0,
+    viewsCount = 0,
+    contactsCount = 0,
+    verificationRequest,
+    openRiskFlags = [],
+    userAuth,
+  } = useLoaderData<typeof loader>();
+  const verificationFetcher = useFetcher<typeof action>();
   const { favorites: localFavoriteIds } = useFavorites();
   const [recentFavoriteListings, setRecentFavoriteListings] = useState<any[]>(favoriteListings);
 
@@ -137,6 +235,7 @@ export default function Profile() {
     return () => { cancelled = true; };
   }, [favoriteListings, localFavoriteIds]);
   const role = profile?.role as 'buyer' | 'seller' | undefined;
+  const verificationPending = verificationRequest?.status === 'pending' || verificationFetcher.data?.ok === true;
   
   const [activeTab, setActiveTab] = useState<'overview' | 'listings' | 'settings'>('overview');
   const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
@@ -303,6 +402,69 @@ export default function Profile() {
             )}
           </div>
         </Card>
+
+        {role === 'seller' && (
+          <Card variant="elevated" padding="lg" className="mb-6 sm:mb-8 border border-accent-gold/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-white">
+                <Shield className="h-5 w-5 text-accent-gold" />
+                Siguranță și verificare
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="font-medium text-white">
+                    {user.isVerified ? 'Cont verificat' : verificationPending ? 'Solicitare în analiză' : 'Verifică-ți contul de vânzător'}
+                  </p>
+                  <p className="mt-1 max-w-2xl text-sm text-gray-300">
+                    {user.isVerified
+                      ? 'Badge-ul este afișat public pe anunțurile tale.'
+                      : verificationPending
+                        ? verificationFetcher.data?.message || 'Analizăm datele contului. Badge-ul apare numai după aprobarea manuală.'
+                        : 'Trimite solicitarea, iar echipa AutoFans o verifică manual înainte de activarea badge-ului.'}
+                  </p>
+                </div>
+                {!user.isVerified && !verificationPending && (
+                  <verificationFetcher.Form method="post">
+                    <input type="hidden" name="intent" value="request-seller-verification" />
+                    <Button
+                      type="submit"
+                      className="bg-gold-gradient text-secondary-900"
+                      disabled={verificationFetcher.state !== 'idle'}
+                    >
+                      {verificationFetcher.state === 'submitting' ? 'Se trimite...' : 'Solicită verificarea'}
+                    </Button>
+                  </verificationFetcher.Form>
+                )}
+              </div>
+
+              {verificationFetcher.data?.error && (
+                <p className="mt-4 rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-300">
+                  {verificationFetcher.data.error}
+                </p>
+              )}
+
+              {openRiskFlags.length > 0 && (
+                <div className="mt-5 border-t border-white/10 pt-5">
+                  <p className="text-sm font-semibold text-amber-300">Anunțuri de verificat</p>
+                  <div className="mt-3 space-y-2">
+                    {openRiskFlags.map((flag: any) => (
+                      <Link
+                        key={flag.id}
+                        to={`/create-listing?edit=${flag.listing_id}`}
+                        className="flex items-center justify-between gap-3 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-sm text-amber-100 transition-colors hover:bg-amber-500/15"
+                      >
+                        <span className="min-w-0 truncate">{flag.listingTitle}: VIN identic găsit într-un alt anunț</span>
+                        <span className="shrink-0 font-medium">Verifică</span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Profile Header - Mobile Optimized */}
         <Card variant="elevated" padding="lg" className="mb-6 sm:mb-8">

@@ -1,5 +1,5 @@
-import { Link, useLoaderData, useNavigate } from 'react-router';
-import type { LoaderFunctionArgs } from 'react-router';
+import { Link, useFetcher, useLoaderData, useNavigate } from 'react-router';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
 import { useState, useEffect, useMemo } from 'react';
 import { SearchHeader } from '~/components/search';
 import { FilterPanel } from '~/components/search/FilterPanel';
@@ -46,22 +46,48 @@ export async function loader({ request }: LoaderFunctionArgs) {
     // Fetch all published listings from Supabase
     const { data: listings } = await supabase
       .from('listings')
-      .select('id, slug, owner_id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, body_type, vin, vin_verified, history_checked, images, created_at, city, county')
+      .select('id, slug, owner_id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, body_type, vin, vin_verified, history_checked, images, created_at, city, county, latitude, longitude')
       .eq('status', 'published')
       .order('created_at', { ascending: false });
 
-    const signedMap = await signListingImages(supabase, listings || []);
+    const signedMap = await signListingImages(supabase as any, listings || []);
 
-    return { dbListings: listings || [], signedMap };
+    const { data: { user } } = await supabase.auth.getUser();
+    return { dbListings: listings || [], signedMap, canSaveSearch: Boolean(user) };
   } catch (e) {
     console.error('search loader error:', e);
-    return { dbListings: [], signedMap: {} };
+    return { dbListings: [], signedMap: {}, canSaveSearch: false };
   }
+}
+
+export async function action({ request }: ActionFunctionArgs) {
+  const { supabase, headers } = getSupabaseServerClient(request);
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return Response.json({ error: 'Autentifică-te pentru a salva căutarea.' }, { status: 401, headers });
+
+  const form = await request.formData();
+  if (form.get('intent') !== 'save-search') return Response.json({ error: 'Acțiune invalidă.' }, { status: 400, headers });
+  const name = String(form.get('name') || '').trim().slice(0, 80);
+  const filtersValue = String(form.get('filters') || '{}');
+  if (!name) return Response.json({ error: 'Alege un nume pentru căutare.' }, { status: 400, headers });
+  let filters: FilterState;
+  try { filters = JSON.parse(filtersValue) as FilterState; } catch { return Response.json({ error: 'Filtre invalide.' }, { status: 400, headers }); }
+
+  const { error } = await supabase.from('saved_searches').insert({
+    user_id: user.id,
+    name,
+    query: filters,
+    alerts_enabled: true,
+    email_alerts_enabled: form.get('emailAlertsEnabled') === 'true',
+  });
+  if (error) return Response.json({ error: error.message }, { status: 400, headers });
+  return Response.json({ ok: true }, { headers });
 }
 
 function SearchContent() {
   const data = useLoaderData<typeof loader>();
   const navigate = useNavigate();
+  const saveSearchFetcher = useFetcher<{ ok?: boolean; error?: string }>();
   const [showFilters, setShowFilters] = useState(false);
   const [displayedCars, setDisplayedCars] = useState<Car[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -129,6 +155,18 @@ function SearchContent() {
 
   const handleFilterChange = (newFilters: FilterState) => {
     updateFilters(newFilters);
+  };
+
+  const handleSaveSearch = (name: string, searchFilters: FilterState, emailAlertsEnabled: boolean) => {
+    const effectiveFilters: FilterState = { ...searchFilters, ...naturalSearch.filters };
+    if (naturalSearch.remainingQuery) effectiveFilters.query = naturalSearch.remainingQuery;
+    else delete effectiveFilters.query;
+    saveSearchFetcher.submit({
+      intent: 'save-search',
+      name,
+      filters: JSON.stringify(effectiveFilters),
+      emailAlertsEnabled: String(emailAlertsEnabled),
+    }, { method: 'post' });
   };
 
   const handleFavorite = (carId: string) => {
@@ -199,6 +237,7 @@ function SearchContent() {
                 onClose={() => setShowFilters(false)}
                 onApply={() => setShowFilters(false)}
                 isCollapsed={false}
+                onSaveSearch={data.canSaveSearch ? handleSaveSearch : undefined}
               />
             </div>
           )}
@@ -226,6 +265,9 @@ function SearchContent() {
                 <Map className="mr-1.5 h-4 w-4" />{showMap ? 'Ascunde harta' : 'Vezi harta'}
               </Button>
             </div>
+
+            {saveSearchFetcher.data?.ok && <p className="-mt-3 mb-4 text-sm text-emerald-300">Căutarea a fost salvată. Alertele sunt active.</p>}
+            {saveSearchFetcher.data?.error && <p className="-mt-3 mb-4 text-sm text-red-300">{saveSearchFetcher.data.error}</p>}
 
             {showMap && <MapResults cars={displayedCars} onCarClick={(car) => handleView(car.id)} />}
 

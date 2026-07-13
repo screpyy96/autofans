@@ -18,6 +18,7 @@ import {
   ROMANIAN_COUNTIES
 } from '~/constants';
 import { useResponsive } from '~/hooks/useResponsive';
+import { SEARCH_LOCATIONS } from '~/utils/location';
 
 // Icons
 const ChevronDownIcon = () => (
@@ -240,7 +241,7 @@ export interface FilterPanelProps {
   filters: FilterState;
   onFiltersChange: (filters: FilterState) => void;
   onReset: () => void;
-  onSaveSearch?: (name: string, filters: FilterState) => void;
+  onSaveSearch?: (name: string, filters: FilterState, emailAlertsEnabled: boolean) => void;
   className?: string;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
@@ -270,6 +271,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
 
   const [saveSearchName, setSaveSearchName] = useState('');
   const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [emailAlertsEnabled, setEmailAlertsEnabled] = useState(true);
 
   // Toggle group open/closed
   const toggleGroup = useCallback((groupName: string) => {
@@ -352,11 +354,17 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
     });
   }, [updateFilters]);
 
+  const handleLocationChange = useCallback((locationId: string) => {
+    const location = SEARCH_LOCATIONS.find((item) => item.id === locationId);
+    updateFilters({ location: location ? { ...location, country: 'RO' } : undefined, radius: undefined });
+  }, [updateFilters]);
+
   // Handle save search
   const handleSaveSearch = useCallback(() => {
     if (saveSearchName.trim() && onSaveSearch) {
-      onSaveSearch(saveSearchName.trim(), filters);
+      onSaveSearch(saveSearchName.trim(), filters, emailAlertsEnabled);
       setSaveSearchName('');
+      setEmailAlertsEnabled(true);
       setShowSaveDialog(false);
     }
   }, [saveSearchName, filters, onSaveSearch]);
@@ -610,6 +618,43 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
 
         {/* Brand */}
         <FilterGroup
+          title="Locație și rază"
+          isOpen={openGroups.location}
+          onToggle={() => toggleGroup('location')}
+          count={(filters.location ? 1 : 0) + (filters.radius ? 1 : 0)}
+        >
+          <label className="block text-xs font-medium text-white/70" htmlFor="search-location">Oraș</label>
+          <select
+            id="search-location"
+            value={filters.location?.id || ''}
+            onChange={(event) => handleLocationChange(event.target.value)}
+            className="mt-1.5 w-full rounded-xl border border-white/15 bg-secondary-950 px-3 py-2.5 text-sm text-white outline-none transition focus:border-accent-gold"
+          >
+            <option value="">Toată România</option>
+            {SEARCH_LOCATIONS.map((location) => <option key={location.id} value={location.id}>{location.city}</option>)}
+          </select>
+          {filters.location && (
+            <div className="pt-2">
+              <p className="mb-2 text-xs font-medium text-white/70">Rază de căutare</p>
+              <div className="grid grid-cols-3 gap-2">
+                {[25, 50, 100, 200, 500].map((radius) => (
+                  <button
+                    key={radius}
+                    type="button"
+                    onClick={() => updateFilters({ radius: filters.radius === radius ? undefined : radius })}
+                    className={cn('rounded-lg border px-2 py-2 text-xs font-semibold transition', filters.radius === radius ? 'border-accent-gold bg-accent-gold/15 text-accent-gold' : 'border-white/15 bg-white/5 text-white/70 hover:border-white/30')}
+                  >
+                    {radius} km
+                  </button>
+                ))}
+              </div>
+              <p className="mt-2 text-[11px] leading-relaxed text-white/45">Fără rază, vezi doar anunțurile din orașul selectat.</p>
+            </div>
+          )}
+        </FilterGroup>
+
+        {/* Brand */}
+        <FilterGroup
           title="Marcă"
           isOpen={openGroups.brand}
           onToggle={() => toggleGroup('brand')}
@@ -767,6 +812,15 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                   autoFocus
                 />
               </div>
+              <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-white/80">
+                <input
+                  type="checkbox"
+                  checked={emailAlertsEnabled}
+                  onChange={(event) => setEmailAlertsEnabled(event.target.checked)}
+                  className="mt-0.5 h-4 w-4 accent-accent-gold"
+                />
+                <span><span className="block font-medium text-white">Alertă pe email</span><span className="text-xs text-white/50">Primești un email când apare un anunț nou potrivit.</span></span>
+              </label>
               <div className="mt-6 flex justify-end gap-3">
                 <Button
                   variant="ghost"

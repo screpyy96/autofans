@@ -1,11 +1,8 @@
 import { FuelType, TransmissionType, type FilterState } from '~/types';
+import { SEARCH_LOCATIONS } from '~/utils/location';
 
 const brands = ['BMW', 'Audi', 'Volkswagen', 'Mercedes-Benz', 'Mercedes', 'Skoda', 'Ford', 'Renault', 'Peugeot', 'Toyota', 'Dacia', 'Opel'];
-const cities: Record<string, { city: string; county: string }> = {
-  bucuresti: { city: 'București', county: 'București' }, cluj: { city: 'Cluj-Napoca', county: 'Cluj' },
-  iasi: { city: 'Iași', county: 'Iași' }, timisoara: { city: 'Timișoara', county: 'Timiș' },
-  constanta: { city: 'Constanța', county: 'Constanța' }, brasov: { city: 'Brașov', county: 'Brașov' },
-};
+const cities = Object.fromEntries(SEARCH_LOCATIONS.map((location) => [location.id, location]));
 const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
 export function parseNaturalSearch(query: string): { filters: Partial<FilterState>; remainingQuery: string; summary: string[] } {
@@ -26,6 +23,18 @@ export function parseNaturalSearch(query: string): { filters: Partial<FilterStat
   const year = normalized.match(/\b(19\d{2}|20\d{2})\b/);
   if (yearRange) { filters.yearRange = { min: Number(yearRange[1]), max: Number(yearRange[2]) }; summary.push(`${yearRange[1]}–${yearRange[2]}`); remaining = remaining.replace(yearRange[0], ' '); }
   else if (year) { filters.yearRange = { min: Number(year[1]), max: Number(year[1]) }; summary.push(year[1]); remaining = remaining.replace(year[0], ' '); }
-  for (const [key, location] of Object.entries(cities)) if (normalized.includes(key)) { filters.location = { id: key, ...location, country: 'RO' }; summary.push(location.city); remaining = remaining.replace(key, ' '); break; }
+  for (const [key, location] of Object.entries(cities)) if (normalized.includes(key)) {
+    filters.location = { ...location, country: 'RO' };
+    summary.push(location.city);
+    const cityPattern = key === 'cluj' ? /cluj(?:-napoca)?/g : new RegExp(key, 'g');
+    remaining = remaining.replace(cityPattern, ' ');
+    break;
+  }
+  const radius = normalized.match(/\b(?:in|în|raza de|pe o raza de)?\s*(25|50|100|200|500)\s*km(?:\s+de)?\b/);
+  if (radius && filters.location) {
+    filters.radius = Number(radius[1]);
+    summary.push(`${radius[1]} km`);
+    remaining = remaining.replace(radius[0], ' ');
+  }
   return { filters, remainingQuery: remaining.replace(/\s+/g, ' ').trim(), summary };
 }

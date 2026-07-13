@@ -10,6 +10,29 @@ import { ArrowLeft, Shield, Clock, Star } from 'lucide-react';
 import { Link } from 'react-router';
 import { getSupabaseBrowserClient } from '~/lib/supabase.client';
 import { generateUniqueSlug } from '~/utils/helpers';
+import { coordinatesForLocation } from '~/utils/location';
+import { isValidVin, normalizeVin } from '~/utils/vin';
+
+async function geocodeListingLocation(city: string, county: string): Promise<{ latitude: number; longitude: number } | null> {
+  const fallback = coordinatesForLocation({ city });
+  const token = import.meta.env.VITE_MAPBOX_TOKEN;
+  if (!token || !city.trim()) return fallback ? { longitude: fallback[0], latitude: fallback[1] } : null;
+
+  try {
+    const query = encodeURIComponent(`${city}, ${county || 'Romania'}, Romania`);
+    const response = await fetch(`https://api.mapbox.com/search/geocode/v6/forward?q=${query}&country=ro&types=place,locality&limit=1&access_token=${encodeURIComponent(token)}`, {
+      signal: AbortSignal.timeout(4000),
+    });
+    if (!response.ok) throw new Error(`Mapbox geocoding failed: ${response.status}`);
+    const payload = await response.json() as { features?: Array<{ geometry?: { coordinates?: [number, number] } }> };
+    const [longitude, latitude] = payload.features?.[0]?.geometry?.coordinates || [];
+    if (Number.isFinite(latitude) && Number.isFinite(longitude)) return { latitude, longitude };
+  } catch (error) {
+    console.warn('Listing geocoding unavailable:', error);
+  }
+
+  return fallback ? { longitude: fallback[0], latitude: fallback[1] } : null;
+}
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -82,6 +105,11 @@ export async function action({ request }: { request: Request }) {
   const editId = url.searchParams.get("edit");
 
   const body = await request.json().catch(() => ({} as any));
+  const vin = normalizeVin(body.vin);
+  if (body.vin && !isValidVin(body.vin)) {
+    return Response.json({ error: 'VIN-ul trebuie să aibă 17 caractere și nu poate conține I, O sau Q.' }, { status: 400 });
+  }
+  const coordinates = await geocodeListingLocation(body.city || '', body.county || '');
   const insert = {
     owner_id: user.id,
     title: body.title,
@@ -95,6 +123,7 @@ export async function action({ request }: { request: Request }) {
     fuel_type: body.fuel_type,
     transmission: body.transmission,
     body_type: body.body_type,
+    vin,
     images: body.images || [],
     status: body.status || 'published',
     // Condition, specs, location and detail columns
@@ -113,6 +142,8 @@ export async function action({ request }: { request: Request }) {
     features: body.features || [],
     city: body.city,
     county: body.county,
+    latitude: coordinates?.latitude ?? null,
+    longitude: coordinates?.longitude ?? null,
   };
 
   if (editId) {
@@ -160,6 +191,7 @@ export default function CreateListing() {
         fuel_type: formDataVal.fuelType,
         transmission: formDataVal.transmission,
         body_type: formDataVal.specifications?.bodyType || null,
+        vin: formDataVal.vin || null,
         images: uploaded,
         status: 'published',
         // Condition, specs and details values
@@ -255,6 +287,7 @@ export default function CreateListing() {
     currency: listing.currency,
     fuelType: listing.fuel_type,
     transmission: listing.transmission,
+    vin: listing.vin || '',
     description: listing.description,
     images: (listing.images || []).map((img: any) => ({
       ...img,

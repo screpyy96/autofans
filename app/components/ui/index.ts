@@ -16,7 +16,7 @@ export {
 } from './Card';
 export { Badge, type BadgeProps } from './Badge';
 export { Modal, type ModalProps } from './Modal';
-export { ContactModal, type ContactModalProps, type ContactFormData, type CallScheduleData, type WhatsAppData } from './ContactModal';
+export { ContactModal, type ContactModalProps, type ContactFormData, type WhatsAppData } from './ContactModal';
 export { NotificationBell, type NotificationBellProps } from './NotificationBell';
 export { NotificationPreferences, type NotificationPreferencesProps } from './NotificationPreferences';
 export { Spinner, Loading, type SpinnerProps, type LoadingProps } from './Spinner';
