@@ -61,7 +61,7 @@ export default function CarListingDemo() {
   };
 
   const handleScheduleViewing = () => {
-    alert('Deschidere modal programare vizionare');
+    handleContactSeller();
   };
 
   const handleAddToCompare = () => {

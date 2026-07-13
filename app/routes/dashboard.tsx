@@ -196,9 +196,9 @@ export default function Dashboard() {
   const { profile, isSeller, counts, recent, thumbs, sellerMetrics, performance } = useLoaderData<LoaderData>();
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold text-white mb-2">Dashboard</h1>
-      <p className="text-gray-300 mb-6">Bun venit, {profile?.display_name || profile?.email}.</p>
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8">
+      <h1 className="mb-1 text-2xl font-bold text-white sm:mb-2 sm:text-3xl">Dashboard</h1>
+      <p className="mb-5 text-sm text-gray-300 sm:mb-6 sm:text-base">Bun venit, {profile?.display_name || profile?.email}.</p>
 
       {!isSeller ? (
         <Card variant="elevated" padding="lg" className="mb-8">
@@ -210,35 +210,38 @@ export default function Dashboard() {
           </Form>
         </Card>
       ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Card variant="elevated" padding="lg">
-            <h3 className="text-white font-semibold">Anunțurile mele</h3>
-            <p className="text-3xl text-accent-gold mt-2">{counts.listings}</p>
-            <div className="flex items-center gap-3 mt-2">
-              <Link to="/create-listing" className="text-sm text-accent-gold hover:underline inline-block">Creează</Link>
-              <Link to="/dashboard/listings" className="text-sm text-accent-gold hover:underline inline-block">Toate anunțurile</Link>
-            </div>
-          </Card>
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-2 text-white font-semibold"><Eye className="h-4 w-4 text-accent-gold" />Vizualizări</div>
-            <p className="text-3xl text-accent-gold mt-2">{sellerMetrics.views}</p>
-            <p className="mt-1 text-xs text-gray-400">pentru anunțurile tale</p>
-          </Card>
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-2 text-white font-semibold"><Heart className="h-4 w-4 text-accent-gold" />Favorite primite</div>
-            <p className="text-3xl text-accent-gold mt-2">{sellerMetrics.favorites}</p>
-            <p className="mt-1 text-xs text-gray-400">interes real din partea cumpărătorilor</p>
-          </Card>
-          <Card variant="elevated" padding="lg">
-            <div className="flex items-center gap-2 text-white font-semibold"><MessageCircle className="h-4 w-4 text-accent-gold" />Contacte</div>
-            <p className="text-3xl text-accent-gold mt-2">{sellerMetrics.contacts}</p>
-            <p className="mt-1 text-xs text-gray-400">conversie {sellerMetrics.conversionRate.toFixed(1)}%</p>
-          </Card>
+        <div className="mb-6 sm:mb-8">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+            <Card variant="elevated" padding="none" className="min-h-[118px] p-4 sm:min-h-0 sm:p-6">
+              <p className="text-xs font-medium text-gray-300 sm:text-sm">Anunțuri active</p>
+              <p className="mt-2 text-3xl font-semibold leading-none text-accent-gold">{counts.listings}</p>
+              <p className="mt-2 text-xs text-gray-400">în portofoliu</p>
+            </Card>
+            <Card variant="elevated" padding="none" className="min-h-[118px] p-4 sm:min-h-0 sm:p-6">
+              <div className="flex items-center gap-2 text-xs font-medium text-gray-300 sm:text-sm"><Eye className="h-4 w-4 text-accent-gold" />Vizualizări</div>
+              <p className="mt-2 text-3xl font-semibold leading-none text-accent-gold">{sellerMetrics.views}</p>
+              <p className="mt-2 text-xs text-gray-400">total anunțuri</p>
+            </Card>
+            <Card variant="elevated" padding="none" className="min-h-[118px] p-4 sm:min-h-0 sm:p-6">
+              <div className="flex items-center gap-2 text-xs font-medium text-gray-300 sm:text-sm"><Heart className="h-4 w-4 text-accent-gold" />Favorite</div>
+              <p className="mt-2 text-3xl font-semibold leading-none text-accent-gold">{sellerMetrics.favorites}</p>
+              <p className="mt-2 text-xs text-gray-400">interes primit</p>
+            </Card>
+            <Card variant="elevated" padding="none" className="min-h-[118px] p-4 sm:min-h-0 sm:p-6">
+              <div className="flex items-center gap-2 text-xs font-medium text-gray-300 sm:text-sm"><MessageCircle className="h-4 w-4 text-accent-gold" />Contactări</div>
+              <p className="mt-2 text-3xl font-semibold leading-none text-accent-gold">{sellerMetrics.contacts}</p>
+              <p className="mt-2 text-xs text-gray-400">conversie {sellerMetrics.conversionRate.toFixed(1)}%</p>
+            </Card>
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-3 sm:flex sm:justify-end">
+            <Link to="/dashboard/listings" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/15 px-4 text-sm font-semibold text-white transition-colors hover:bg-white/5">Gestionează</Link>
+            <Link to="/create-listing" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-gold-gradient px-4 text-sm font-bold text-secondary-900 transition-transform hover:scale-[1.01]">Adaugă anunț</Link>
+          </div>
         </div>
       )}
 
       {isSeller && performance.length > 0 && (
-        <Card variant="elevated" padding="lg" className="mb-8">
+        <Card variant="elevated" padding="none" className="mb-6 p-4 sm:mb-8 sm:p-8">
           <div className="mb-5 flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-accent-gold" />
             <div>
@@ -272,14 +275,14 @@ export default function Dashboard() {
       )}
 
       {isSeller && (
-        <Card variant="elevated" padding="lg">
-          <h2 className="text-xl font-semibold text-white mb-4">Anunțuri recente</h2>
+        <Card variant="elevated" padding="none" className="p-4 sm:p-8">
+          <h2 className="mb-4 text-lg font-semibold text-white sm:text-xl">Anunțuri recente</h2>
           {recent.length === 0 ? (
             <p className="text-gray-400">Încă nu ai anunțuri.</p>
           ) : (
             <ul className="divide-y divide-white/10">
               {recent.map((l) => (
-                <li key={l.id} className="py-2 grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+                <li key={l.id} className="grid grid-cols-[3.5rem_minmax(0,1fr)] gap-3 py-4 first:pt-0 md:grid-cols-12 md:items-center">
                   <div className="md:col-span-1">
                     {thumbs?.[l.id] ? (
                       <img src={thumbs[l.id]} alt="thumb" className="w-14 h-14 rounded-lg object-cover border border-white/10" />
@@ -287,32 +290,32 @@ export default function Dashboard() {
                       <div className="w-14 h-14 rounded-lg bg-white/5 border border-white/10" />
                     )}
                   </div>
-                  <div className="md:col-span-5">
+                  <div className="min-w-0 md:col-span-5">
                     <p className="text-white font-medium">{l.title}</p>
                     <p className="text-gray-400 text-sm">{l.status} • {new Date(l.updated_at).toLocaleString()}</p>
                   </div>
-                  <div className="md:col-span-2 text-accent-gold font-semibold">{formatPrice(Number(l.price), l.currency)}</div>
-                  <div className="md:col-span-4 flex gap-2 justify-end items-center">
+                  <div className="col-span-2 text-sm font-semibold text-accent-gold md:col-span-2 md:text-base">{formatPrice(Number(l.price), l.currency)}</div>
+                  <div className="col-span-2 grid grid-cols-3 gap-2 md:col-span-4 md:flex md:items-center md:justify-end">
                     {l.status !== 'published' ? (
                       <Form method="post">
                         <input type="hidden" name="intent" value="publish" />
                         <input type="hidden" name="id" value={String(l.id)} />
-                        <Button type="submit" size="sm">Publică</Button>
+                        <Button type="submit" size="sm" className="w-full md:w-auto">Publică</Button>
                       </Form>
                     ) : (
                       <Form method="post">
                         <input type="hidden" name="intent" value="draft" />
                         <input type="hidden" name="id" value={String(l.id)} />
-                        <Button type="submit" variant="outline" size="sm">Draft</Button>
+                        <Button type="submit" variant="outline" size="sm" className="w-full md:w-auto">Draft</Button>
                       </Form>
                     )}
                     <Link to={`/create-listing?edit=${l.id}`}>
-                      <Button variant="outline" size="sm" className="border-accent-gold/20 text-accent-gold">Editează</Button>
+                      <Button variant="outline" size="sm" className="w-full border-accent-gold/20 text-accent-gold md:w-auto">Editează</Button>
                     </Link>
                     <Form method="post">
                       <input type="hidden" name="intent" value="delete" />
                       <input type="hidden" name="id" value={String(l.id)} />
-                      <Button type="submit" variant="danger" size="sm">Șterge</Button>
+                      <Button type="submit" variant="danger" size="sm" className="w-full md:w-auto">Șterge</Button>
                     </Form>
                   </div>
                 </li>

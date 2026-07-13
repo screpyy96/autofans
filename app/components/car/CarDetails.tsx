@@ -242,6 +242,26 @@ export function CarDetails({
             </div>
           </Card>
 
+          {/* The seller must be visible before long-form details on mobile. */}
+          <Link
+            to={`/seller/${car.seller.id}`}
+            className="flex items-center gap-3 rounded-2xl border border-white/10 bg-glass p-4 transition-colors hover:border-accent-gold/40 hover:bg-white/5 lg:hidden"
+          >
+            {car.seller.avatar ? (
+              <img src={car.seller.avatar} alt={car.seller.name} className="h-11 w-11 shrink-0 rounded-full border border-white/10 object-cover" />
+            ) : (
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-accent-gold/30 bg-accent-gold/15 text-base font-bold text-accent-gold">
+                {car.seller.name.charAt(0).toUpperCase()}
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-xs text-gray-400">Vândut de</p>
+              <p className="truncate font-semibold text-white">{car.seller.name}</p>
+              <p className="text-xs text-gray-400">{car.seller.type === 'dealer' ? 'Dealer autorizat' : 'Persoană fizică'}</p>
+            </div>
+            <span className="shrink-0 text-sm font-semibold text-accent-gold">Profil →</span>
+          </Link>
+
           {/* Key specs grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {keySpecs.map((spec, index) => (

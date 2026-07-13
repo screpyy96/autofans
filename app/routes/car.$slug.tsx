@@ -63,7 +63,7 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
       listing = byId.data;
     }
 
-    const [sellerProfileResult, comparablesResult] = listing
+    const [sellerProfileResult, comparablesResult, metricsResult] = listing
       ? await Promise.all([
           listing.owner_id
             ? supabase
@@ -84,10 +84,12 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
                 .lte('year', Number(listing.year) + 3)
                 .limit(60)
             : Promise.resolve({ data: [] }),
+          supabase.rpc('get_public_listing_metrics', { p_listing_id: listing.id }).maybeSingle(),
         ])
-      : [{ data: null }, { data: [] }];
+      : [{ data: null }, { data: [] }, { data: null }];
     const sellerProfile = sellerProfileResult.data;
     const priceScore = listing ? calculatePriceScore(listing, comparablesResult.data || []) : null;
+    const listingMetrics = metricsResult.data || { view_count: 0, contact_count: 0, favorite_count: 0 };
 
     let signedMap: Record<string, string> = {};
     if (listing?.images?.length) {
@@ -106,10 +108,10 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
       }
     }
 
-    return { listing: listing ?? null, signedMap, sellerProfile, priceScore, userId: user?.id || null };
+    return { listing: listing ?? null, signedMap, sellerProfile, listingMetrics, priceScore, userId: user?.id || null };
   } catch (e) {
     console.error('car.$id loader error:', e);
-    return { listing: null, signedMap: {}, sellerProfile: null, priceScore: null, userId: null };
+    return { listing: null, signedMap: {}, sellerProfile: null, listingMetrics: null, priceScore: null, userId: null };
   }
 }
 
@@ -169,7 +171,7 @@ export default function CarDetail({ params }: Route.ComponentProps) {
         hasAccidents: !!l.has_accidents
       },
       seller: {
-        id: data.sellerProfile?.id || 'unknown',
+        id: data.sellerProfile?.id || l.owner_id || 'unknown',
         type: data.sellerProfile?.role === 'seller' ? 'dealer' : 'individual',
         name: data.sellerProfile?.display_name || data.sellerProfile?.email?.split('@')[0] || 'Vânzător',
         email: data.sellerProfile?.email || '',
@@ -182,9 +184,9 @@ export default function CarDetail({ params }: Route.ComponentProps) {
       createdAt: l.created_at ? new Date(l.created_at) : new Date(),
       updatedAt: l.created_at ? new Date(l.created_at) : new Date(),
       status: mapListingStatus(l.status),
-      viewCount: 0,
-      favoriteCount: 0,
-      contactCount: 0,
+      viewCount: Number(data.listingMetrics?.view_count || 0),
+      favoriteCount: Number(data.listingMetrics?.favorite_count || 0),
+      contactCount: Number(data.listingMetrics?.contact_count || 0),
       owners: l.owners ?? 1,
       serviceHistory: !!l.service_history,
     };
@@ -252,7 +254,7 @@ export default function CarDetail({ params }: Route.ComponentProps) {
   };
 
   const handleScheduleViewing = () => {
-    alert('Deschidere modal programare vizionare');
+    handleContactSeller();
   };
 
   const handleAddToCompare = () => {

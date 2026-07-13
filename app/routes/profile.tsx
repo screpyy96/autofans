@@ -369,7 +369,7 @@ export default function Profile() {
       id: 'listings',
       label: 'Anunțurile mele',
       icon: Car,
-      shortLabel: 'Anunțurile mele',
+      shortLabel: 'Anunțuri',
       description: 'Gestionează anunțurile tale de vânzare'
     },
     {
@@ -384,7 +384,7 @@ export default function Profile() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Seller status and quick actions */}
-        <Card variant="elevated" padding="lg" className="mb-6 sm:mb-8">
+        <Card variant="elevated" padding="none" className="mb-6 p-4 sm:mb-8 sm:p-8">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-white font-semibold">Tip cont</h2>
@@ -508,30 +508,30 @@ export default function Profile() {
           </div>
 
           {/* Stats - Mobile Optimized */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mt-6 sm:mt-8 pt-6 border-t border-white/10">
-            <div className="text-center p-3 sm:p-4 bg-white/5 rounded-xl border border-white/10">
-              <div className="flex items-center justify-center gap-2 mb-2">
+          <div className="mt-5 grid grid-cols-2 gap-3 border-t border-white/10 pt-5 sm:mt-8 sm:gap-6 sm:pt-6 lg:grid-cols-4">
+            <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-center sm:p-4">
+              <div className="mb-1.5 flex items-center justify-center gap-2 sm:mb-2">
                 <Car className="h-4 w-4 text-accent-gold" />
                 <div className="text-lg sm:text-2xl font-bold text-white">{user.stats.listings}</div>
               </div>
               <div className="text-xs sm:text-sm text-gray-300">Anunțuri active</div>
             </div>
-            <div className="text-center p-3 sm:p-4 bg-white/5 rounded-xl border border-white/10">
-              <div className="flex items-center justify-center gap-2 mb-2">
+            <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-center sm:p-4">
+              <div className="mb-1.5 flex items-center justify-center gap-2 sm:mb-2">
                 <Heart className="h-4 w-4 text-red-400" />
                 <div className="text-lg sm:text-2xl font-bold text-white">{user.stats.favorites}</div>
               </div>
               <div className="text-xs sm:text-sm text-gray-300">Favorite</div>
             </div>
-            <div className="text-center p-3 sm:p-4 bg-white/5 rounded-xl border border-white/10">
-              <div className="flex items-center justify-center gap-2 mb-2">
+            <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-center sm:p-4">
+              <div className="mb-1.5 flex items-center justify-center gap-2 sm:mb-2">
                 <Eye className="h-4 w-4 text-blue-400" />
                 <div className="text-lg sm:text-2xl font-bold text-white">{user.stats.views}</div>
               </div>
               <div className="text-xs sm:text-sm text-gray-300">Vizualizări</div>
             </div>
-            <div className="text-center p-3 sm:p-4 bg-white/5 rounded-xl border border-white/10">
-              <div className="flex items-center justify-center gap-2 mb-2">
+            <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-center sm:p-4">
+              <div className="mb-1.5 flex items-center justify-center gap-2 sm:mb-2">
                 <MessageCircle className="h-4 w-4 text-green-400" />
                 <div className="text-lg sm:text-2xl font-bold text-white">{user.stats.contacts}</div>
               </div>
@@ -543,12 +543,12 @@ export default function Profile() {
         {/* Tabs - Mobile Optimized */}
         <div className="mb-6 sm:mb-8">
           <div className="border-b border-white/10">
-            <div className="flex overflow-x-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent -mb-px">
+            <div className="-mb-px flex">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   className={cn(
-                    'relative flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-4 text-sm font-medium border-b-2 transition-all whitespace-nowrap flex-shrink-0 group rounded-lg mx-1',
+                    'relative flex flex-1 items-center justify-center gap-2 px-2 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-all group rounded-lg sm:mx-1 sm:flex-none sm:gap-3 sm:px-6 sm:py-4',
                     activeTab === tab.id
                       ? 'border-accent-gold text-accent-gold bg-gradient-to-r from-accent-gold/10 to-accent-gold/5 shadow-sm'
                       : 'border-transparent text-gray-400 hover:text-white hover:border-white/20 hover:bg-white/5'
@@ -637,10 +637,10 @@ export default function Profile() {
 
         {activeTab === 'listings' && (
           <div className="space-y-4 text-center">
-            <div className="flex items-center justify-between mb-4">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <h3 className="text-xl font-bold text-white">Anunțurile mele</h3>
-              <Link to="/create-listing">
-                <Button className="bg-gold-gradient text-secondary-900 font-semibold flex items-center gap-2">
+              <Link to="/create-listing" className="w-full sm:w-auto">
+                <Button className="flex w-full items-center justify-center gap-2 bg-gold-gradient font-semibold text-secondary-900 sm:w-auto">
                   <Plus className="h-4 w-4" />
                   Adaugă anunț
                 </Button>
@@ -673,11 +673,11 @@ export default function Profile() {
             ) : (
               <div className="space-y-3">
                 {listings.map((l: any) => (
-                  <Card key={l.id} variant="elevated" padding="md" className="flex items-center gap-3">
+                  <Card key={l.id} variant="elevated" padding="none" className="flex flex-wrap items-center gap-3 p-4 sm:flex-nowrap sm:p-6">
                     {thumbs[l.id] ? (
-                      <img src={thumbs[l.id]} alt="thumb" className="w-20 h-16 rounded-lg object-cover border border-white/10" />
+                      <img src={thumbs[l.id]} alt="thumb" className="h-16 w-20 shrink-0 rounded-lg border border-white/10 object-cover" />
                     ) : (
-                      <div className="w-20 h-16 rounded-lg bg-white/5 border border-white/10" />
+                      <div className="h-16 w-20 shrink-0 rounded-lg border border-white/10 bg-white/5" />
                     )}
                     <div className="flex-1 min-w-0 text-left">
                       <p className="text-white font-medium truncate">{l.title}</p>
@@ -685,15 +685,15 @@ export default function Profile() {
                         {l.status === 'published' ? 'Publicat' : 'Ciornă'} • {new Date(l.updated_at).toLocaleDateString()}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-accent-gold font-semibold mr-2">€{Number(l.price).toLocaleString()}</span>
-                      <Link to={`/create-listing?edit=${l.id}`}>
-                        <Button variant="outline" size="sm" className="border-accent-gold/20 text-accent-gold">
+                    <div className="flex w-full items-center gap-2 border-t border-white/10 pt-3 sm:w-auto sm:border-0 sm:pt-0">
+                      <span className="mr-auto shrink-0 text-sm font-semibold text-accent-gold sm:mr-2 sm:text-base">€{Number(l.price).toLocaleString()}</span>
+                      <Link to={`/create-listing?edit=${l.id}`} className="flex-1 sm:flex-none">
+                        <Button variant="outline" size="sm" className="w-full border-accent-gold/20 text-accent-gold">
                           Editează
                         </Button>
                       </Link>
-                      <Link to={`/car/${l.slug || l.id}`}>
-                        <Button variant="outline" size="sm">
+                      <Link to={`/car/${l.slug || l.id}`} className="flex-1 sm:flex-none">
+                        <Button variant="outline" size="sm" className="w-full">
                           Vezi
                         </Button>
                       </Link>
