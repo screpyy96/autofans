@@ -67,7 +67,7 @@ export default function BlogIndex() {
                 </p>
                 
                 <div className="flex items-center gap-4">
-                  <img src={featuredPost.author.avatar} alt={featuredPost.author.name} className="w-12 h-12 rounded-full border-2 border-white/20" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-accent-gold/50 bg-secondary-950 text-sm font-black text-accent-gold" aria-hidden="true">AF</div>
                   <div>
                     <p className="text-white font-semibold">{featuredPost.author.name}</p>
                     <p className="text-gray-400 text-sm">{new Date(featuredPost.publishedAt).toLocaleDateString('ro-RO', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
@@ -120,9 +120,7 @@ export default function BlogIndex() {
                   
                   <div className="flex items-center justify-between mt-auto pt-4 border-t border-white/5">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center overflow-hidden">
-                        <img src={post.author.avatar} alt={post.author.name} className="w-full h-full object-cover" />
-                      </div>
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full border border-accent-gold/40 bg-secondary-950 text-[10px] font-black text-accent-gold" aria-hidden="true">AF</div>
                       <span className="text-sm text-gray-300 font-medium">{post.author.name}</span>
                     </div>
                     <Link to={`/blog/${post.slug}`} className="text-accent-gold hover:text-yellow-400 p-2 rounded-full hover:bg-accent-gold/10 transition-colors">

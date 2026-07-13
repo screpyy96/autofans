@@ -49,6 +49,37 @@ export function MainLayout({ children }: MainLayoutProps) {
   useEffect(() => {
     setHasHydrated(true);
   }, []);
+
+  // A bottom sheet must never allow the page behind it to scroll on mobile.
+  useEffect(() => {
+    if (!isBottomDrawerOpen || typeof window === 'undefined') return;
+
+    const scrollY = window.scrollY;
+    const bodyStyle = document.body.style;
+    const htmlStyle = document.documentElement.style;
+    const previous = {
+      bodyPosition: bodyStyle.position,
+      bodyTop: bodyStyle.top,
+      bodyWidth: bodyStyle.width,
+      bodyOverflow: bodyStyle.overflow,
+      htmlOverflow: htmlStyle.overflow,
+    };
+
+    bodyStyle.position = 'fixed';
+    bodyStyle.top = `-${scrollY}px`;
+    bodyStyle.width = '100%';
+    bodyStyle.overflow = 'hidden';
+    htmlStyle.overflow = 'hidden';
+
+    return () => {
+      bodyStyle.position = previous.bodyPosition;
+      bodyStyle.top = previous.bodyTop;
+      bodyStyle.width = previous.bodyWidth;
+      bodyStyle.overflow = previous.bodyOverflow;
+      htmlStyle.overflow = previous.htmlOverflow;
+      window.scrollTo(0, scrollY);
+    };
+  }, [isBottomDrawerOpen]);
   const {
     notifications,
     unreadCount,
@@ -202,6 +233,14 @@ export function MainLayout({ children }: MainLayoutProps) {
               <Link
                 to="/create-listing"
                 aria-label="Adaugă anunț"
+                className="inline-flex sm:hidden items-center justify-center rounded-xl border border-accent-gold/40 bg-accent-gold/10 p-2 text-accent-gold transition-colors hover:bg-accent-gold hover:text-secondary-900"
+              >
+                <Plus className="h-5 w-5" aria-hidden="true" />
+              </Link>
+
+              <Link
+                to="/create-listing"
+                aria-label="Adaugă anunț"
                 className="hidden sm:inline-flex items-center justify-center rounded-xl border-2 border-accent-gold/30 bg-glass px-3 py-1.5 text-sm font-medium text-accent-gold backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:border-transparent hover:bg-gold-gradient hover:text-secondary-900 hover:shadow-glow focus:outline-none focus:ring-2 focus:ring-accent-gold focus:ring-offset-2 focus:ring-offset-secondary-800"
               >
                 <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
@@ -306,28 +345,29 @@ export function MainLayout({ children }: MainLayoutProps) {
             <span>Căutare</span>
           </Link>
 
-          {/* Adaugă (Floating Central button) */}
+          {/* Blog */}
           <Link
-            to="/create-listing"
-            className="flex flex-col items-center justify-center -translate-y-4"
-          >
-            <div className="h-12 w-12 rounded-full bg-gold-gradient flex items-center justify-center shadow-glow border-2 border-secondary-950 text-secondary-900 active:scale-95 transition-transform duration-200">
-              <Plus className="h-6 w-6 stroke-[3]" />
-            </div>
-            <span className="text-[10px] font-medium text-gray-400 mt-1">Adaugă</span>
-          </Link>
-
-          {/* Mesaje */}
-          <Link
-            to={authUser ? "/messages" : `/login?next=${encodeURIComponent('/messages')}`}
+            to="/blog"
             className={cn(
               "flex flex-col items-center gap-1 text-[10px] font-medium transition-all duration-300",
-              location.pathname.startsWith('/messages') ? "text-accent-gold" : "text-gray-400 hover:text-white"
+              location.pathname.startsWith('/blog') ? "text-accent-gold" : "text-gray-400 hover:text-white"
             )}
-            aria-label={authUser ? 'Mesaje' : 'Autentifică-te pentru mesaje'}
+          >
+            <Newspaper className="h-5 w-5" />
+            <span>Blog</span>
+          </Link>
+
+          {/* Contact */}
+          <Link
+            to="/contact"
+            className={cn(
+              "flex flex-col items-center gap-1 text-[10px] font-medium transition-all duration-300",
+              location.pathname.startsWith('/contact') ? "text-accent-gold" : "text-gray-400 hover:text-white"
+            )}
+            aria-label="Contactează AutoFans"
           >
             <MessageCircle className="h-5 w-5" />
-            <span>Mesaje</span>
+            <span>Contact</span>
           </Link>
 
           {/* Meniu (Opens Drawer) */}
@@ -367,10 +407,19 @@ export function MainLayout({ children }: MainLayoutProps) {
               transition={{ type: "spring", damping: 25, stiffness: 220 }}
               className="relative w-full max-h-[85vh] bg-glass border-t border-white/10 rounded-t-[2rem] shadow-modal z-10 flex flex-col overflow-hidden animate-none"
             >
-              {/* Drag Indicator Pill */}
-              <div className="w-full flex justify-center py-3">
+              {/* Drag handle: pull down to close without touching the page behind it. */}
+              <motion.div
+                drag="y"
+                dragConstraints={{ top: 0, bottom: 0 }}
+                dragElastic={0.18}
+                onDragEnd={(_, info) => {
+                  if (info.offset.y > 72 || info.velocity.y > 500) setIsBottomDrawerOpen(false);
+                }}
+                className="w-full flex justify-center py-3 touch-none cursor-grab active:cursor-grabbing"
+                aria-label="Trage în jos pentru a închide meniul"
+              >
                 <div className="w-12 h-1.5 rounded-full bg-white/20" />
-              </div>
+              </motion.div>
 
               {/* Drawer Content */}
               <div className="flex-1 overflow-y-auto px-6 pb-12 pt-2">
@@ -530,6 +579,20 @@ export function MainLayout({ children }: MainLayoutProps) {
                   >
                     <ShieldCheck className="h-5 w-5 text-accent-gold" />
                     Ajutor și siguranță
+                  </Link>
+
+                  <Link
+                    to="/contact"
+                    onClick={() => setIsBottomDrawerOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-all border border-transparent",
+                      location.pathname.startsWith('/contact')
+                        ? "text-white bg-white/5 border-white/20"
+                        : "text-gray-300 hover:text-white hover:bg-white/5"
+                    )}
+                  >
+                    <MessageCircle className="h-5 w-5 text-accent-gold" />
+                    Contactează AutoFans
                   </Link>
                 </div>
 

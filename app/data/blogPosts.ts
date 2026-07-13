@@ -8,7 +8,6 @@ export interface BlogPost {
   coverImage: string;
   author: {
     name: string;
-    avatar: string;
     role: string;
   };
   category: string;
@@ -97,11 +96,10 @@ La vizionare, concentrează-te pe lucrurile care nu se văd în poze: pornirea l
 
 O alegere bună are un buget de rezervă. Include în calcul revizia completă de după achiziție, anvelopele de sezon, impozitul, asigurarea și eventualele reparații descoperite la inspecție. Nu există un „cel mai bun SUV premium” universal: există modelul care se potrivește drumurilor tale, bugetului tău de întreținere și exemplarul cu cel mai bun istoric. [Vezi SUV-uri disponibile pe AutoFans](/search) și compară doar mașini pentru care poți verifica datele esențiale.
     `,
-    coverImage: "https://images.unsplash.com/photo-1606016159991-ddeab5617277?q=80&w=2000&auto=format&fit=crop", // BMW/SUV style image
+    coverImage: "/blog/suv-premium-romania-2026.webp",
     author: {
-      name: "Andrei Popescu",
-      avatar: "https://i.pravatar.cc/150?u=andrei",
-      role: "Redactor Șef AutoFans"
+      name: "AutoFans",
+      role: "Echipa editorială AutoFans"
     },
     category: "Review-uri",
     tags: ["SUV", "Premium", "BMW", "Mercedes-Benz", "Porsche", "Ghid Achiziție"],
@@ -187,11 +185,10 @@ La întâlnire, fotografiază VIN-ul numai cu acordul vânzătorului, verifică 
 
 Prețul mult sub piață, refuzul VIN-ului, avansul cerut înainte de vizionare, presiunea de a semna „azi” și lipsa documentelor sunt motive să cauți altă ofertă. Nu încerca să demonstrezi că o afacere suspectă e bună doar fiindcă mașina îți place. Pe [AutoFans](/search) poți salva anunțurile care merită comparate și poți reveni la ele după ce ai verificat fiecare pas.
     `,
-    coverImage: "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?q=80&w=2000&auto=format&fit=crop", // Checking car engine
+    coverImage: "/blog/verificare-istoric-auto.webp",
     author: {
-      name: "Mihai Stan",
-      avatar: "https://i.pravatar.cc/150?u=mihai",
-      role: "Expert Mecanic & Inspector Auto"
+      name: "AutoFans",
+      role: "Echipa editorială AutoFans"
     },
     category: "Ghiduri",
     tags: ["Verificare Auto", "Sfaturi", "Second-hand", "Siguranță", "Țepe Auto"],
@@ -271,11 +268,10 @@ Primele zile după montaj urmează instrucțiunile atelierului. Apoi spală maș
 
 Dacă folosești mașina zilnic pe autostradă și vrei să păstrezi vopseaua originală, începe cu zonele expuse din față. Dacă vrei un aspect nou, colantarea este mai potrivită, cu condiția ca vopseaua să fie sănătoasă înainte de montaj. Pentru o mașină pe care intenționezi să o vinzi curând, documentează montajul și garanția: ajută următorul cumpărător să înțeleagă ce a primit mașina. [Vezi mașini premium pe AutoFans](/search) înainte să alegi investiția potrivită pentru următorul tău vehicul.
     `,
-    coverImage: "https://images.unsplash.com/photo-1619682817481-e994891cd1f5?q=80&w=2000&auto=format&fit=crop", // Car detailing
+    coverImage: "/blog/ppf-vs-colantare.webp",
     author: {
-      name: "Elena Popa",
-      avatar: "https://i.pravatar.cc/150?u=elena",
-      role: "Auto Detailer Pro"
+      name: "AutoFans",
+      role: "Echipa editorială AutoFans"
     },
     category: "Întreținere",
     tags: ["PPF", "Detailing", "Vopsea", "Protecție Ceramică", "Colantare"],

@@ -49,7 +49,7 @@ export default function BlogPost() {
     datePublished: post.publishedAt,
     dateModified: post.updatedAt,
     mainEntityOfPage: canonicalUrl,
-    author: { '@type': 'Person', name: post.author.name },
+    author: { '@type': 'Organization', name: post.author.name, url: 'https://autofans.ro' },
     publisher: { '@type': 'Organization', name: 'AutoFans', url: 'https://autofans.ro' },
   };
   const faqSchema = {
@@ -113,7 +113,7 @@ export default function BlogPost() {
 
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-4">
-                <img src={post.author.avatar} alt={post.author.name} className="w-12 h-12 rounded-full border-2 border-white/20" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-accent-gold/50 bg-secondary-950 text-sm font-black text-accent-gold" aria-hidden="true">AF</div>
                 <div>
                   <p className="text-white font-semibold text-lg">{post.author.name}</p>
                   <div className="flex items-center text-gray-400 text-sm">

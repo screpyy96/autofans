@@ -7,3 +7,6 @@
 .env
 .env.*
 !.env.example
+
+# Source renders retained locally; the optimized WebP variants are served by the app.
+/public/blog/*.png
