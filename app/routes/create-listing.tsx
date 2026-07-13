@@ -321,15 +321,15 @@ export default function CreateListing() {
   } : undefined;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 py-4 pb-28 sm:py-8 sm:pb-8">
         {/* Header */}
-        <div className="mb-8">
-          <Link to="/profile" className="inline-flex items-center text-accent-gold hover:text-accent-gold/80 transition-colors font-semibold mb-4 text-sm">
+        <div className="mb-5 sm:mb-8">
+          <Link to="/profile" className="inline-flex items-center text-accent-gold hover:text-accent-gold/80 transition-colors font-semibold mb-3 sm:mb-4 text-sm">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Înapoi la profil
           </Link>
           
-          <h1 className="text-3xl font-extrabold text-white mb-2 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white mb-2 tracking-tight">
             {listing ? 'Editează anunțul tău' : 'Creează un anunț nou'}
           </h1>
           <p className="text-gray-400 text-sm sm:text-base">
@@ -338,7 +338,7 @@ export default function CreateListing() {
         </div>
 
         {/* Benefits */}
-        <Card variant="elevated" padding="lg" className="mb-8 bg-glass border-white/10 shadow-xl">
+        <Card variant="elevated" padding="lg" className="hidden md:block mb-8 bg-glass border-white/10 shadow-xl">
           <h3 className="text-base font-bold text-white mb-5 uppercase tracking-wider">
             De ce să vinzi pe AutoFans?
           </h3>

@@ -23,7 +23,6 @@ import {
     Textarea,
     Card,
     CardHeader,
-    CardTitle,
     CardContent
 } from '~/components/ui';
 import { ImageUpload } from './ImageUpload';
@@ -247,9 +246,9 @@ export function CreateListingWizard({
         const progressPercent = ((currentStep + 1) / STEPS.length) * 100;
         
         return (
-            <div className="mb-8 bg-white/5 border border-white/5 p-4 sm:p-5 rounded-2xl">
+            <div className="mb-5 border-b border-white/10 pb-5 sm:mb-8 sm:rounded-2xl sm:border sm:border-white/5 sm:bg-white/5 sm:p-5">
                 {/* Step Info Row */}
-                <div className="flex items-center justify-between mb-3.5">
+                <div className="flex items-center justify-between gap-3 mb-3">
                     <div className="min-w-0">
                         <span className="text-[10px] sm:text-xs font-bold text-accent-gold uppercase tracking-wider">
                             Pasul {currentStep + 1} din {STEPS.length}
@@ -258,7 +257,7 @@ export function CreateListingWizard({
                             {STEPS[currentStep].title}
                         </h3>
                     </div>
-                    <span className="text-[10px] sm:text-xs font-bold text-accent-gold bg-accent-gold/10 border border-accent-gold/20 px-2.5 py-1 rounded-lg">
+                    <span className="shrink-0 text-[10px] sm:text-xs font-bold text-accent-gold bg-accent-gold/10 border border-accent-gold/20 px-2 py-1 sm:px-2.5 rounded-lg">
                         {Math.round(progressPercent)}% Complet
                     </span>
                 </div>
@@ -274,7 +273,7 @@ export function CreateListingWizard({
                 </div>
 
                 {/* Quick Dot Indicators below progress bar */}
-                <div className="flex items-center justify-between mt-4 px-1 gap-2.5">
+                <div className="flex items-center justify-between mt-3 px-1 gap-2 sm:mt-4 sm:gap-2.5">
                     {STEPS.map((step, index) => {
                         const isActive = index === currentStep;
                         const isCompleted = index < currentStep;
@@ -328,32 +327,26 @@ export function CreateListingWizard({
 
     return (
         <div className="mx-auto">
-            <Card className="bg-glass border-white/10 shadow-2xl backdrop-blur-xl rounded-2xl overflow-hidden">
-                <CardHeader className="border-b border-white/5 pb-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <div>
-                            <span className="text-xs font-bold text-accent-gold uppercase tracking-wider">Pasul {currentStep + 1} din {STEPS.length}</span>
-                            <h2 className="text-xl font-extrabold text-white mt-0.5">{STEPS[currentStep].title}</h2>
-                        </div>
-                        <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
-                            {lastSaved && (
-                                <p className="text-xs sm:text-sm text-gray-400">
-                                    Salvat: {lastSaved.toLocaleTimeString()}
-                                </p>
-                            )}
-                            {isDraftSaving && (
-                                <p className="text-xs sm:text-sm text-accent-gold animate-pulse">Se salvează...</p>
-                            )}
-                            {onClose && (
-                                <Button variant="ghost" onClick={onClose} className="text-xs sm:text-sm text-white/60 hover:text-white">
-                                    Închide
-                                </Button>
-                            )}
-                        </div>
+            <Card padding="none" className="bg-glass border-white/10 shadow-2xl backdrop-blur-xl rounded-xl sm:rounded-2xl overflow-hidden">
+                <CardHeader className="hidden sm:flex sm:flex-row sm:items-center sm:justify-end sm:gap-4 sm:border-b sm:border-white/5 sm:px-8 sm:py-4">
+                    <div className="flex items-center gap-4 flex-wrap">
+                        {lastSaved && (
+                            <p className="text-xs sm:text-sm text-gray-400">
+                                Salvat: {lastSaved.toLocaleTimeString()}
+                            </p>
+                        )}
+                        {isDraftSaving && (
+                            <p className="text-xs sm:text-sm text-accent-gold animate-pulse">Se salvează...</p>
+                        )}
+                        {onClose && (
+                            <Button variant="ghost" onClick={onClose} className="text-xs sm:text-sm text-white/60 hover:text-white">
+                                Închide
+                            </Button>
+                        )}
                     </div>
                 </CardHeader>
 
-                <CardContent className="p-6 sm:p-8">
+                <CardContent className="p-4 sm:p-8">
                     {renderProgressIndicator()}
 
                     <AnimatePresence mode="wait">
@@ -368,7 +361,7 @@ export function CreateListingWizard({
                         </motion.div>
                     </AnimatePresence>
 
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-8 pt-6 border-t border-white/5">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mt-6 sm:mt-8 pt-5 sm:pt-6 border-t border-white/5">
                         <div className="w-full sm:w-auto flex justify-center sm:justify-start">
                             <Button
                                 variant="outline"
@@ -452,17 +445,17 @@ function BasicInfoStep({ formData, updateFormData, errors }: StepProps) {
     ];
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-5 sm:space-y-6">
             <div>
-                <h3 className="text-lg font-semibold text-white mb-4">
+                <h3 className="text-base sm:text-lg font-semibold text-white mb-2 sm:mb-4">
                     Informații de bază despre mașină
                 </h3>
-                <p className="text-gray-400 text-sm sm:text-base mb-6">
+                <p className="text-gray-400 text-sm sm:text-base mb-4 sm:mb-6">
                     Începe cu informațiile esențiale despre vehiculul tău
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <Select
                     label="Marca *"
                     placeholder="Selectează marca"
@@ -555,7 +548,7 @@ function TechnicalDetailsStep({ formData, updateFormData, errors }: StepProps) {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-5 sm:space-y-6">
             <div>
                 <h3 className="text-lg font-semibold text-white mb-4">
                     Specificații tehnice
@@ -565,7 +558,7 @@ function TechnicalDetailsStep({ formData, updateFormData, errors }: StepProps) {
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <Select
                     label="Tipul combustibilului *"
                     placeholder="Selectează tipul"
@@ -714,7 +707,7 @@ function ConditionStep({ formData, updateFormData, errors }: StepProps) {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-5 sm:space-y-6">
             <div>
                 <h3 className="text-lg font-semibold text-white mb-4">
                     Starea și istoricul mașinii
@@ -724,7 +717,7 @@ function ConditionStep({ formData, updateFormData, errors }: StepProps) {
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <Select
                     label="Starea generală *"
                     placeholder="Selectează starea"
@@ -842,7 +835,7 @@ function PricingStep({ formData, updateFormData, errors }: StepProps) {
     ].map(county => ({ value: county, label: county }));
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-5 sm:space-y-6">
             <div>
                 <h3 className="text-lg font-semibold text-white mb-4">
                     Preț și locație
@@ -852,7 +845,7 @@ function PricingStep({ formData, updateFormData, errors }: StepProps) {
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <div className="space-y-4">
                     <Input
                         label="Preț *"
@@ -887,7 +880,7 @@ function PricingStep({ formData, updateFormData, errors }: StepProps) {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <Input
                     label="Orașul *"
                     placeholder="ex: București"
