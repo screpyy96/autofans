@@ -5,13 +5,15 @@ import { Calendar, Clock, ChevronRight, User } from "lucide-react";
 import { Card } from "~/components/ui/Card";
 
 export function meta({ }: Route.MetaArgs) {
-  const title = "Blog Auto Premium - Noutăți, Review-uri și Ghiduri | AutoFans.ro";
-  const description = "Descoperă cele mai noi știri din lumea auto, review-uri detaliate pentru mașini premium și ghiduri complete pentru cumpărarea unei mașini second-hand.";
+  const title = "Ghiduri pentru mașini second-hand, verificări și costuri | AutoFans";
+  const description = "Ghiduri practice pentru cumpărarea unei mașini second-hand: acte, verificări la vizionare, istoric VIN, costuri reale și întreținere.";
   const image = "https://autofans.ro/hero_background.jpg";
 
   return [
     { title },
     { name: "description", content: description },
+    { name: "robots", content: "index,follow,max-image-preview:large" },
+    { tagName: "link", rel: "canonical", href: "https://autofans.ro/blog" },
     { property: "og:title", content: title },
     { property: "og:description", content: description },
     { property: "og:image", content: image },
@@ -26,9 +28,24 @@ export function meta({ }: Route.MetaArgs) {
 export default function BlogIndex() {
   const featuredPost = blogPosts.find(p => p.isFeatured) || blogPosts[0];
   const otherPosts = blogPosts.filter(p => p.id !== featuredPost.id);
+  const blogSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Blog',
+    name: 'AutoFans Blog',
+    url: 'https://autofans.ro/blog',
+    description: 'Ghiduri practice pentru cumpărarea și deținerea unei mașini.',
+    blogPost: blogPosts.map((post) => ({
+      '@type': 'BlogPosting',
+      headline: post.title,
+      url: `https://autofans.ro/blog/${post.slug}`,
+      datePublished: post.publishedAt,
+      dateModified: post.updatedAt,
+    })),
+  };
 
   return (
     <div className="min-h-screen bg-[#121212] pt-8 pb-20">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(blogSchema) }} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         
         {/* Header */}
@@ -44,6 +61,8 @@ export default function BlogIndex() {
               <img 
                 src={featuredPost.coverImage} 
                 alt={featuredPost.title} 
+                fetchPriority="high"
+                sizes="(max-width: 768px) 100vw, 1280px"
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
@@ -88,6 +107,9 @@ export default function BlogIndex() {
                   <img 
                     src={post.coverImage} 
                     alt={post.title} 
+                    loading="lazy"
+                    decoding="async"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                   <div className="absolute top-4 left-4">

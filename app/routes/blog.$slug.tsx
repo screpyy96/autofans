@@ -9,6 +9,7 @@ export function meta({ data }: Route.MetaArgs) {
   const post = data?.post;
   if (!post) return [{ title: "Articol inexistent - AutoFans Blog" }];
   const canonicalUrl = `https://autofans.ro/blog/${post.slug}`;
+  const imageUrl = `https://autofans.ro${post.coverImage}`;
 
   return [
     { title: `${post.title} | AutoFans Blog` },
@@ -17,7 +18,7 @@ export function meta({ data }: Route.MetaArgs) {
     { tagName: 'link', rel: 'canonical', href: canonicalUrl },
     { property: "og:title", content: post.title },
     { property: "og:description", content: post.excerpt },
-    { property: "og:image", content: post.coverImage },
+    { property: "og:image", content: imageUrl },
     { property: "og:type", content: "article" },
     { property: 'og:url', content: canonicalUrl },
     { property: 'article:published_time', content: post.publishedAt },
@@ -25,7 +26,7 @@ export function meta({ data }: Route.MetaArgs) {
     { name: "twitter:card", content: "summary_large_image" },
     { name: "twitter:title", content: post.title },
     { name: "twitter:description", content: post.excerpt },
-    { name: "twitter:image", content: post.coverImage }
+    { name: "twitter:image", content: imageUrl }
   ];
 }
 
@@ -40,12 +41,13 @@ export async function loader({ params }: Route.LoaderArgs) {
 export default function BlogPost() {
   const { post } = useLoaderData<typeof loader>();
   const canonicalUrl = `https://autofans.ro/blog/${post.slug}`;
+  const imageUrl = `https://autofans.ro${post.coverImage}`;
   const articleSchema = {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
     headline: post.title,
     description: post.excerpt,
-    image: post.coverImage,
+    image: imageUrl,
     datePublished: post.publishedAt,
     dateModified: post.updatedAt,
     mainEntityOfPage: canonicalUrl,
@@ -85,6 +87,8 @@ export default function BlogPost() {
           <img 
             src={post.coverImage} 
             alt={post.title} 
+            fetchPriority="high"
+            sizes="100vw"
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-[#121212]" />
