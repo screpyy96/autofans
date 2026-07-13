@@ -46,7 +46,7 @@ export default function Privacy() {
             <ul className="list-disc pl-6 space-y-2 text-gray-400">
               <li><strong className="text-white">Date de cont:</strong> Adresa de email și numele primite prin autentificarea directă sau prin intermediul contului Google.</li>
               <li><strong className="text-white">Date de contact anunț:</strong> Numărul de telefon furnizat opțional de dumneavoastră atunci când alegeți să publicați un anunț de vânzare, pentru a fi contactat de cumpărători.</li>
-              <li><strong className="text-white">Date de navigare:</strong> Adresa IP, browser-ul utilizat, preferințele de căutare (marcă, model) stocate local sau pe serverele noastre pentru a îmbunătăți experiența de utilizare.</li>
+              <li><strong className="text-white">Date de navigare:</strong> Adresa IP, browser-ul utilizat și date agregate despre paginile vizitate, colectate prin Google Analytics, pentru a îmbunătăți experiența de utilizare.</li>
             </ul>
           </section>
 
@@ -62,6 +62,7 @@ export default function Privacy() {
               <li>Permiterea comunicării directe prin telefon între potențialii cumpărători și vânzători.</li>
               <li>Prevenirea tentativelor de fraudă și a spam-ului prin validarea manuală a anunțurilor publicate.</li>
               <li>Trimiterea de notificări tehnice de sistem sau alerte de preț/anunțuri noi (doar dacă sunt solicitate în prealabil).</li>
+              <li>Înțelegerea modului în care este folosit site-ul, prin statistici agregate de trafic și performanță furnizate de Google Analytics.</li>
             </ul>
           </section>
 
@@ -97,7 +98,7 @@ export default function Privacy() {
               <span className="text-accent-gold">5.</span> Utilizarea de Cookie-uri
             </h2>
             <p>
-              Folosim cookie-uri tehnice și funcționale de sesiune (inclusiv pentru stocarea token-ului de sesiune Supabase sau a preferințelor de favorite în Zustand) pentru a asigura funcționarea corectă a site-ului. Aceste cookie-uri nu sunt folosite pentru profilare publicitară invazivă.
+              Folosim cookie-uri tehnice și funcționale de sesiune (inclusiv pentru stocarea token-ului de sesiune Supabase sau a preferințelor de favorite în Zustand) pentru a asigura funcționarea corectă a site-ului. Folosim și Google Analytics (ID de măsurare G-1LFYZC3LT9) pentru statistici agregate despre trafic și utilizarea paginilor. Nu folosim aceste date pentru profilare publicitară invazivă.
             </p>
           </section>
 
