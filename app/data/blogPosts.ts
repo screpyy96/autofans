@@ -206,7 +206,7 @@ Prețul mult sub piață, refuzul VIN-ului, avansul cerut înainte de vizionare,
     title: "PPF vs colantare auto: diferențe, preț, durabilitate și ce alegi",
     excerpt: "Află diferența dintre folia PPF și colantarea vinyl: protecție la pietricele, schimbarea culorii, costuri de montaj, întreținere și durata de viață.",
     content: `
-A venit momentul în care vrei să îți personalizezi mașina sau să îi protejezi vopseaua originală, mai ales dacă tocmai ai cumpărat-o. La un atelier de detailing vei primi, de regulă, două propuneri: colantare pentru schimbarea aspectului sau PPF pentru protecție.
+A venit momentul în care vrei să îți personalizezi mașina sau să îi protejezi vopseaua originală, mai ales dacă tocmai ai cumpărat-o. La un atelier de detailing vei primi, de regulă, două propuneri: colantare pentru schimbarea aspectului sau PPF pentru protecție. Dacă ești din Bucovina, poți vedea concret ce include un serviciu de [colantare auto profesională în Suceava](https://www.detailingsuceava.com/servicii/colantare) înainte să ceri oferta.
 
 > **Pe scurt:** alege PPF când vrei să protejezi vopseaua de impacturile ușoare și colantare când obiectivul principal este schimbarea culorii. Cere mereu marca foliei, condițiile de garanție și exemple de montaj înainte să plătești avansul.
 
@@ -258,7 +258,7 @@ Nu te lăsa păcălit de unele spălătorii sau "ateliere auto" care susțin că
 
 Nu compara doar totalul de pe ofertă. Întreabă ce suprafețe sunt incluse, dacă se demontează elemente, cum se pregătește vopseaua, ce marcă de folie se folosește și cine răspunde dacă apar bule, muchii ridicate sau diferențe de culoare. Un preț mic poate exclude decontaminarea, corecția lacului sau zonele greu de montat, iar costul real apare ulterior.
 
-Pentru PPF, stabilește exact pachetul: bară, capotă parțială sau integrală, aripi, oglinzi, faruri și praguri. Pentru colantare, verifică dacă atelierul a văzut defectele existente ale vopselei și dacă folia aleasă are finisajul dorit în lumină naturală. Cere mostre, fotografii ale unor lucrări vechi și condițiile de întreținere după montaj.
+Pentru PPF, stabilește exact pachetul: bară, capotă parțială sau integrală, aripi, oglinzi, faruri și praguri. Pentru colantare, verifică dacă atelierul a văzut defectele existente ale vopselei și dacă folia aleasă are finisajul dorit în lumină naturală. Cere mostre, fotografii ale unor lucrări vechi și condițiile de întreținere după montaj. Ca exemplu de checklist, pagina de [protecție PPF de la D&S Auto Suceava](https://www.detailingsuceava.com/servicii/ppf) detaliază pregătirea suprafeței, zonele incluse și factorii care influențează o ofertă.
 
 ### Întreținere după aplicare
 

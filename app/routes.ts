@@ -23,6 +23,7 @@ export default [
   route("/seller/:id", "routes/seller.$id.tsx", { lazy: true }),
   route("/create-listing", "routes/create-listing.tsx", { lazy: true }),
   route("/api/alerts/dispatch", "routes/api.alerts.dispatch.tsx"),
+  route("/api/home", "routes/api.home.tsx"),
   route("/compare", "routes/compare.tsx", { lazy: true }),
   route("/dashboard", "routes/dashboard.tsx", { lazy: true }),
   route("/dashboard/listings", "routes/dashboard.listings.tsx", { lazy: true }),

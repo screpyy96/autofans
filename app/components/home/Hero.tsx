@@ -20,7 +20,9 @@ export function Hero({ onSearch }: HeroProps) {
             width={1376}
             height={768}
             fetchPriority="high"
+            loading="eager"
             decoding="async"
+            sizes="100vw"
             className="absolute inset-0 h-full w-full object-cover object-center"
           />
         </picture>

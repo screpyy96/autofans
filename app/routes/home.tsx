@@ -1,6 +1,7 @@
+import { useEffect, useState } from 'react';
 import { Link, useLoaderData } from 'react-router';
 import type { Route } from "./+types/home";
-import type { LoaderFunctionArgs } from 'react-router';
+import type { LinksFunction } from 'react-router';
 import { Search, Car as CarIcon, Shield, Clock, TrendingUp, FileText, ShieldCheck, Calculator, Tag, Plus, Sparkles } from 'lucide-react';
 import { Button } from '~/components/ui/Button';
 import { Card } from '~/components/ui/Card';
@@ -8,11 +9,8 @@ import { Hero } from '~/components/home/Hero';
 import { RouteErrorBoundary } from '~/components/error';
 import { CarCard } from '~/components/car/CarCard';
 import { useFavorites, useComparison } from '~/stores/useAppStore';
-import { getSupabaseServerClient } from '~/lib/supabase.server';
 import type { Car } from '~/types';
 import { mapListingToCar } from '~/utils/listingMapper';
-import { signListingImages } from '~/utils/listingImages';
-import { buildRecommendations } from '~/utils/recommendations';
 
 export function meta({ }: Route.MetaArgs) {
   const title = "AutoFans.ro - Platforma Premium de Anunțuri Auto";
@@ -34,82 +32,38 @@ export function meta({ }: Route.MetaArgs) {
   ];
 }
 
-export async function loader({ request }: LoaderFunctionArgs) {
-  try {
-    const { supabase } = getSupabaseServerClient(request);
-    const { data: { user } } = await supabase.auth.getUser();
-    const [publishedCountResult, brandRowsResult, listingsResult] = await Promise.all([
-      supabase
-        .from('listings')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', 'published'),
-      supabase
-        .from('listings')
-        .select('make')
-        .eq('status', 'published')
-        .not('make', 'is', null)
-        .limit(500),
-      supabase
-        .from('listings')
-        .select('id, slug, owner_id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, vin, vin_verified, history_checked, images, created_at, city, county, latitude, longitude')
-        .eq('status', 'published')
-        .order('created_at', { ascending: false })
-        .limit(6),
-    ]);
+export const links: LinksFunction = () => [
+  {
+    rel: 'preload',
+    as: 'image',
+    href: '/hero_background.webp',
+    type: 'image/webp',
+    imageSrcSet: '/hero_background.webp 1376w',
+    imageSizes: '100vw',
+    fetchPriority: 'high',
+  },
+];
 
-    const publishedCount = publishedCountResult.count;
-    const brandRows = brandRowsResult.data;
-    const listings = listingsResult.data;
-
-    let favoriteListings: any[] = [];
-    let savedSearches: any[] = [];
-    let recommendationListings: any[] = [];
-    if (user) {
-      const [{ data: favoriteRows }, { data: searches }, { data: candidates }] = await Promise.all([
-        supabase.from('favorites').select('listing_id').eq('user_id', user.id),
-        supabase.from('saved_searches').select('name, query').eq('user_id', user.id).limit(20),
-        supabase.from('listings')
-          .select('id, slug, owner_id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, vin, vin_verified, history_checked, images, created_at, city, county, latitude, longitude, service_history, owners')
-          .eq('status', 'published')
-          .order('created_at', { ascending: false })
-          .limit(60),
-      ]);
-      const favoriteIds = (favoriteRows || []).map((row: any) => row.listing_id);
-      if (favoriteIds.length) {
-        const { data } = await supabase.from('listings')
-          .select('id, make, model, fuel_type, transmission, price, city, county, created_at')
-          .in('id', favoriteIds)
-          .eq('status', 'published');
-        favoriteListings = data || [];
-      }
-      savedSearches = searches || [];
-      recommendationListings = candidates || [];
-    }
-
-    const recommendations = buildRecommendations({ candidates: recommendationListings, favorites: favoriteListings, savedSearches, limit: 6 });
-    const allListingsForImages = [...(listings || []), ...recommendations.map((item) => item.listing)];
-    const signedMap = await signListingImages(supabase as any, allListingsForImages);
-    
-    // Calculate brand frequencies
-    const brandCounts = (brandRows || []).reduce((acc: Record<string, number>, row: any) => {
-      if (row.make) acc[row.make] = (acc[row.make] || 0) + 1;
-      return acc;
-    }, {});
-    
-    const brands = Object.entries(brandCounts)
-      .map(([name, count]) => ({ name, count: count as number }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 8);
-
-    return { listings: listings || [], recommendations, signedMap, publishedCount: publishedCount || 0, brands };
-  } catch (error) {
-    console.error('home loader error:', error);
-    return { listings: [], recommendations: [], signedMap: {} as Record<string, string>, publishedCount: 0, brands: [] };
-  }
+export async function loader() {
+  return { listings: [], recommendations: [], signedMap: {} as Record<string, string>, publishedCount: 0, brands: [] };
 }
 
 function HomeContent() {
-  const data = useLoaderData<typeof loader>();
+  const initialData = useLoaderData<typeof loader>();
+  const [data, setData] = useState<any>(initialData);
+  const [catalogLoaded, setCatalogLoaded] = useState(false);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch('/api/home', { signal: controller.signal })
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error('Home catalog failed')))
+      .then(setData)
+      .catch((error) => {
+        if (error.name !== 'AbortError') console.warn('Unable to load home catalog:', error);
+      })
+      .finally(() => setCatalogLoaded(true));
+    return () => controller.abort();
+  }, []);
   const recentCars = data.listings.map((listing: any) => mapListingToCar(listing, data.signedMap));
   const recommendedCars = data.recommendations.map((item: any) => ({ car: mapListingToCar(item.listing, data.signedMap), reason: item.reason }));
   const { favorites, addToFavorites, removeFromFavorites, isFavorited } = useFavorites();
@@ -145,9 +99,9 @@ function HomeContent() {
   };
 
   const stats = [
-    { label: 'Anunțuri active', value: data.publishedCount.toLocaleString('ro-RO'), icon: CarIcon },
-    { label: 'Mărci disponibile', value: String(data.brands.length), icon: Shield },
-    { label: 'Adăugate recent', value: String(recentCars.length), icon: TrendingUp },
+    { label: 'Anunțuri active', value: catalogLoaded ? data.publishedCount.toLocaleString('ro-RO') : '—', icon: CarIcon },
+    { label: 'Mărci disponibile', value: catalogLoaded ? String(data.brands.length) : '—', icon: Shield },
+    { label: 'Adăugate recent', value: catalogLoaded ? String(recentCars.length) : '—', icon: TrendingUp },
     { label: 'Platformă', value: 'LIVE', icon: Clock },
   ];
 
@@ -156,7 +110,7 @@ function HomeContent() {
       <Hero onSearch={handleSearch} />
 
       {/* Info Cards Section */}
-      <section className="py-16 w-full bg-glass/10 backdrop-blur-md text-white border-b border-white/5">
+      <section className="defer-render py-16 w-full bg-glass/10 backdrop-blur-md text-white border-b border-white/5">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-10">
             <h2 className="text-3xl font-bold mb-2">
@@ -220,7 +174,7 @@ function HomeContent() {
       </section>
 
       {/* Brands Section */}
-      <section className="py-16 bg-glass/20 backdrop-blur-md w-full border-b border-white/5">
+      <section className="defer-render py-16 bg-glass/20 backdrop-blur-md w-full border-b border-white/5">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-10">
             <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
@@ -249,7 +203,7 @@ function HomeContent() {
 
       {/* Recent Listings Section */}
       {recommendedCars.length > 0 && (
-        <section className="border-y border-accent-gold/15 bg-accent-gold/[0.04] py-20">
+        <section className="defer-render border-y border-accent-gold/15 bg-accent-gold/[0.04] py-20">
           <div className="mx-auto max-w-7xl px-6">
             <div className="mb-12 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
@@ -272,7 +226,7 @@ function HomeContent() {
       )}
 
       {/* Recent Listings Section */}
-      <section className="py-20 w-full max-w-7xl mx-auto px-6">
+      <section className="defer-render py-20 w-full max-w-7xl mx-auto px-6">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-12 gap-4">
           <div>
             <h2 className="text-3xl font-bold text-white mb-3">
@@ -299,16 +253,20 @@ function HomeContent() {
                 isFavorited={isFavorited(car.id)}
                 isInComparison={isInComparison(car.id)}
               />
-            )) : (
+            )) : catalogLoaded ? (
               <div className="col-span-full rounded-2xl border border-white/10 bg-glass p-10 text-center text-gray-300">
                 Nu există încă anunțuri publicate.
+              </div>
+            ) : (
+              <div className="col-span-full rounded-2xl border border-white/10 bg-glass p-10 text-center text-gray-400">
+                Se încarcă anunțurile recente…
               </div>
             )}
         </div>
       </section>
 
       {/* Stats Section */}
-      <section className="py-20 bg-glass backdrop-blur-xl border-y border-premium w-full">
+      <section className="defer-render py-20 bg-glass backdrop-blur-xl border-y border-premium w-full">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
@@ -327,7 +285,7 @@ function HomeContent() {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-glass backdrop-blur-xl w-full border-t border-white/5">
+      <section className="defer-render py-20 bg-glass backdrop-blur-xl w-full border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-2">
@@ -388,7 +346,7 @@ function HomeContent() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gold-gradient relative overflow-hidden w-full">
+      <section className="defer-render py-20 bg-gold-gradient relative overflow-hidden w-full">
         <div className="absolute inset-0 bg-gradient-to-br from-accent-gold/20 via-transparent to-accent-gold/10"></div>
         <div className="relative w-full px-6 text-center">
           <h2 className="text-4xl font-bold text-secondary-900 mb-6">

@@ -152,7 +152,16 @@ export default function BlogPost() {
             </ol>
           </nav>
           <div className="markdown-content">
-            <Markdown remarkPlugins={[remarkGfm]}>
+            <Markdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                a: ({ href, children }) => href?.startsWith("http") ? (
+                  <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>
+                ) : (
+                  <Link to={href || "#"}>{children}</Link>
+                ),
+              }}
+            >
               {post.content}
             </Markdown>
           </div>
