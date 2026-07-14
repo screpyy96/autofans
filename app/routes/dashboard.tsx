@@ -54,7 +54,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
       supabase
         .from('listings')
         .select('id', { count: 'exact', head: true })
-        .eq('owner_id', user.id),
+        .eq('owner_id', user.id)
+        .eq('status', 'published'),
       supabase
         .from('listings')
         .select('id, title, price, currency, status, updated_at, make, model, year, mileage, images')

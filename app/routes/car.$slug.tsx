@@ -10,7 +10,7 @@ import { Button } from '~/components/ui/Button';
 import { Calculator, MessageCircle } from 'lucide-react';
 import type { Car, Image } from '~/types';
 import { FuelType, TransmissionType } from "~/types";
-import { useComparison } from '~/stores/useAppStore';
+import { useComparison, useFavorites } from '~/stores/useAppStore';
 import { mapListingStatus } from '~/utils/listingMapper';
 import { calculateTrustScore } from '~/utils/trustScore';
 import { calculatePriceScore } from '~/utils/priceScore';
@@ -117,7 +117,6 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
 
 export default function CarDetail({ params }: Route.ComponentProps) {
   const data = useLoaderData() as any;
-  const [isFavorited, setIsFavorited] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
   const contactRecorded = useRef(false);
@@ -213,6 +212,7 @@ export default function CarDetail({ params }: Route.ComponentProps) {
   }, [listingId]);
 
   const { isInComparison, addToComparison, removeFromComparison } = useComparison();
+  const { isFavorited: isListingFavorited, addToFavorites, removeFromFavorites } = useFavorites();
 
   if (!car) {
     return (
@@ -266,7 +266,9 @@ export default function CarDetail({ params }: Route.ComponentProps) {
   };
 
   const handleAddToFavorites = () => {
-    setIsFavorited(!isFavorited);
+    if (!car) return;
+    if (isListingFavorited(car.id)) removeFromFavorites(car.id);
+    else addToFavorites(car.id);
   };
 
   const handleShare = () => {
@@ -298,7 +300,7 @@ export default function CarDetail({ params }: Route.ComponentProps) {
         onShare={handleShare}
         similarCars={similarCars}
         onSimilarCarClick={handleSimilarCarClick}
-        isFavorited={isFavorited}
+        isFavorited={isListingFavorited(car.id)}
         isInComparison={isInComparison(car.id)}
       />
 
@@ -310,10 +312,10 @@ export default function CarDetail({ params }: Route.ComponentProps) {
           car={car}
           seller={car.seller}
           onSendMessage={async (message) => {
-            await recordContact();
             const response = await fetch('/messages', { method: 'POST', body: new URLSearchParams({ intent: 'start', listingId: car.id, body: message.message }) });
             const result = await response.json().catch(() => ({}));
             if (!response.ok || !result.conversationId) throw new Error(result.error || 'Mesajul nu a putut fi trimis.');
+            await recordContact();
             window.location.href = `/messages?conversation=${result.conversationId}`;
           }}
           onWhatsAppContact={() => { void recordContact(); }}
