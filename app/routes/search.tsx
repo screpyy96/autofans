@@ -12,9 +12,7 @@ import { useFavorites, useComparison, useAppInitialization } from '~/stores/useA
 import { RouteErrorBoundary } from '~/components/error';
 import type { Car, FilterState } from '~/types';
 import { mapListingToCar } from '~/utils/listingMapper';
-import { signListingImages } from '~/utils/listingImages';
 import { getSupabaseServerClient } from '~/lib/supabase.server';
-import { searchService } from '~/services/searchService';
 import { parseNaturalSearch } from '~/utils/naturalSearch';
 import { Map } from 'lucide-react';
 
@@ -45,21 +43,11 @@ export function meta({}: any) {
 export async function loader({ request }: LoaderFunctionArgs) {
   try {
     const { supabase, headers } = getSupabaseServerClient(request);
-
-    // Fetch all published listings from Supabase
-    const { data: listings } = await supabase
-      .from('listings')
-      .select('id, slug, owner_id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, body_type, vin, vin_verified, history_checked, images, created_at, city, county, latitude, longitude')
-      .eq('status', 'published')
-      .order('created_at', { ascending: false });
-
-    const signedMap = await signListingImages(supabase as any, listings || []);
-
     const { data: { user } } = await supabase.auth.getUser();
-    return { dbListings: listings || [], signedMap, canSaveSearch: Boolean(user) };
+    return { canSaveSearch: Boolean(user) };
   } catch (e) {
     console.error('search loader error:', e);
-    return { dbListings: [], signedMap: {}, canSaveSearch: false };
+    return { canSaveSearch: false };
   }
 }
 
@@ -108,10 +96,6 @@ function SearchContent() {
   const { activeSort, viewMode, setActiveSort, setViewMode } = useSortAndView();
   const naturalSearch = useMemo(() => parseNaturalSearch(filters.query || ''), [filters.query]);
 
-  const dbCars: Car[] = (data?.dbListings || []).map((listing: any) => mapListingToCar(listing, data.signedMap));
-
-  const allCars = dbCars;
-
   const fetchCars = async (currentPage: number, append = false) => {
     if (append) {
       setIsLoadingMore(true);
@@ -119,14 +103,21 @@ function SearchContent() {
       setIsSearching(true);
     }
     try {
-      const result = await searchService.searchCars(
-        naturalSearch.remainingQuery,
-        { ...filters, ...naturalSearch.filters, sortBy: activeSort as any },
-        currentPage,
-        12,
-        allCars
-      );
-      setDisplayedCars(prev => append ? [...prev, ...result.cars] : result.cars);
+      const response = await fetch('/api/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: naturalSearch.remainingQuery,
+          filters: { ...filters, ...naturalSearch.filters },
+          page: currentPage,
+          pageSize: 12,
+          sort: activeSort,
+        }),
+      });
+      if (!response.ok) throw new Error('Catalogue search failed');
+      const result = await response.json() as { listings: unknown[]; signedMap: Record<string, string>; total: number; hasMore: boolean };
+      const cars = result.listings.map((listing) => mapListingToCar(listing as any, result.signedMap));
+      setDisplayedCars(prev => append ? [...prev, ...cars] : cars);
       setTotalCount(result.total);
       setHasMore(result.hasMore);
     } catch (e) {
@@ -189,7 +180,7 @@ function SearchContent() {
   };
 
   const handleView = (carId: string) => {
-    const car = allCars.find((item) => item.id === carId);
+    const car = displayedCars.find((item) => item.id === carId);
     navigate(`/car/${encodeURIComponent(car?.slug || carId)}`);
   };
 

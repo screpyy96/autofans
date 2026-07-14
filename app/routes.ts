@@ -24,6 +24,7 @@ export default [
   route("/create-listing", "routes/create-listing.tsx", { lazy: true }),
   route("/api/alerts/dispatch", "routes/api.alerts.dispatch.tsx"),
   route("/api/home", "routes/api.home.tsx"),
+  route("/api/search", "routes/api.search.ts"),
   route("/compare", "routes/compare.tsx", { lazy: true }),
   route("/dashboard", "routes/dashboard.tsx", { lazy: true }),
   route("/dashboard/listings", "routes/dashboard.listings.tsx", { lazy: true }),
