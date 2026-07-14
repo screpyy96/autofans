@@ -98,7 +98,7 @@ export default function Privacy() {
               <span className="text-accent-gold">5.</span> Utilizarea de Cookie-uri
             </h2>
             <p>
-              Folosim cookie-uri tehnice și funcționale de sesiune (inclusiv pentru stocarea token-ului de sesiune Supabase sau a preferințelor de favorite în Zustand) pentru a asigura funcționarea corectă a site-ului. Folosim și Google Analytics (ID de măsurare G-1LFYZC3LT9) pentru statistici agregate despre trafic și utilizarea paginilor. Nu folosim aceste date pentru profilare publicitară invazivă.
+              Folosim cookie-uri tehnice și funcționale de sesiune (inclusiv pentru stocarea token-ului de sesiune Supabase sau a preferințelor de favorite în Zustand) pentru a asigura funcționarea corectă a site-ului. Google Analytics (ID de măsurare G-1LFYZC3LT9) este încărcat numai dacă îl accepți din bannerul de preferințe și ne oferă statistici agregate despre trafic și utilizarea paginilor. Nu folosim aceste date pentru profilare publicitară invazivă.
             </p>
           </section>
 

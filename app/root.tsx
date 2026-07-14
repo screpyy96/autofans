@@ -41,12 +41,6 @@ export function Layout({ children }: { children: ReactNode }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#121212" />
         <meta name="google-site-verification" content="RHKKSS1PkcH2LMq-gwj8oR4KEgccWN1X0-Cqo6Sld7Q" />
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-1LFYZC3LT9" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} window.gtag = gtag; gtag('js', new Date()); gtag('config', 'G-1LFYZC3LT9', { send_page_view: false });`,
-          }}
-        />
         <Meta />
         <Links />
       </head>
