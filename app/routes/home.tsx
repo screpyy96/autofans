@@ -1,16 +1,19 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Link, useLoaderData } from 'react-router';
 import type { Route } from "./+types/home";
 import type { LinksFunction } from 'react-router';
-import { Search, Car as CarIcon, Shield, Clock, TrendingUp, FileText, ShieldCheck, Calculator, Tag, Plus, Sparkles } from 'lucide-react';
+import { Search, Car as CarIcon, Shield, Clock, TrendingUp, FileText, ShieldCheck, Calculator, Tag, Plus } from 'lucide-react';
 import { Button } from '~/components/ui/Button';
 import { Card } from '~/components/ui/Card';
 import { Hero } from '~/components/home/Hero';
 import { RouteErrorBoundary } from '~/components/error';
-import { CarCard } from '~/components/car/CarCard';
-import { useFavorites, useComparison } from '~/stores/useAppStore';
+import { DeferredMount } from '~/components/performance/DeferredMount';
 import type { Car } from '~/types';
 import { mapListingToCar } from '~/utils/listingMapper';
+
+const HomeListings = lazy(() =>
+  import('~/components/home/HomeListings').then(({ HomeListings: HomeListingsComponent }) => ({ default: HomeListingsComponent })),
+);
 
 export function meta({ }: Route.MetaArgs) {
   const title = "AutoFans.ro - Platforma Premium de Anunțuri Auto";
@@ -89,32 +92,8 @@ function HomeContent() {
   }, []);
   const recentCars = data.listings.map((listing: any) => mapListingToCar(listing, data.signedMap));
   const recommendedCars = data.recommendations.map((item: any) => ({ car: mapListingToCar(item.listing, data.signedMap), reason: item.reason }));
-  const { favorites, addToFavorites, removeFromFavorites, isFavorited } = useFavorites();
-  const { comparisonCars, addToComparison, removeFromComparison, isInComparison } = useComparison();
-
   const handleSearch = (query: string) => {
     window.location.href = `/search?q=${encodeURIComponent(query)}`;
-  };
-
-  const handleFavorite = (carId: string) => {
-    if (isFavorited(carId)) {
-      removeFromFavorites(carId);
-    } else {
-      addToFavorites(carId);
-    }
-  };
-
-  const handleCompare = (carId: string) => {
-    if (isInComparison(carId)) {
-      removeFromComparison(carId);
-    } else {
-      addToComparison(carId);
-    }
-  };
-
-  const handleView = (carId: string) => {
-    const car = [...recentCars, ...recommendedCars.map((item) => item.car)].find((item) => item.id === carId);
-    window.location.href = `/car/${encodeURIComponent(car?.slug || carId)}`;
   };
 
   const stats = [
@@ -220,68 +199,13 @@ function HomeContent() {
         </div>
       </section>
 
-      {/* Recent Listings Section */}
-      {recommendedCars.length > 0 && (
-        <section className="defer-render border-y border-accent-gold/15 bg-accent-gold/[0.04] py-20">
-          <div className="mx-auto max-w-7xl px-6">
-            <div className="mb-12 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <div className="mb-3 flex items-center gap-2 text-accent-gold"><Sparkles className="h-5 w-5" /><span className="text-sm font-bold uppercase tracking-[0.18em]">Personalizat</span></div>
-                <h2 className="text-3xl font-bold text-white">Recomandate pentru tine</h2>
-                <p className="mt-3 text-gray-400">Selectate din favoritele și căutările tale salvate.</p>
-              </div>
-              <Link to="/search"><Button variant="outline" className="border-accent-gold/45 text-accent-gold hover:bg-accent-gold/10">Explorează toate mașinile</Button></Link>
-            </div>
-            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-              {recommendedCars.map(({ car, reason }) => (
-                <div key={car.id} className="relative">
-                  <div className="absolute left-4 top-4 z-10 rounded-full border border-accent-gold/30 bg-secondary-950/95 px-3 py-1 text-xs font-semibold text-accent-gold shadow-lg">{reason}</div>
-                  <CarCard car={car} onFavorite={handleFavorite} onCompare={handleCompare} onView={handleView} isFavorited={isFavorited(car.id)} isInComparison={isInComparison(car.id)} />
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Recent Listings Section */}
-      <section className="defer-render py-20 w-full max-w-7xl mx-auto px-6">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-12 gap-4">
-          <div>
-            <h2 className="text-3xl font-bold text-white mb-3">
-              Ultimele anunțuri adăugate
-            </h2>
-            <p className="text-gray-400">Mașini gata de drum, adăugate recent de proprietari și dealeri verificați din România.</p>
-          </div>
-          <Link to="/search">
-            <Button variant="outline" className="border-accent-gold/45 text-accent-gold hover:bg-accent-gold/10 hover:border-accent-gold font-bold transition-all">
-              Vezi toate anunțurile
-            </Button>
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {recentCars.length > 0 ? recentCars.map((car) => (
-              <CarCard
-                key={car.id}
-                car={car}
-                onFavorite={handleFavorite}
-                onCompare={handleCompare}
-                onView={handleView}
-                isFavorited={isFavorited(car.id)}
-                isInComparison={isInComparison(car.id)}
-              />
-            )) : catalogLoaded ? (
-              <div className="col-span-full rounded-2xl border border-white/10 bg-glass p-10 text-center text-gray-300">
-                Nu există încă anunțuri publicate.
-              </div>
-            ) : (
-              <div className="col-span-full rounded-2xl border border-white/10 bg-glass p-10 text-center text-gray-400">
-                Se încarcă anunțurile recente…
-              </div>
-            )}
-        </div>
-      </section>
+      <DeferredMount
+        placeholder={<section className="defer-render min-h-[440px] py-20" aria-hidden="true" />}
+      >
+        <Suspense fallback={<section className="min-h-[440px] py-20" aria-label="Se încarcă anunțurile" />}>
+          <HomeListings catalogLoaded={catalogLoaded} recentCars={recentCars} recommendedCars={recommendedCars} />
+        </Suspense>
+      </DeferredMount>
 
       {/* Stats Section */}
       <section className="defer-render py-20 bg-glass backdrop-blur-xl border-y border-premium w-full">
