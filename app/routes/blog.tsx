@@ -1,7 +1,7 @@
 import { Link, useLoaderData, useSearchParams } from "react-router";
 import type { Route } from "./+types/blog";
 import { getBlogPostSummaries } from "~/data/blogPosts.server";
-import { Calendar, Clock, ChevronRight, User } from "lucide-react";
+import { Calendar, Clock, ChevronRight } from "lucide-react";
 import { Card } from "~/components/ui/Card";
 
 export function meta({ }: Route.MetaArgs) {
@@ -33,8 +33,11 @@ export default function BlogIndex() {
   const { posts: blogPosts } = useLoaderData<typeof loader>();
   const [searchParams] = useSearchParams();
   const activeTag = searchParams.get('tag')?.trim() || '';
-  const allTags = Array.from(new Set(blogPosts.flatMap((post) => post.tags))).sort((a, b) => a.localeCompare(b, 'ro'));
-  const filteredPosts = activeTag
+  const activeCategory = searchParams.get('category')?.trim() || '';
+  const categories = Array.from(new Set(blogPosts.map((post) => post.category))).sort((a, b) => a.localeCompare(b, 'ro'));
+  const filteredPosts = activeCategory
+    ? blogPosts.filter((post) => post.category === activeCategory)
+    : activeTag
     ? blogPosts.filter((post) => post.tags.some((tag) => tag.localeCompare(activeTag, 'ro', { sensitivity: 'accent' }) === 0))
     : blogPosts;
   const featuredPost = filteredPosts.find((post) => post.isFeatured) || filteredPosts[0];
@@ -69,15 +72,15 @@ export default function BlogIndex() {
           <p className="text-xl text-gray-400 max-w-2xl">Descoperă cele mai noi trenduri, review-uri sincere și sfaturi esențiale din lumea auto.</p>
         </div>
 
-        <nav aria-label="Filtrează articolele după etichetă" className="mb-10 flex flex-wrap gap-2">
-          <Link to="/blog" aria-current={!activeTag ? 'page' : undefined} className={`rounded-full border px-3 py-2 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-gold ${!activeTag ? 'border-accent-gold bg-accent-gold/15 text-accent-gold' : 'border-white/10 bg-white/[0.03] text-gray-300 hover:border-white/30 hover:text-white'}`}>
+        <nav aria-label="Filtrează articolele după categorie" className="mb-10 flex flex-wrap gap-2">
+          <Link to="/blog" aria-current={!activeTag && !activeCategory ? 'page' : undefined} className={`rounded-full border px-3 py-2 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-gold ${!activeTag && !activeCategory ? 'border-accent-gold bg-accent-gold/15 text-accent-gold' : 'border-white/10 bg-white/[0.03] text-gray-300 hover:border-white/30 hover:text-white'}`}>
             Toate articolele
           </Link>
-          {allTags.map((tag) => {
-            const isActive = tag.localeCompare(activeTag, 'ro', { sensitivity: 'accent' }) === 0;
+          {categories.map((category) => {
+            const isActive = category === activeCategory;
             return (
-              <Link key={tag} to={`/blog?tag=${encodeURIComponent(tag)}`} aria-current={isActive ? 'page' : undefined} className={`rounded-full border px-3 py-2 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-gold ${isActive ? 'border-accent-gold bg-accent-gold/15 text-accent-gold' : 'border-white/10 bg-white/[0.03] text-gray-300 hover:border-white/30 hover:text-white'}`}>
-                #{tag}
+              <Link key={category} to={`/blog?category=${encodeURIComponent(category)}`} aria-current={isActive ? 'page' : undefined} className={`rounded-full border px-3 py-2 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-gold ${isActive ? 'border-accent-gold bg-accent-gold/15 text-accent-gold' : 'border-white/10 bg-white/[0.03] text-gray-300 hover:border-white/30 hover:text-white'}`}>
+                {category}
               </Link>
             );
           })}
