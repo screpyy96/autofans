@@ -3,6 +3,16 @@ import { useLoaderData, Link, Form } from "react-router";
 import { getSupabaseServerClient } from "~/lib/supabase.server";
 import { Card } from "~/components/ui/Card";
 import { Button } from "~/components/ui/Button";
+import { DeleteListingControl } from '~/components/listing/DeleteListingControl';
+import { formatListingUpdatedAt, listingStatusLabel } from '~/utils/listingStatus';
+import { publishOwnedListing } from '~/utils/publishListing.server';
+
+export function meta() {
+  return [
+    { title: 'Anunțurile mele - AutoFans.ro' },
+    { name: 'robots', content: 'noindex,nofollow' },
+  ];
+}
 
 type Listing = {
   id: number;
@@ -30,7 +40,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
     .map((l) => (l.images || []).find((i: any) => i.isMain)?.path || (l.images || [])[0]?.path)
     .filter(Boolean) as string[];
   if (paths.length) {
-    const { data: signed } = await supabase.storage.from('listing-images').createSignedUrls(paths, 60 * 60);
+      const { data: signed } = await (supabase.storage.from('listing-images') as any).createSignedUrls(paths, 60 * 60, {
+        transform: { width: 480, height: 360, quality: 68, resize: 'cover' },
+      });
     const map: Record<string, string> = {};
     for (const s of signed || []) {
       const it: any = s; if (it?.path && it?.signedUrl) map[it.path] = it.signedUrl as string;
@@ -55,8 +67,8 @@ export async function action({ request }: ActionFunctionArgs) {
   const path = form.get('path') as string | null;
 
   if (intent === 'publish' && id) {
-    const { error } = await supabase.from('listings').update({ status: 'published' }).eq('id', id).eq('owner_id', user.id);
-    if (error) return { ok: false, error: error.message };
+    const result = await publishOwnedListing(supabase, user.id, id);
+    if (!result.ok) return result;
     return redirect('/dashboard/listings', { headers });
   }
   if (intent === 'draft' && id) {
@@ -85,10 +97,10 @@ export default function DashboardListings() {
   const { listings, thumbs } = useLoaderData<{ listings: Listing[]; thumbs: Record<number, string> }>();
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex items-center justify-between mb-6">
+    <div className="mx-auto max-w-6xl px-4 py-5 sm:px-6 sm:py-8 lg:px-8">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-white">Anunțurile mele</h1>
-        <Link to="/create-listing"><Button className="bg-gold-gradient text-secondary-900">Creează anunț</Button></Link>
+        <Button asChild className="bg-gold-gradient text-secondary-900"><Link to="/create-listing">Adaugă anunț</Link></Button>
       </div>
 
       {(listings || []).length === 0 ? (
@@ -98,17 +110,17 @@ export default function DashboardListings() {
       ) : (
         <div className="space-y-3">
           {(listings || []).map((l) => (
-            <Card key={l.id} variant="elevated" padding="md" className="flex items-center gap-3">
+            <Card key={l.id} variant="elevated" padding="md" className="flex flex-col gap-3 sm:flex-row sm:items-center">
               {thumbs?.[l.id] ? (
-                <img src={thumbs[l.id]} alt="thumb" className="w-20 h-16 rounded-lg object-cover border border-white/10" />
+                <img src={thumbs[l.id]} alt={l.title} className="h-16 w-20 rounded-lg border border-white/10 object-cover" />
               ) : (
-                <div className="w-20 h-16 rounded-lg bg-white/5 border border-white/10" />
+                <div className="h-16 w-20 rounded-lg border border-white/10 bg-white/5" aria-hidden="true" />
               )}
               <div className="flex-1 min-w-0">
                 <p className="text-white font-medium truncate">{l.title}</p>
-                <p className="text-gray-400 text-sm">{l.status} • {new Date(l.updated_at).toLocaleString()}</p>
+                <p className="text-sm text-gray-400">{listingStatusLabel(l.status)} · {formatListingUpdatedAt(l.updated_at)}</p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
                 {l.status !== 'published' ? (
                   <Form method="post">
                     <input type="hidden" name="intent" value="publish" />
@@ -122,15 +134,11 @@ export default function DashboardListings() {
                     <Button type="submit" variant="outline" size="sm">Draft</Button>
                   </Form>
                 )}
-                <Link to={`/create-listing?edit=${l.id}`}>
-                  <Button variant="outline" size="sm" className="border-accent-gold/20 text-accent-gold">Editează</Button>
-                </Link>
-                <Form method="post">
-                  <input type="hidden" name="intent" value="delete" />
-                  <input type="hidden" name="id" value={String(l.id)} />
-                  <Button type="submit" variant="danger" size="sm">Șterge</Button>
-                </Form>
-                <Link to={`/car/${l.slug || l.id}`}><Button variant="outline" size="sm">Vezi</Button></Link>
+                <Button asChild variant="outline" size="sm" className="w-full border-accent-gold/20 text-accent-gold sm:w-auto">
+                  <Link to={`/create-listing?edit=${l.id}`}>Editează</Link>
+                </Button>
+                <DeleteListingControl listingId={l.id} className="w-full sm:w-auto" />
+                <Button asChild variant="outline" size="sm" className="w-full sm:w-auto"><Link to={`/car/${l.slug || l.id}`}>Vezi</Link></Button>
               </div>
             </Card>
           ))}
@@ -139,4 +147,3 @@ export default function DashboardListings() {
     </div>
   );
 }
-

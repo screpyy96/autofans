@@ -1,5 +1,4 @@
 import { Link } from 'react-router';
-import { Badge } from '~/components/ui/Badge';
 
 export type PremiumFooterNavItem = {
   name: string;
@@ -19,15 +18,10 @@ export function PremiumFooter({ navigation }: PremiumFooterProps) {
       <div className="mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="col-span-1 md:col-span-2">
-            <div className="flex items-start gap-3 mb-4">
-              <p className="text-gray-400 leading-relaxed">
-                Platforma premium pentru mașini second-hand în România. Găsește mașina perfectă sau vinde-ți mașina rapid și sigur.
-              </p>
-            </div>
-            <div className="flex items-center gap-4">
-              <Badge variant="success" className="bg-green-900/20 text-green-400 border-green-500/30">Verificat SSL</Badge>
-              <Badge variant="primary" className="bg-accent-gold/20 text-accent-gold border-accent-gold/30">Suport 24/7</Badge>
-            </div>
+            <p className="max-w-xl text-gray-400 leading-relaxed">
+              Platforma AutoFans pentru cumpărarea și vânzarea de mașini. Compară ofertele, salvează ce contează și discută direct cu vânzătorul.
+            </p>
+            <p className="mt-4 text-sm font-medium text-accent-gold">Cumpără informat. Vinde clar.</p>
           </div>
 
           <div>

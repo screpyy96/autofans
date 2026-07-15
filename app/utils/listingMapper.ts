@@ -41,6 +41,7 @@ export function mapListingToCar(listing: any, signedMap: Record<string, string> 
     slug: listing.slug || String(listing.id),
     trustScore: trust.score,
     trustLevel: trust.level,
+    trustSignals: trust.signals,
     title: listing.title || `${listing.make || ''} ${listing.model || ''}`.trim() || 'Anunț auto',
     brand: listing.make || '—',
     model: listing.model || '—',
@@ -59,7 +60,10 @@ export function mapListingToCar(listing: any, signedMap: Record<string, string> 
       latitude: typeof listing.latitude === 'number' ? listing.latitude : undefined,
       longitude: typeof listing.longitude === 'number' ? listing.longitude : undefined,
     },
-    images: images.length ? images : [{ id: '0', url: '/placeholder-car.jpg', thumbnailUrl: '/placeholder-car.jpg', alt: listing.title || 'Mașină', order: 0, isMain: true }],
+    // A missing image is an honest empty state. Do not manufacture a URL for
+    // an asset that does not exist: it would create a 404 on every card.
+    images,
+    imageCount: Number.isFinite(Number(listing.image_count)) ? Number(listing.image_count) : images.length,
     specifications: { engineSize: listing.engine_size || 0, power: listing.power || 0, doors: listing.doors || 4, seats: listing.seats || 5 },
     features: listing.features || [],
     condition: { overall: 3 as any, exterior: 3 as any, interior: 3 as any, engine: 3 as any, transmission: 3 as any, hasAccidents: !!listing.has_accidents },

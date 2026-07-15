@@ -1,6 +1,6 @@
-import { forwardRef } from 'react';
-import { motion } from 'framer-motion';
-import { cn } from '~/lib/utils';
+import { forwardRef, useId } from 'react';
+
+const cn = (...values: unknown[]) => values.filter(Boolean).join(' ');
 
 export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
@@ -11,15 +11,8 @@ export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextArea
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ className, label, error, helperText, resize = 'vertical', ...props }, ref) => {
-    const { 
-      onDrag, 
-      onDragEnd, 
-      onDragStart, 
-      onAnimationStart, 
-      onAnimationEnd, 
-      onAnimationIteration,
-      ...restProps 
-    } = props;
+    const generatedId = useId();
+    const textareaId = props.id ?? `textarea-${generatedId}`;
     
     const resizeClasses = {
       none: 'resize-none',
@@ -31,12 +24,13 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-sm font-medium text-white mb-2">
+          <label htmlFor={textareaId} className="block text-sm font-medium text-white mb-2">
             {label}
           </label>
         )}
-        <motion.textarea
+        <textarea
           ref={ref}
+          id={textareaId}
           className={cn(
             'block w-full px-4 py-3 border border-premium rounded-2xl',
             'placeholder-gray-400 text-white bg-glass backdrop-blur-xl',
@@ -47,17 +41,12 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
             error && 'border-red-500 focus:ring-red-500',
             className
           )}
-          whileFocus={{ scale: 1.01 }}
-          {...restProps}
+          {...props}
         />
         {error && (
-          <motion.p
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-2 text-sm text-red-400"
-          >
+          <p className="mt-2 text-sm text-red-400 motion-safe:animate-[autofans-fade-in_160ms_ease-out]">
             {error}
-          </motion.p>
+          </p>
         )}
         {helperText && !error && (
           <p className="mt-2 text-sm text-gray-400">

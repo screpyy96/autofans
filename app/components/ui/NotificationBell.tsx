@@ -1,6 +1,4 @@
 import { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '~/lib/utils';
 import type { Notification, NotificationType } from '~/types';
 
 export interface NotificationBellProps {
@@ -10,6 +8,9 @@ export interface NotificationBellProps {
   onMarkAsRead: (notificationId: string) => void;
   onMarkAllAsRead: () => void;
   onClearAll: () => void;
+  onViewAll?: () => void;
+  onOpenChange?: (isOpen: boolean) => void;
+  loading?: boolean;
   className?: string;
 }
 
@@ -79,6 +80,8 @@ const getNotificationColor = (type: NotificationType) => {
   }
 };
 
+const cn = (...values: Array<string | false | null | undefined>) => values.filter(Boolean).join(' ');
+
 const formatTimeAgo = (date: Date) => {
   const now = new Date();
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
@@ -104,6 +107,9 @@ export const NotificationBell = ({
   onMarkAsRead,
   onMarkAllAsRead,
   onClearAll,
+  onViewAll,
+  onOpenChange,
+  loading = false,
   className
 }: NotificationBellProps) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -135,6 +141,12 @@ export const NotificationBell = ({
     setIsOpen(false);
   };
 
+  const handleBellClick = () => {
+    const nextIsOpen = !isOpen;
+    setIsOpen(nextIsOpen);
+    onOpenChange?.(nextIsOpen);
+  };
+
   const recentNotifications = [...notifications]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 10);
@@ -142,16 +154,16 @@ export const NotificationBell = ({
   return (
     <div className={cn('relative', className)}>
       {/* Notification Bell Button */}
-      <motion.button
+      <button
         ref={buttonRef}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleBellClick}
+        aria-label="Notificări"
+        aria-expanded={isOpen}
         className={cn(
           'relative p-2 text-gray-300 hover:text-accent-gold transition-colors',
           'focus:outline-none focus:ring-2 focus:ring-accent-gold focus:ring-offset-2 focus:ring-offset-secondary-800 rounded-2xl',
           isOpen && 'text-accent-gold'
         )}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
       >
         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5z" />
@@ -159,30 +171,18 @@ export const NotificationBell = ({
         </svg>
         
         {/* Unread Badge */}
-        <AnimatePresence>
-          {unreadCount > 0 && (
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0 }}
-              className="absolute -top-1 -right-1 bg-accent-gold text-secondary-900 text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center font-medium shadow-glow"
-            >
+        {unreadCount > 0 && (
+            <div className="absolute -top-1 -right-1 flex h-[18px] min-w-[18px] animate-[autofans-badge-in_180ms_ease-out] items-center justify-center rounded-full bg-accent-gold text-xs font-medium text-secondary-900 shadow-glow">
               {unreadCount > 99 ? '99+' : unreadCount}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.button>
+            </div>
+        )}
+      </button>
 
       {/* Notification Dropdown */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
+      {isOpen && (
+          <div
             ref={dropdownRef}
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
-            className="absolute right-0 mt-2 w-80 bg-glass backdrop-blur-xl rounded-2xl shadow-modal border border-premium z-50"
+            className="absolute right-0 z-50 mt-2 w-80 origin-top-right animate-[autofans-pop-in_160ms_ease-out] rounded-2xl border border-premium bg-glass shadow-modal backdrop-blur-xl"
           >
             {/* Header */}
             <div className="px-4 py-3 border-b border-premium">
@@ -203,7 +203,9 @@ export const NotificationBell = ({
 
             {/* Notifications List */}
             <div className="max-h-96 overflow-y-auto">
-              {recentNotifications.length === 0 ? (
+              {loading ? (
+                <div className="px-4 py-8 text-center text-sm text-gray-400" role="status">Se încarcă notificările…</div>
+              ) : recentNotifications.length === 0 ? (
                 <div className="px-4 py-8 text-center">
                   <svg className="w-12 h-12 text-accent-gold/50 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5z" />
@@ -214,12 +216,10 @@ export const NotificationBell = ({
               ) : (
                 <div className="divide-y divide-premium">
                   {recentNotifications.map((notification) => (
-                    <motion.div
+                    <div
                       key={notification.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
                       className={cn(
-                        'px-4 py-3 hover:bg-accent-gold/10 cursor-pointer transition-colors',
+                        'cursor-pointer px-4 py-3 transition-colors hover:bg-accent-gold/10',
                         !notification.isRead && 'bg-accent-gold/20'
                       )}
                       onClick={() => handleNotificationClick(notification)}
@@ -258,7 +258,7 @@ export const NotificationBell = ({
                           </div>
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
                   ))}
                 </div>
               )}
@@ -270,8 +270,8 @@ export const NotificationBell = ({
                 <div className="flex items-center justify-between">
                   <button
                     onClick={() => {
-                      // Navigate to all notifications page
                       setIsOpen(false);
+                      onViewAll?.();
                     }}
                     className="text-sm text-accent-gold hover:text-accent-gold/80 font-medium transition-colors"
                   >
@@ -289,9 +289,8 @@ export const NotificationBell = ({
                 </div>
               </div>
             )}
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
     </div>
   );
 };

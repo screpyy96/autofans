@@ -1,10 +1,10 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence, type PanInfo } from 'framer-motion';
+import { lazy, Suspense, useState, useRef, useEffect, useCallback } from 'react';
 import { cn } from '~/lib/utils';
 import type { Image } from '~/types';
-import { Modal } from './Modal';
 import { useTouch } from '~/hooks/useTouch';
 import { useResponsive } from '~/hooks/useResponsive';
+
+const Modal = lazy(() => import('./Modal').then(({ Modal: ModalComponent }) => ({ default: ModalComponent })));
 
 export interface ImageGalleryProps {
   images: Image[];
@@ -98,19 +98,6 @@ export const ImageGallery = ({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isFullscreen, goToNext, goToPrevious]);
 
-  // Swipe gesture handling
-  const handleDragEnd = useCallback((event: any, info: PanInfo) => {
-    const threshold = isMobile ? 30 : 50; // Lower threshold for mobile
-
-    if (Math.abs(info.offset.x) > threshold) {
-      if (info.offset.x > 0) {
-        goToPrevious();
-      } else {
-        goToNext();
-      }
-    }
-  }, [goToNext, goToPrevious, isMobile]);
-
   // Touch gesture handlers
   const { touchHandlers } = useTouch({
     threshold: 30,
@@ -182,7 +169,7 @@ export const ImageGallery = ({
           <svg className="w-12 h-12 mx-auto mb-2 text-accent-gold/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
-          <p className="text-sm">No images available</p>
+          <p className="text-sm">Nu sunt fotografii disponibile</p>
         </div>
       </div>
     );
@@ -202,35 +189,24 @@ export const ImageGallery = ({
         )}
         onClick={handleImageClick}
       >
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentIndex}
-            className="relative w-full h-full"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            drag={!isZoomed ? "x" : false}
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.2}
-            onDragEnd={handleDragEnd}
-          >
+        <div key={currentIndex} className="relative h-full w-full animate-[autofans-fade-in_180ms_ease-out]">
             {/* Loading placeholder */}
             {loadingImages.has(currentIndex) && (
               <div className="absolute inset-0 flex items-center justify-center bg-secondary-800">
-                <motion.div
-                  className="w-8 h-8 border-2 border-accent-gold border-t-transparent rounded-full"
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                />
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent-gold border-t-transparent" />
               </div>
             )}
 
             {/* Main Image */}
-            <motion.img
+            <img
               src={currentImage.url}
+              srcSet={currentImage.srcSet}
+              sizes={currentImage.sizes}
               alt={currentImage.alt}
               className="w-full h-full object-cover"
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
               style={{
                 transform: isZoomed
                   ? `scale(${zoomLevel}) translate(${zoomPosition.x}px, ${zoomPosition.y}px)`
@@ -243,8 +219,7 @@ export const ImageGallery = ({
               draggable={false}
               {...(isTouchDevice ? touchHandlers : {})}
             />
-          </motion.div>
-        </AnimatePresence>
+        </div>
 
         {/* Navigation Arrows */}
         {images.length > 1 && (
@@ -325,7 +300,7 @@ export const ImageGallery = ({
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {images.map((image, index) => (
-              <motion.button
+              <button
                 key={image.id}
                 onClick={() => goToImage(index)}
                 className={cn(
@@ -335,8 +310,6 @@ export const ImageGallery = ({
                     ? 'border-accent-gold ring-2 ring-accent-gold/20'
                     : 'border-premium hover:border-accent-gold/50'
                 )}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
                 aria-label={`Selectează imaginea ${index + 1}: ${image.alt}`}
                 aria-pressed={currentIndex === index}
                 type="button"
@@ -350,8 +323,11 @@ export const ImageGallery = ({
 
                 <img
                   src={image.thumbnailUrl || image.url}
-                  alt={image.alt}
+                  alt=""
+                  aria-hidden="true"
                   className="w-full h-full object-cover"
+                  loading={index === currentIndex ? 'eager' : 'lazy'}
+                  decoding="async"
                   onLoad={() => handleImageLoad(index)}
                   onLoadStart={() => handleImageLoadStart(index)}
                 />
@@ -360,30 +336,27 @@ export const ImageGallery = ({
                 {currentIndex === index && (
                   <div className="absolute inset-0 bg-accent-gold/20" />
                 )}
-              </motion.button>
+              </button>
             ))}
           </div>
         </div>
       )}
 
       {/* Fullscreen Modal */}
-      {enableFullscreen && (
-        <Modal
-          isOpen={isFullscreen}
-          onClose={() => setIsFullscreen(false)}
-          size="xl"
-                        className="!w-screen !h-screen !m-0 !rounded-none"
-        >
+      {enableFullscreen && isFullscreen && (
+        <Suspense fallback={null}>
+          <Modal
+            isOpen={isFullscreen}
+            onClose={() => setIsFullscreen(false)}
+            size="xl"
+            className="!m-0 !h-screen !w-screen !rounded-none"
+          >
           <div className="relative w-full h-full bg-black flex items-center justify-center">
-            <motion.div
-              className="relative"
-              drag="x"
-              dragConstraints={{ left: 0, right: 0 }}
-              dragElastic={0.2}
-              onDragEnd={handleDragEnd}
-            >
+            <div className="relative">
               <img
                 src={currentImage.url}
+                srcSet={currentImage.srcSet}
+                sizes="100vw"
                 alt={currentImage.alt}
                 className="object-contain"
                 style={{
@@ -395,7 +368,7 @@ export const ImageGallery = ({
                 }}
                 onClick={handleImageClick}
               />
-            </motion.div>
+            </div>
 
             {/* Fullscreen Navigation */}
             {images.length > 1 && (
@@ -403,7 +376,7 @@ export const ImageGallery = ({
                 <button
                   onClick={goToPrevious}
                   className="absolute left-4 top-1/2 -translate-y-1/2 bg-secondary-900/80 text-white p-3 rounded-full hover:bg-accent-gold/20 hover:text-accent-gold border border-premium transition-colors"
-                  aria-label="Previous image"
+                  aria-label="Imaginea anterioară"
                 >
                   <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -413,7 +386,7 @@ export const ImageGallery = ({
                 <button
                   onClick={goToNext}
                   className="absolute right-4 top-1/2 -translate-y-1/2 bg-secondary-900/80 text-white p-3 rounded-full hover:bg-accent-gold/20 hover:text-accent-gold border border-premium transition-colors"
-                  aria-label="Next image"
+                  aria-label="Imaginea următoare"
                 >
                   <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -441,11 +414,17 @@ export const ImageGallery = ({
                           ? 'border-accent-gold ring-2 ring-accent-gold/50'
                           : 'border-premium hover:border-accent-gold/60'
                       )}
+                      type="button"
+                      aria-label={`Selectează imaginea ${index + 1}: ${image.alt}`}
+                      aria-pressed={currentIndex === index}
                     >
                       <img
                         src={image.thumbnailUrl || image.url}
-                        alt={image.alt}
+                        alt=""
+                        aria-hidden="true"
                         className="w-full h-full object-cover"
+                        loading="lazy"
+                        decoding="async"
                       />
                     </button>
                   ))}
@@ -453,7 +432,8 @@ export const ImageGallery = ({
               </div>
             )}
           </div>
-        </Modal>
+          </Modal>
+        </Suspense>
       )}
     </div>
   );

@@ -1,7 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '~/lib/utils';
-import { Spinner } from '~/components/ui/Spinner';
 import { SEARCH_CONFIG, POPULAR_BRANDS } from '~/constants';
 
 // Icons (using simple SVG icons for now)
@@ -9,12 +6,6 @@ import { SEARCH_CONFIG, POPULAR_BRANDS } from '~/constants';
 const ClockIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-  </svg>
-);
-
-const TrendingIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
   </svg>
 );
 
@@ -30,10 +21,12 @@ const XIcon = () => (
   </svg>
 );
 
+const cn = (...values: Array<string | false | null | undefined>) => values.filter(Boolean).join(' ');
+
 export interface SearchSuggestion {
   id: string;
   text: string;
-  type: 'brand' | 'model' | 'query' | 'recent' | 'popular';
+  type: 'brand' | 'recent';
   category?: string;
 }
 
@@ -47,7 +40,8 @@ export interface SearchBarProps {
   disabled?: boolean;
 }
 
-// Mock suggestions generator (in real app, this would come from API)
+// Brand suggestions use the platform taxonomy. We deliberately avoid invented
+// models or "popular" queries: a suggestion must not imply a live offer exists.
 const generateSuggestions = (query: string): SearchSuggestion[] => {
   if (!query || query.length < SEARCH_CONFIG.MIN_QUERY_LENGTH) {
     return [];
@@ -64,44 +58,6 @@ const generateSuggestions = (query: string): SearchSuggestion[] => {
         text: brand,
         type: 'brand',
         category: 'Mărci'
-      });
-    }
-  });
-
-  // Model suggestions (mock data)
-  const popularModels = [
-    'Seria 3', 'Seria 5', 'X3', 'X5', // BMW
-    'A4', 'A6', 'Q5', 'Q7', // Audi
-    'C-Class', 'E-Class', 'GLC', 'GLE', // Mercedes
-    'Golf', 'Passat', 'Tiguan', 'Touareg', // VW
-    'Octavia', 'Superb', 'Kodiaq', // Skoda
-  ];
-
-  popularModels.forEach((model, index) => {
-    if (model.toLowerCase().includes(lowerQuery)) {
-      suggestions.push({
-        id: `model-${index}`,
-        text: model,
-        type: 'model',
-        category: 'Modele'
-      });
-    }
-  });
-
-  // Generic query suggestions
-  const queryTemplates = [
-    `${query} diesel`,
-    `${query} automatic`,
-    `${query} 2020`,
-    `${query} sub 30000`,
-  ];
-
-  queryTemplates.forEach((template, index) => {
-    if (template !== query) {
-      suggestions.push({
-        id: `query-${index}`,
-        text: template,
-        type: 'query'
       });
     }
   });
@@ -150,15 +106,6 @@ const saveRecentSearch = (query: string) => {
   }
 };
 
-// Popular searches (mock data)
-const getPopularSearches = (): SearchSuggestion[] => [
-  { id: 'popular-1', text: 'BMW Seria 3', type: 'popular' },
-  { id: 'popular-2', text: 'Audi A4', type: 'popular' },
-  { id: 'popular-3', text: 'VW Golf', type: 'popular' },
-  { id: 'popular-4', text: 'Mercedes C-Class', type: 'popular' },
-  { id: 'popular-5', text: 'Skoda Octavia', type: 'popular' },
-];
-
 export const SearchBar: React.FC<SearchBarProps> = ({
   placeholder = "Caută mașina dorită...",
   value = "",
@@ -171,12 +118,17 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   const [query, setQuery] = useState(value);
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Keep the input aligned with URL searches and with the reset-filters
+  // action. The component still owns typing responsiveness between submits.
+  useEffect(() => {
+    setQuery(value);
+  }, [value]);
 
   // Debounced search function
   const debouncedSearch = useCallback((searchQuery: string) => {
@@ -186,16 +138,9 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
     debounceRef.current = setTimeout(() => {
       if (searchQuery.length >= SEARCH_CONFIG.MIN_QUERY_LENGTH) {
-        setIsLoading(true);
-        // Simulate API delay
-        setTimeout(() => {
-          const newSuggestions = generateSuggestions(searchQuery);
-          setSuggestions(newSuggestions);
-          setIsLoading(false);
-        }, 150);
+        setSuggestions(generateSuggestions(searchQuery));
       } else {
         setSuggestions([]);
-        setIsLoading(false);
       }
     }, SEARCH_CONFIG.DEBOUNCE_DELAY);
   }, []);
@@ -220,11 +165,10 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     if (query.trim()) {
       setIsOpen(true);
     } else {
-      // Show recent and popular searches when focused with empty query
+      // Recent searches belong to this browser; never fabricate popularity.
       const recent = getRecentSearches();
-      const popular = getPopularSearches();
-      setSuggestions([...recent, ...popular]);
-      setIsOpen(true);
+      setSuggestions(recent);
+      setIsOpen(recent.length > 0);
     }
   };
 
@@ -301,9 +245,6 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     if (suggestion.type === 'recent') {
       if (!groups.recent) groups.recent = [];
       groups.recent.push(suggestion);
-    } else if (suggestion.type === 'popular') {
-      if (!groups.popular) groups.popular = [];
-      groups.popular.push(suggestion);
     } else {
       const category = suggestion.category || 'Sugestii';
       if (!groups[category]) groups[category] = [];
@@ -356,13 +297,6 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             )}
           />
 
-          {/* Loading spinner */}
-          {isLoading && (
-            <div className="absolute inset-y-0 right-12 flex items-center text-accent-gold">
-              <Spinner size="sm" />
-            </div>
-          )}
-
           {/* Clear button */}
           {query && (
             <button
@@ -377,39 +311,26 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         </div>
       </form>
 
-      <AnimatePresence>
-        {isOpen && (suggestions.length > 0 || isLoading) && (
-          <motion.div
+      {isOpen && suggestions.length > 0 && (
+          <div
             ref={dropdownRef}
             id="search-suggestions"
             role="listbox"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="absolute top-full left-0 right-0 z-50 mt-2 bg-secondary-900/90 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl max-h-96 overflow-y-auto"
+            className="absolute left-0 right-0 top-full z-50 mt-2 max-h-96 animate-[autofans-pop-in_160ms_ease-out] overflow-y-auto rounded-xl border border-white/20 bg-secondary-900/90 shadow-2xl backdrop-blur-xl"
           >
-            {isLoading ? (
-              <div className="p-4 text-center">
-                <Spinner size="sm" className="mx-auto" />
-                <p className="text-sm text-white/80 mt-2">Se caută...</p>
-              </div>
-            ) : (
-              <div className="py-2">
+            <div className="py-2">
                 {Object.entries(groupedSuggestions).map(([category, items]) => (
                   <div key={category}>
                     {category !== 'undefined' && (
                       <div className="px-4 py-2 text-xs font-semibold text-accent-gold uppercase tracking-wide border-b border-white/10 flex items-center bg-white/5">
                         {category === 'recent' && <ClockIcon className="mr-2 w-3 h-3 text-accent-gold" />}
-                        {category === 'popular' && <TrendingIcon className="mr-2 w-3 h-3 text-accent-gold" />}
-                        {category === 'recent' ? 'Căutări recente' : 
-                         category === 'popular' ? 'Căutări populare' : category}
+                        {category === 'recent' ? 'Căutări recente' : category}
                       </div>
                     )}
-                    {items.map((suggestion, index) => {
+                    {items.map((suggestion) => {
                       const globalIndex = suggestions.indexOf(suggestion);
                       return (
-                        <motion.button
+                        <button
                           key={suggestion.id}
                           type="button"
                           role="option"
@@ -419,16 +340,12 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                             "w-full px-4 py-3 text-left hover:bg-accent-gold/10 transition-colors flex items-center text-white hover:text-accent-gold",
                             globalIndex === selectedIndex && "bg-accent-gold/20 text-accent-gold"
                           )}
-                          whileHover={{ backgroundColor: "rgba(212, 175, 55, 0.1)" }}
                         >
                           <div className="flex items-center flex-1">
                             {suggestion.type === 'recent' && (
                               <ClockIcon className="mr-3 w-4 h-4 text-accent-gold" />
                             )}
-                            {suggestion.type === 'popular' && (
-                              <TrendingIcon className="mr-3 w-4 h-4 text-accent-gold" />
-                            )}
-                            {(suggestion.type === 'brand' || suggestion.type === 'model') && (
+                            {suggestion.type === 'brand' && (
                               <SearchIcon className="mr-3 w-4 h-4 text-accent-gold" />
                             )}
                             <span className="text-white">{suggestion.text}</span>
@@ -438,21 +355,14 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                               Marcă
                             </span>
                           )}
-                          {suggestion.type === 'model' && (
-                            <span className="text-xs text-accent-gold bg-accent-gold/10 px-2 py-1 rounded-full border border-accent-gold/30">
-                              Model
-                            </span>
-                          )}
-                        </motion.button>
+                        </button>
                       );
                     })}
                   </div>
                 ))}
-              </div>
-            )}
-          </motion.div>
+            </div>
+          </div>
         )}
-      </AnimatePresence>
     </div>
   );
 };

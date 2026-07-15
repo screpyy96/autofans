@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '~/lib/utils';
+import { isListingWizardStepValid, validateListingWizardStep } from '~/utils/listingWizardValidation';
 import {
     FuelType,
     TransmissionType,
@@ -25,29 +26,22 @@ import {
     CardHeader,
     CardContent
 } from '~/components/ui';
-import { ImageUpload } from './ImageUpload';
+import { ImageUpload, type ListingImageUpload } from './ImageUpload';
 
 export interface CreateListingWizardProps {
     onSubmit: (listing: CarDraft) => Promise<void>;
     onSaveDraft: (draft: Partial<CarDraft>) => Promise<void>;
     initialData?: Partial<CarDraft>;
     onClose?: () => void;
-    onFilesSelected?: (files: File[]) => Promise<void>;
-}
-
-interface WizardStep {
-    id: string;
-    title: string;
-    description: string;
-    isCompleted: boolean;
-    isValid: boolean;
+    onUploadImages?: (files: File[]) => Promise<ListingImageUpload[]>;
+    onImageReferencesChange?: (images: ListingImageUpload[]) => void;
 }
 
 interface FormErrors {
     [key: string]: string;
 }
 
-const STEPS: Omit<WizardStep, 'isCompleted' | 'isValid'>[] = [
+const STEPS = [
     {
         id: 'basic',
         title: 'Informații de bază',
@@ -85,12 +79,14 @@ export function CreateListingWizard({
     onSaveDraft,
     initialData,
     onClose,
-    onFilesSelected
+    onUploadImages,
+    onImageReferencesChange,
 }: CreateListingWizardProps) {
     const [currentStep, setCurrentStep] = useState(0);
     const [formData, setFormData] = useState<Partial<CarDraft>>(initialData || {});
     const [errors, setErrors] = useState<FormErrors>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
     const [isDraftSaving, setIsDraftSaving] = useState(false);
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
@@ -120,6 +116,7 @@ export function CreateListingWizard({
     }, [formData, onSaveDraft, isDraftSaving]);
 
     const updateFormData = (field: string, value: any) => {
+        setSubmitError(null);
         setFormData(prev => ({
             ...prev,
             [field]: value
@@ -136,50 +133,7 @@ export function CreateListingWizard({
     };
 
     const validateStep = (stepIndex: number): boolean => {
-        const newErrors: FormErrors = {};
-
-        switch (stepIndex) {
-            case 0: // Basic info
-                if (!formData.brand) newErrors.brand = 'Marca este obligatorie';
-                if (!formData.model) newErrors.model = 'Modelul este obligatoriu';
-                if (!formData.year) newErrors.year = 'Anul este obligatoriu';
-                if (formData.year && (formData.year < 1900 || formData.year > new Date().getFullYear() + 1)) {
-                    newErrors.year = 'Anul nu este valid';
-                }
-                break;
-
-            case 1: // Technical details
-                if (!formData.fuelType) newErrors.fuelType = 'Tipul de combustibil este obligatoriu';
-                if (!formData.transmission) newErrors.transmission = 'Tipul de transmisie este obligatoriu';
-                if (!formData.mileage) newErrors.mileage = 'Kilometrajul este obligatoriu';
-                if (formData.mileage && formData.mileage < 0) newErrors.mileage = 'Kilometrajul nu poate fi negativ';
-                break;
-
-            case 2: // Condition
-                if (!formData.condition?.overall) newErrors['condition.overall'] = 'Starea generală este obligatorie';
-                if (!formData.owners) newErrors.owners = 'Numărul de proprietari este obligatoriu';
-                break;
-
-            case 3: // Images
-                if (!formData.images || formData.images.length === 0) {
-                    newErrors.images = 'Cel puțin o imagine este obligatorie';
-                }
-                break;
-
-            case 4: // Pricing
-                if (!formData.price) newErrors.price = 'Prețul este obligatoriu';
-                if (formData.price && formData.price <= 0) newErrors.price = 'Prețul trebuie să fie pozitiv';
-                if (!formData.location?.city) newErrors['location.city'] = 'Orașul este obligatoriu';
-                break;
-
-            case 5: // Description
-                if (!formData.title) newErrors.title = 'Titlul anunțului este obligatoriu';
-                if (!formData.description) newErrors.description = 'Descrierea este obligatorie';
-                if (formData.description && formData.description.length < 50) {
-                    newErrors.description = 'Descrierea trebuie să aibă cel puțin 50 de caractere';
-                }
-                break;
-        }
+        const newErrors = validateListingWizardStep(formData, stepIndex);
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -199,47 +153,21 @@ export function CreateListingWizard({
         if (!validateStep(currentStep)) return;
 
         setIsSubmitting(true);
+        setSubmitError(null);
         try {
             await onSubmit(formData);
         } catch (error) {
             console.error('Failed to submit listing:', error);
+            setSubmitError(error instanceof Error ? error.message : 'Anunțul nu a putut fi publicat. Încearcă din nou.');
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    // Validation function that doesn't trigger state updates (for render-time checks)
-    const isStepValid = useCallback((stepIndex: number): boolean => {
-        switch (stepIndex) {
-            case 0: // Basic Info
-                return !!(formData.title && formData.brand && formData.model && formData.year && formData.price);
-            case 1: // Details
-                return !!(formData.mileage && formData.fuelType && formData.transmission);
-            case 2: // Specifications
-                return !!(formData.specifications?.engineSize && formData.specifications?.power);
-            case 3: // Condition
-                return !!(formData.condition?.overall);
-            case 4: // Images
-                return !!(formData.images && formData.images.length > 0);
-            case 5: // Description
-                return !!(formData.description && formData.description.length >= 50);
-            default:
-                return false;
-        }
-    }, [formData]);
-
-    const getStepStatus = (stepIndex: number): WizardStep => {
-        const step = STEPS[stepIndex];
-        return {
-            ...step,
-            isCompleted: stepIndex < currentStep,
-            isValid: stepIndex <= currentStep ? isStepValid(stepIndex) : false
-        };
-    };
-
-    const stepStatuses = useMemo(() => 
-        STEPS.map((_, index) => getStepStatus(index)),
-        [currentStep, formData, isStepValid]
+    // The progress rail uses the same rules as the Continue button.
+    const isStepValid = useCallback(
+        (stepIndex: number) => isListingWizardStepValid(formData, stepIndex),
+        [formData],
     );
 
     const renderProgressIndicator = () => {
@@ -315,7 +243,7 @@ export function CreateListingWizard({
             case 2:
                 return <ConditionStep formData={formData} updateFormData={updateFormData} errors={errors} />;
             case 3:
-                return <ImagesStep formData={formData} updateFormData={updateFormData} errors={errors} onFilesSelected={onFilesSelected} />;
+                return <ImagesStep formData={formData} updateFormData={updateFormData} errors={errors} onUploadImages={onUploadImages} onImageReferencesChange={onImageReferencesChange} />;
             case 4:
                 return <PricingStep formData={formData} updateFormData={updateFormData} errors={errors} />;
             case 5:
@@ -332,7 +260,7 @@ export function CreateListingWizard({
                     <div className="flex items-center gap-4 flex-wrap">
                         {lastSaved && (
                             <p className="text-xs sm:text-sm text-gray-400">
-                                Salvat: {lastSaved.toLocaleTimeString()}
+                                Salvat pe acest dispozitiv: {lastSaved.toLocaleTimeString()}
                             </p>
                         )}
                         {isDraftSaving && (
@@ -361,6 +289,12 @@ export function CreateListingWizard({
                         </motion.div>
                     </AnimatePresence>
 
+                    {submitError && (
+                        <p role="alert" className="mt-5 rounded-xl border border-red-400/25 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                            {submitError}
+                        </p>
+                    )}
+
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mt-6 sm:mt-8 pt-5 sm:pt-6 border-t border-white/5">
                         <div className="w-full sm:w-auto flex justify-center sm:justify-start">
                             <Button
@@ -369,7 +303,7 @@ export function CreateListingWizard({
                                 disabled={isDraftSaving}
                                 className="w-full sm:w-auto text-xs sm:text-sm border-white/10 hover:border-accent-gold/40 hover:bg-white/5 text-white"
                             >
-                                {isDraftSaving ? 'Se salvează...' : 'Salvează ca draft'}
+                                {isDraftSaving ? 'Se salvează...' : 'Salvează pe dispozitiv'}
                             </Button>
                         </div>
 
@@ -582,7 +516,7 @@ function TechnicalDetailsStep({ formData, updateFormData, errors }: StepProps) {
                     type="number"
                     placeholder="ex: 150000"
                     value={formData.mileage?.toString() || ''}
-                    onChange={(e) => updateFormData('mileage', parseInt(e.target.value) || 0)}
+                    onChange={(e) => updateFormData('mileage', e.target.value === '' ? undefined : Number(e.target.value))}
                     error={errors.mileage}
                     rightIcon={<span className="text-sm text-gray-300">km</span>}
                 />
@@ -991,7 +925,7 @@ function DescriptionStep({ formData, updateFormData, errors }: StepProps) {
                         <div className="flex items-center gap-4 text-sm text-gray-300 mb-2">
                             <span>{formData.year || '----'}</span>
                             <span>•</span>
-                            <span>{formData.mileage?.toLocaleString() || '---'} km</span>
+                            <span>{typeof formData.mileage === 'number' ? formData.mileage.toLocaleString() : '---'} km</span>
                             <span>•</span>
                             <span>{formData.fuelType || '---'}</span>
                             <span>•</span>
@@ -1028,26 +962,19 @@ function DescriptionStep({ formData, updateFormData, errors }: StepProps) {
         </div>
     );
 } function
-    ImagesStep({ formData, updateFormData, errors, onFilesSelected }: StepProps & { onFilesSelected?: (files: File[]) => Promise<void> }) {
-    const handleImagesChange = async (files: File[]) => {
-        // Convert files to Image objects for the form data
-        const imageObjects: Image[] = files.map((file, index) => ({
-            id: `temp-${index}`,
-            url: URL.createObjectURL(file),
-            thumbnailUrl: URL.createObjectURL(file),
-            alt: `Car image ${index + 1}`,
+    ImagesStep({ formData, updateFormData, errors, onUploadImages, onImageReferencesChange }: StepProps & { onUploadImages?: (files: File[]) => Promise<ListingImageUpload[]>; onImageReferencesChange?: (images: ListingImageUpload[]) => void }) {
+    const handleImagesChange = (images: ListingImageUpload[]) => {
+        const imageObjects: Image[] = images.map((image, index) => ({
+            id: image.id,
+            url: image.url,
+            thumbnailUrl: image.url,
+            alt: `Fotografie mașină ${index + 1}`,
             order: index,
-            isMain: index === 0
-        }));
-
+            isMain: image.isMain,
+            path: image.path,
+        } as Image));
         updateFormData('images', imageObjects);
-        if (onFilesSelected) {
-            try {
-                await onFilesSelected(files);
-            } catch (e) {
-                console.error('Image upload error', e);
-            }
-        }
+        onImageReferencesChange?.(images);
     };
 
     return (
@@ -1064,9 +991,15 @@ function DescriptionStep({ formData, updateFormData, errors }: StepProps) {
             <ImageUpload
                 maxImages={15}
                 onImagesChange={handleImagesChange}
+                onUpload={onUploadImages || (async () => [])}
                 acceptedTypes={['image/jpeg', 'image/jpg', 'image/png', 'image/webp']}
                 maxFileSize={10}
-                initialImages={formData.images?.map(img => img.url) || []}
+                initialImages={(formData.images || []).map((image) => ({
+                    id: image.id,
+                    path: (image as Image & { path?: string }).path || image.id,
+                    url: image.url,
+                    isMain: image.isMain,
+                }))}
             />
 
             {errors.images && (

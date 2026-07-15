@@ -1,19 +1,19 @@
-import { Link } from "react-router";
+import { Link, useLoaderData, useSearchParams } from "react-router";
 import type { Route } from "./+types/blog";
-import { blogPosts } from "~/data/blogPosts";
+import { getBlogPostSummaries } from "~/data/blogPosts.server";
 import { Calendar, Clock, ChevronRight, User } from "lucide-react";
 import { Card } from "~/components/ui/Card";
 
 export function meta({ }: Route.MetaArgs) {
   const title = "Ghiduri pentru mașini second-hand, verificări și costuri | AutoFans";
   const description = "Ghiduri practice pentru cumpărarea unei mașini second-hand: acte, verificări la vizionare, istoric VIN, costuri reale și întreținere.";
-  const image = "https://autofans.ro/hero_background.jpg";
+  const image = "https://www.autofans.ro/hero_background.jpg";
 
   return [
     { title },
     { name: "description", content: description },
     { name: "robots", content: "index,follow,max-image-preview:large" },
-    { tagName: "link", rel: "canonical", href: "https://autofans.ro/blog" },
+    { tagName: "link", rel: "canonical", href: "https://www.autofans.ro/blog" },
     { property: "og:title", content: title },
     { property: "og:description", content: description },
     { property: "og:image", content: image },
@@ -25,19 +25,34 @@ export function meta({ }: Route.MetaArgs) {
   ];
 }
 
+export async function loader() {
+  return { posts: getBlogPostSummaries() };
+}
+
 export default function BlogIndex() {
-  const featuredPost = blogPosts.find(p => p.isFeatured) || blogPosts[0];
-  const otherPosts = blogPosts.filter(p => p.id !== featuredPost.id);
+  const { posts: blogPosts } = useLoaderData<typeof loader>();
+  const [searchParams] = useSearchParams();
+  const activeTag = searchParams.get('tag')?.trim() || '';
+  const allTags = Array.from(new Set(blogPosts.flatMap((post) => post.tags))).sort((a, b) => a.localeCompare(b, 'ro'));
+  const filteredPosts = activeTag
+    ? blogPosts.filter((post) => post.tags.some((tag) => tag.localeCompare(activeTag, 'ro', { sensitivity: 'accent' }) === 0))
+    : blogPosts;
+  const featuredPost = filteredPosts.find((post) => post.isFeatured) || filteredPosts[0];
+  const otherPosts = filteredPosts.filter((post) => post.id !== featuredPost?.id);
   const blogSchema = {
     '@context': 'https://schema.org',
     '@type': 'Blog',
+    '@id': 'https://www.autofans.ro/blog#blog',
     name: 'AutoFans Blog',
-    url: 'https://autofans.ro/blog',
+    url: 'https://www.autofans.ro/blog',
     description: 'Ghiduri practice pentru cumpărarea și deținerea unei mașini.',
+    inLanguage: 'ro-RO',
+    publisher: { '@id': 'https://www.autofans.ro/#organization' },
     blogPost: blogPosts.map((post) => ({
       '@type': 'BlogPosting',
+      '@id': `https://www.autofans.ro/blog/${post.slug}#article`,
       headline: post.title,
-      url: `https://autofans.ro/blog/${post.slug}`,
+      url: `https://www.autofans.ro/blog/${post.slug}`,
       datePublished: post.publishedAt,
       dateModified: post.updatedAt,
     })),
@@ -54,8 +69,22 @@ export default function BlogIndex() {
           <p className="text-xl text-gray-400 max-w-2xl">Descoperă cele mai noi trenduri, review-uri sincere și sfaturi esențiale din lumea auto.</p>
         </div>
 
+        <nav aria-label="Filtrează articolele după etichetă" className="mb-10 flex flex-wrap gap-2">
+          <Link to="/blog" aria-current={!activeTag ? 'page' : undefined} className={`rounded-full border px-3 py-2 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-gold ${!activeTag ? 'border-accent-gold bg-accent-gold/15 text-accent-gold' : 'border-white/10 bg-white/[0.03] text-gray-300 hover:border-white/30 hover:text-white'}`}>
+            Toate articolele
+          </Link>
+          {allTags.map((tag) => {
+            const isActive = tag.localeCompare(activeTag, 'ro', { sensitivity: 'accent' }) === 0;
+            return (
+              <Link key={tag} to={`/blog?tag=${encodeURIComponent(tag)}`} aria-current={isActive ? 'page' : undefined} className={`rounded-full border px-3 py-2 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-gold ${isActive ? 'border-accent-gold bg-accent-gold/15 text-accent-gold' : 'border-white/10 bg-white/[0.03] text-gray-300 hover:border-white/30 hover:text-white'}`}>
+                #{tag}
+              </Link>
+            );
+          })}
+        </nav>
+
         {/* Featured Post */}
-        <div className="mb-16">
+        {featuredPost ? <div className="mb-16">
           <Link to={`/blog/${featuredPost.slug}`} className="group block">
             <div className="relative rounded-3xl overflow-hidden bg-glass border border-white/10 aspect-[21/9] md:aspect-[21/8]">
               <img 
@@ -95,10 +124,15 @@ export default function BlogIndex() {
               </div>
             </div>
           </Link>
-        </div>
+        </div> : (
+          <div className="mb-16 rounded-2xl border border-white/10 bg-white/[0.03] p-8 text-center">
+            <h2 className="text-xl font-bold text-white">Nu există încă articole pentru „{activeTag}”.</h2>
+            <Link to="/blog" className="mt-4 inline-flex min-h-11 items-center rounded-xl border border-accent-gold/50 px-4 text-sm font-bold text-accent-gold hover:bg-accent-gold/10">Vezi toate articolele</Link>
+          </div>
+        )}
 
         {/* Grid Posts */}
-        <div className="mb-8">
+        {otherPosts.length > 0 && <div className="mb-8">
           <h3 className="text-2xl font-bold text-white mb-6">Ultimele articole</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {otherPosts.map(post => (
@@ -153,7 +187,7 @@ export default function BlogIndex() {
               </Card>
             ))}
           </div>
-        </div>
+        </div>}
 
       </div>
     </div>

@@ -1,101 +1,44 @@
-import type { Route } from "./+types/contact";
-import { Mail, Phone, MapPin, Send } from "lucide-react";
-import { Button } from "~/components/ui/Button";
+import type { Route } from './+types/contact';
+import { ArrowUpRight, CircleHelp, Mail, ShieldCheck } from 'lucide-react';
+import { Link } from 'react-router';
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "Contact - AutoFans.ro" },
-    { name: "description", content: "Contactează echipa AutoFans.ro pentru suport, parteneriate sau informații." },
+    { title: 'Contact - AutoFans.ro' },
+    { name: 'description', content: 'Contactează echipa AutoFans.ro pentru suport pentru cont, anunțuri și parteneriate.' },
   ];
 }
 
 export default function ContactPage() {
   return (
-    <div className="min-h-screen bg-premium-gradient py-20 px-6">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">Contactează-ne</h1>
-          <p className="text-xl text-gray-400">
-            Ai o întrebare sau dorești un parteneriat? Echipa noastră este aici pentru a te ajuta.
-          </p>
-        </div>
+    <div className="min-h-screen bg-premium-gradient px-4 py-12 sm:px-6 sm:py-20">
+      <div className="mx-auto max-w-4xl">
+        <header className="mx-auto mb-10 max-w-2xl text-center sm:mb-14">
+          <span className="inline-flex items-center gap-2 rounded-full border border-accent-gold/30 bg-accent-gold/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-accent-gold">
+            <ShieldCheck className="h-3.5 w-3.5" /> Suport AutoFans
+          </span>
+          <h1 className="mt-5 text-4xl font-bold text-white sm:text-5xl">Cu ce te putem ajuta?</h1>
+          <p className="mt-4 text-base leading-relaxed text-gray-400 sm:text-lg">Pentru probleme de cont, un anunț sau un parteneriat, scrie-ne direct. Nu afișăm date de contact inventate și nu folosim formulare care nu trimit nimic.</p>
+        </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Informații de contact */}
-          <div className="bg-glass backdrop-blur-xl border border-white/10 p-8 rounded-2xl flex flex-col gap-8">
-            <h2 className="text-2xl font-bold text-white mb-2">Informații utile</h2>
-            
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-full bg-accent-gold/20 flex items-center justify-center shrink-0">
-                <Mail className="h-6 w-6 text-accent-gold" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-white">Email</h3>
-                <p className="text-gray-400">contact@autofans.ro</p>
-                <p className="text-sm text-gray-500 mt-1">Îți vom răspunde în maxim 24h.</p>
-              </div>
-            </div>
+        <div className="grid gap-5 md:grid-cols-2">
+          <section className="rounded-3xl border border-accent-gold/25 bg-accent-gold/[0.06] p-6 shadow-2xl sm:p-8">
+            <span className="inline-flex rounded-2xl bg-accent-gold/15 p-3 text-accent-gold"><Mail className="h-6 w-6" /></span>
+            <h2 className="mt-5 text-2xl font-bold text-white">Scrie echipei</h2>
+            <p className="mt-2 text-sm leading-relaxed text-gray-400">Trimite-ne contextul și, dacă este cazul, linkul anunțului. Îți răspundem pe email.</p>
+            <a href="mailto:contact@autofans.ro" className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-xl bg-gold-gradient px-4 py-2.5 text-sm font-bold text-secondary-900 transition hover:brightness-110">
+              contact@autofans.ro <ArrowUpRight className="h-4 w-4" />
+            </a>
+          </section>
 
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-full bg-accent-gold/20 flex items-center justify-center shrink-0">
-                <Phone className="h-6 w-6 text-accent-gold" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-white">Telefon</h3>
-                <p className="text-gray-400">+40 700 000 000</p>
-                <p className="text-sm text-gray-500 mt-1">Luni - Vineri: 09:00 - 18:00</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-full bg-accent-gold/20 flex items-center justify-center shrink-0">
-                <MapPin className="h-6 w-6 text-accent-gold" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-white">Adresă</h3>
-                <p className="text-gray-400">București, România</p>
-                <p className="text-sm text-gray-500 mt-1">Clădirea de birouri AutoFans, Sector 1</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Formular de contact (Demo) */}
-          <div className="bg-glass backdrop-blur-xl border border-white/10 p-8 rounded-2xl">
-            <h2 className="text-2xl font-bold text-white mb-6">Trimite-ne un mesaj</h2>
-            <form className="flex flex-col gap-5" onSubmit={(e) => { e.preventDefault(); alert("Formular demonstrativ. Mesajul nu a fost trimis."); }}>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Nume complet</label>
-                <input 
-                  type="text" 
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:border-accent-gold focus:ring-1 focus:ring-accent-gold transition-colors"
-                  placeholder="Ion Popescu"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
-                <input 
-                  type="email" 
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:border-accent-gold focus:ring-1 focus:ring-accent-gold transition-colors"
-                  placeholder="ion@exemplu.ro"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Mesaj</label>
-                <textarea 
-                  rows={4}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:border-accent-gold focus:ring-1 focus:ring-accent-gold transition-colors resize-none"
-                  placeholder="Scrie-ne mesajul tău aici..."
-                  required
-                ></textarea>
-              </div>
-              <Button type="submit" className="w-full bg-accent-gold text-secondary-900 hover:bg-yellow-500 py-3 rounded-xl font-bold mt-2 shadow-glow transition-all">
-                <Send className="w-5 h-5 mr-2" />
-                Trimite mesajul
-              </Button>
-            </form>
-          </div>
+          <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 sm:p-8">
+            <span className="inline-flex rounded-2xl bg-white/10 p-3 text-accent-gold"><CircleHelp className="h-6 w-6" /></span>
+            <h2 className="mt-5 text-2xl font-bold text-white">Răspunsuri rapide</h2>
+            <p className="mt-2 text-sm leading-relaxed text-gray-400">Verifică centrul de ajutor pentru publicarea anunțurilor, siguranță, cont și conversații.</p>
+            <Link to="/help" className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/20 px-4 py-2.5 text-sm font-bold text-white transition hover:border-accent-gold hover:bg-white/5">
+              Deschide centrul de ajutor <ArrowUpRight className="h-4 w-4" />
+            </Link>
+          </section>
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { CarCard } from '~/components/car/CarCard';
 import { CarGrid } from '~/components/car/CarGrid';
 import { SearchBar } from '~/components/search/SearchBar';
@@ -36,6 +36,8 @@ describe('Performance Tests', () => {
             loading={false}
             onLoadMore={() => {}}
             hasMore={true}
+            onFavorite={() => {}}
+            onCompare={() => {}}
           />
         );
       });
@@ -56,6 +58,8 @@ describe('Performance Tests', () => {
             loading={false}
             onLoadMore={() => {}}
             hasMore={true}
+            onFavorite={() => {}}
+            onCompare={() => {}}
           />
         );
       });
@@ -95,8 +99,6 @@ describe('Performance Tests', () => {
         <SearchBar 
           onSearch={() => {}}
           onSuggestionSelect={() => {}}
-          suggestions={[]}
-          isLoading={false}
         />
       );
 
@@ -157,8 +159,7 @@ describe('Performance Tests', () => {
       const image = screen.getByRole('img');
       
       // Simulate image error
-      const errorEvent = new Event('error');
-      image.dispatchEvent(errorEvent);
+      fireEvent.error(image);
 
       // Should still render without crashing
       expect(screen.getByText(car.title)).toBeInTheDocument();
@@ -242,21 +243,16 @@ describe('Performance Tests', () => {
         <SearchBar 
           onSearch={onSearch}
           onSuggestionSelect={() => {}}
-          suggestions={[]}
-          isLoading={false}
         />
       );
 
       const input = screen.getByRole('textbox');
       
       // Simulate rapid typing
-      input.focus();
-      ['B', 'M', 'W'].forEach(char => {
-        input.dispatchEvent(new InputEvent('input', { 
-          data: char,
-          inputType: 'insertText'
-        }));
-      });
+      fireEvent.focus(input);
+      fireEvent.change(input, { target: { value: 'B' } });
+      fireEvent.change(input, { target: { value: 'BM' } });
+      fireEvent.change(input, { target: { value: 'BMW' } });
 
       // Should not call onSearch for every keystroke immediately
       expect(onSearch).not.toHaveBeenCalledTimes(3);
@@ -279,6 +275,8 @@ describe('Performance Tests', () => {
             loading={false}
             onLoadMore={() => {}}
             hasMore={true}
+            onFavorite={() => {}}
+            onCompare={() => {}}
           />
         );
       }).not.toThrow();

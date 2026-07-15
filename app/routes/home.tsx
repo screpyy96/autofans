@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 import { Link, useLoaderData } from 'react-router';
 import type { Route } from "./+types/home";
 import type { LinksFunction } from 'react-router';
-import { Search, Car as CarIcon, Shield, Clock, TrendingUp, FileText, ShieldCheck, Calculator, Tag, Plus } from 'lucide-react';
+import { Search, Car as CarIcon, Shield, Clock, TrendingUp, GitCompare, Heart, MessageCircle, SlidersHorizontal, Plus } from 'lucide-react';
 import { Button } from '~/components/ui/Button';
 import { Card } from '~/components/ui/Card';
 import { Hero } from '~/components/home/Hero';
@@ -17,15 +17,18 @@ const HomeListings = lazy(() =>
 
 export function meta({ }: Route.MetaArgs) {
   const title = "AutoFans.ro - Platforma Premium de Anunțuri Auto";
-  const description = "Cumpără sau vinde mașina ta rapid și sigur. Pe Autofans.ro găsești mii de anunțuri auto din toată țara, verificate manual.";
-  const image = "https://autofans.ro/hero_background.jpg";
+  const description = "Cumpără sau vinde mașina ta pe AutoFans.ro. Caută anunțuri auto după marcă, model, preț, an și locație.";
+  const image = "https://www.autofans.ro/hero_background.jpg";
 
   return [
     { title },
     { name: "description", content: description },
+    { name: "robots", content: "index,follow,max-image-preview:large" },
+    { tagName: "link", rel: "canonical", href: "https://www.autofans.ro/" },
     { property: "og:title", content: title },
     { property: "og:description", content: description },
     { property: "og:image", content: image },
+    { property: "og:url", content: "https://www.autofans.ro/" },
     { property: "og:type", content: "website" },
     { property: "og:site_name", content: "AutoFans.ro" },
     { name: "twitter:card", content: "summary_large_image" },
@@ -41,7 +44,7 @@ export const links: LinksFunction = () => [
     as: 'image',
     href: '/hero_background.webp',
     type: 'image/webp',
-    imageSrcSet: '/hero_background.webp 1376w',
+    imageSrcSet: '/hero_background-768.webp 768w, /hero_background-1024.webp 1024w, /hero_background.webp 1376w',
     imageSizes: '100vw',
     fetchPriority: 'high',
   },
@@ -55,6 +58,8 @@ function HomeContent() {
   const initialData = useLoaderData<typeof loader>();
   const [data, setData] = useState<any>(initialData);
   const [catalogLoaded, setCatalogLoaded] = useState(false);
+  const [catalogError, setCatalogError] = useState(false);
+  const [catalogRequest, setCatalogRequest] = useState(0);
 
   useEffect(() => {
     let controller: AbortController | undefined;
@@ -62,6 +67,7 @@ function HomeContent() {
 
     const loadCatalog = () => {
       if (cancelled) return;
+      setCatalogError(false);
       controller = new AbortController();
       fetch('/api/home', { signal: controller.signal })
         .then((response) => response.ok ? response.json() : Promise.reject(new Error('Home catalog failed')))
@@ -69,7 +75,7 @@ function HomeContent() {
           if (!cancelled) setData(catalog);
         })
         .catch((error) => {
-          if (error.name !== 'AbortError') console.warn('Unable to load home catalog:', error);
+          if (!cancelled && error.name !== 'AbortError') setCatalogError(true);
         })
         .finally(() => {
           if (!cancelled) setCatalogLoaded(true);
@@ -78,10 +84,10 @@ function HomeContent() {
 
     // The hero image is the LCP element. Defer the non-critical catalog request
     // until the browser is idle so it cannot steal bandwidth on slow mobile data.
-    const idleId = 'requestIdleCallback' in window
+    const idleId = catalogRequest === 0 && 'requestIdleCallback' in window
       ? window.requestIdleCallback(loadCatalog, { timeout: 900 })
       : undefined;
-    const timeoutId = idleId === undefined ? window.setTimeout(loadCatalog, 250) : undefined;
+    const timeoutId = idleId === undefined ? window.setTimeout(loadCatalog, catalogRequest === 0 ? 250 : 0) : undefined;
 
     return () => {
       cancelled = true;
@@ -89,7 +95,7 @@ function HomeContent() {
       if (timeoutId !== undefined) window.clearTimeout(timeoutId);
       controller?.abort();
     };
-  }, []);
+  }, [catalogRequest]);
   const recentCars = data.listings.map((listing: any) => mapListingToCar(listing, data.signedMap));
   const recommendedCars = data.recommendations.map((item: any) => ({ car: mapListingToCar(item.listing, data.signedMap), reason: item.reason }));
   const handleSearch = (query: string) => {
@@ -102,9 +108,65 @@ function HomeContent() {
     { label: 'Adăugate recent', value: catalogLoaded ? String(recentCars.length) : '—', icon: TrendingUp },
     { label: 'Platformă', value: 'LIVE', icon: Clock },
   ];
+  const buyerFeatures = [
+    {
+      icon: SlidersHorizontal,
+      title: 'Filtre care contează',
+      description: 'Restrânge rezultatele după marcă, preț, an, kilometraj și locație, fără să pierzi timp în liste inutile.',
+      href: '/search',
+      action: 'Deschide căutarea',
+    },
+    {
+      icon: GitCompare,
+      title: 'Compară pe bune',
+      description: 'Păstrează mașinile relevante și compară prețul, specificațiile și declarațiile vânzătorului într-un singur loc.',
+      href: '/search',
+      action: 'Alege mașini',
+    },
+    {
+      icon: MessageCircle,
+      title: 'Contact direct',
+      description: 'Trimite mesaj, programează o vizionare sau continuă discuția în chatul securizat al platformei.',
+      href: '/search',
+      action: 'Vezi anunțurile',
+    },
+    {
+      icon: Heart,
+      title: 'Favorite sincronizate',
+      description: 'Salvează ofertele care contează și revino la ele de pe orice dispozitiv după ce intri în cont.',
+      href: '/favorites',
+      action: 'Vezi favoritele',
+    },
+  ];
+  const homeSchema = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'Organization',
+        '@id': 'https://www.autofans.ro/#organization',
+        name: 'AutoFans.ro',
+        url: 'https://www.autofans.ro/',
+        logo: 'https://www.autofans.ro/logo-header.webp',
+      },
+      {
+        '@type': 'WebSite',
+        '@id': 'https://www.autofans.ro/#website',
+        name: 'AutoFans.ro',
+        url: 'https://www.autofans.ro/',
+        inLanguage: 'ro-RO',
+        publisher: { '@id': 'https://www.autofans.ro/#organization' },
+        potentialAction: {
+          '@type': 'SearchAction',
+          target: 'https://www.autofans.ro/search?q={search_term_string}',
+          'query-input': 'required name=search_term_string',
+        },
+      },
+    ],
+  };
 
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(homeSchema) }} />
       <Hero onSearch={handleSearch} />
 
       {/* Info Cards Section */}
@@ -126,7 +188,7 @@ function HomeContent() {
               <div className="p-6 flex flex-col flex-1">
                 <h3 className="text-xl font-bold mb-2 text-white group-hover:text-accent-gold transition-colors">Cumpără cu încredere</h3>
                 <p className="text-gray-400 mb-6 flex-1">
-                  Prețul pe care îl vezi este prețul final. Descoperă mii de mașini verificate și alege-o pe cea perfectă pentru tine.
+                  Compară ofertele după preț, an, kilometraj și locație, apoi alege mașina care ți se potrivește.
                 </p>
                 <Link to="/search" className="inline-block text-center text-accent-gold border border-accent-gold hover:bg-accent-gold/10 font-bold py-2.5 px-6 rounded-xl transition-colors">
                   Caută mașini
@@ -182,7 +244,7 @@ function HomeContent() {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4">
-            {data.brands.map((brand) => (
+            {data.brands.map((brand: { name: string; count: number }) => (
               <Link
                 key={brand.name}
                 to={`/search?q=${encodeURIComponent(brand.name)}`}
@@ -203,7 +265,17 @@ function HomeContent() {
         placeholder={<section className="defer-render min-h-[440px] py-20" aria-hidden="true" />}
       >
         <Suspense fallback={<section className="min-h-[440px] py-20" aria-label="Se încarcă anunțurile" />}>
-          <HomeListings catalogLoaded={catalogLoaded} recentCars={recentCars} recommendedCars={recommendedCars} />
+          <HomeListings
+            catalogLoaded={catalogLoaded}
+            catalogError={catalogError}
+            recentCars={recentCars}
+            recommendedCars={recommendedCars}
+            onRetry={() => {
+              setCatalogLoaded(false);
+              setCatalogError(false);
+              setCatalogRequest((request) => request + 1);
+            }}
+          />
         </Suspense>
       </DeferredMount>
 
@@ -235,54 +307,19 @@ function HomeContent() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-            <Card variant="outlined" className="text-center bg-glass border-white/10 hover:border-accent-gold/50 transition-all duration-300 p-8 rounded-2xl flex flex-col items-center justify-start group">
-              <div className="mb-6 group-hover:scale-110 transition-transform duration-300">
-                <FileText className="h-12 w-12 text-accent-gold stroke-[1.5]" />
-              </div>
-              <h3 className="text-lg font-bold text-white mb-3">
-                Verifică istoricul auto
-              </h3>
-              <p className="text-sm text-gray-400 leading-relaxed">
-                Ai liniște sufletească deplină înainte de a cumpăra următoarea mașină.
-              </p>
-            </Card>
-
-            <Card variant="outlined" className="text-center bg-glass border-white/10 hover:border-accent-gold/50 transition-all duration-300 p-8 rounded-2xl flex flex-col items-center justify-start group">
-              <div className="mb-6 group-hover:scale-110 transition-transform duration-300">
-                <ShieldCheck className="h-12 w-12 text-accent-gold stroke-[1.5]" />
-              </div>
-              <h3 className="text-lg font-bold text-white mb-3">
-                Sfaturi de siguranță
-              </h3>
-              <p className="text-sm text-gray-400 leading-relaxed">
-                Recomandări și ghiduri despre cum să cumperi și să vinzi vehicule în siguranță.
-              </p>
-            </Card>
-
-            <Card variant="outlined" className="text-center bg-glass border-white/10 hover:border-accent-gold/50 transition-all duration-300 p-8 rounded-2xl flex flex-col items-center justify-start group">
-              <div className="mb-6 group-hover:scale-110 transition-transform duration-300">
-                <Calculator className="h-12 w-12 text-accent-gold stroke-[1.5]" />
-              </div>
-              <h3 className="text-lg font-bold text-white mb-3">
-                Finanțare și Credit
-              </h3>
-              <p className="text-sm text-gray-400 leading-relaxed">
-                Descoperă cât poți împrumuta și găsește pachetul de rate potrivit pentru tine.
-              </p>
-            </Card>
-
-            <Card variant="outlined" className="text-center bg-glass border-white/10 hover:border-accent-gold/50 transition-all duration-300 p-8 rounded-2xl flex flex-col items-center justify-start group">
-              <div className="mb-6 group-hover:scale-110 transition-transform duration-300">
-                <Tag className="h-12 w-12 text-accent-gold stroke-[1.5]" />
-              </div>
-              <h3 className="text-lg font-bold text-white mb-3">
-                Vânzare rapidă
-              </h3>
-              <p className="text-sm text-gray-400 leading-relaxed">
-                Fără bătăi de cap. Găsește cumpărători reali și vinde mașina ta la prețul corect.
-              </p>
-            </Card>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-4">
+            {buyerFeatures.map((feature) => (
+              <Card key={feature.title} variant="outlined" className="group flex flex-col items-center rounded-2xl border-white/10 bg-glass p-7 text-center transition-all duration-300 hover:border-accent-gold/50 sm:p-8">
+                <div className="mb-6 transition-transform duration-300 group-hover:scale-110">
+                  <feature.icon className="h-12 w-12 text-accent-gold stroke-[1.5]" />
+                </div>
+                <h3 className="mb-3 text-lg font-bold text-white">{feature.title}</h3>
+                <p className="flex-1 text-sm leading-relaxed text-gray-400">{feature.description}</p>
+                <Link to={feature.href} className="mt-6 text-sm font-bold text-accent-gold transition-colors hover:text-white">
+                  {feature.action} →
+                </Link>
+              </Card>
+            ))}
           </div>
         </div>
       </section>
@@ -295,7 +332,7 @@ function HomeContent() {
             Gata să-ți schimbi mașina?
           </h2>
           <p className="text-xl text-secondary-800 mb-10 leading-relaxed max-w-2xl mx-auto">
-            Adaugă un anunț acum sau caută în miile de oferte active de pe Autofans.ro
+            Adaugă un anunț acum sau caută ofertele active de pe AutoFans.ro
           </p>
           <div className="flex flex-col sm:flex-row gap-6 justify-center">
             <Link 

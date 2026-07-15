@@ -1,12 +1,9 @@
 // Service Worker for caching strategies
-const CACHE_NAME = 'autofans-v2';
-const STATIC_CACHE = 'static-v2';
-const DYNAMIC_CACHE = 'dynamic-v1';
-const IMAGE_CACHE = 'images-v1';
+const STATIC_CACHE = 'autofans-static-v3';
+const IMAGE_CACHE = 'autofans-images-v3';
 
 // Assets to cache immediately
 const STATIC_ASSETS = [
-  '/',
   '/manifest.json',
   '/autofans-logo-pack/icons/favicon.ico',
   '/autofans-logo-pack/icons/android-chrome-192x192.png',
@@ -18,7 +15,6 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then(cache => cache.addAll(STATIC_ASSETS))
-      .then(() => self.skipWaiting())
   );
 });
 
@@ -31,7 +27,6 @@ self.addEventListener('activate', (event) => {
           cacheNames
             .filter(cacheName => 
               cacheName !== STATIC_CACHE && 
-              cacheName !== DYNAMIC_CACHE && 
               cacheName !== IMAGE_CACHE
             )
             .map(cacheName => caches.delete(cacheName))
@@ -39,6 +34,12 @@ self.addEventListener('activate', (event) => {
       })
       .then(() => self.clients.claim())
   );
+});
+
+// Updates wait until the in-app prompt asks for them. This prevents a seller
+// from losing a draft or a buyer from being interrupted mid-conversation.
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 // Fetch event - implement caching strategies
@@ -49,22 +50,19 @@ self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (request.method !== 'GET') return;
 
-  // Skip chrome-extension and other non-http requests
-  if (!url.protocol.startsWith('http')) return;
+  // Never cache third-party, extension, authenticated document, or API traffic.
+  if (url.origin !== self.location.origin) return;
 
-  // Handle different types of requests
-  if (request.destination === 'image') {
+  if (url.pathname.startsWith('/api/') || request.destination === 'document') {
+    event.respondWith(fetch(request));
+  } else if (request.destination === 'image') {
     event.respondWith(handleImageRequest(request));
-  } else if (url.pathname.startsWith('/api/')) {
-    event.respondWith(handleAPIRequest(request));
-  } else if (request.destination === 'document') {
-    event.respondWith(handleDocumentRequest(request));
   } else {
     event.respondWith(handleStaticRequest(request));
   }
 });
 
-// Image caching strategy - Cache First with fallback
+// Image caching strategy - Cache First for public first-party assets only.
 async function handleImageRequest(request) {
   try {
     const cache = await caches.open(IMAGE_CACHE);
@@ -76,64 +74,20 @@ async function handleImageRequest(request) {
     
     const networkResponse = await fetch(request);
     
-    if (networkResponse.ok) {
+    if (canCache(networkResponse) && !request.url.includes('token=')) {
       cache.put(request, networkResponse.clone());
     }
     
     return networkResponse;
   } catch (error) {
-    // Return a fallback image if available
-    const fallback = await caches.match('/images/placeholder.jpg');
-    return fallback || new Response('Image not available', { status: 404 });
+    return new Response('Image not available', { status: 404 });
   }
 }
 
-// API caching strategy - Network First with cache fallback
-async function handleAPIRequest(request) {
-  try {
-    const networkResponse = await fetch(request);
-    
-    if (networkResponse.ok) {
-      const cache = await caches.open(DYNAMIC_CACHE);
-      cache.put(request, networkResponse.clone());
-    }
-    
-    return networkResponse;
-  } catch (error) {
-    const cache = await caches.open(DYNAMIC_CACHE);
-    const cachedResponse = await cache.match(request);
-    
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-    
-    return new Response(
-      JSON.stringify({ error: 'Network unavailable' }), 
-      { 
-        status: 503,
-        headers: { 'Content-Type': 'application/json' }
-      }
-    );
-  }
-}
-
-// Document caching strategy - Network First
-async function handleDocumentRequest(request) {
-  try {
-    const networkResponse = await fetch(request);
-    
-    if (networkResponse.ok) {
-      const cache = await caches.open(DYNAMIC_CACHE);
-      cache.put(request, networkResponse.clone());
-    }
-    
-    return networkResponse;
-  } catch (error) {
-    const cache = await caches.open(DYNAMIC_CACHE);
-    const cachedResponse = await cache.match(request);
-    
-    return cachedResponse || caches.match('/');
-  }
+function canCache(response) {
+  if (!response.ok || response.type === 'opaque') return false;
+  const cacheControl = response.headers.get('Cache-Control') || '';
+  return !cacheControl.includes('no-store') && !cacheControl.includes('private');
 }
 
 // Static assets caching strategy - Cache First
@@ -148,7 +102,7 @@ async function handleStaticRequest(request) {
   try {
     const networkResponse = await fetch(request);
     
-    if (networkResponse.ok) {
+    if (canCache(networkResponse)) {
       cache.put(request, networkResponse.clone());
     }
     
@@ -158,28 +112,21 @@ async function handleStaticRequest(request) {
   }
 }
 
-// Background sync for offline actions
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'background-sync') {
-    event.waitUntil(doBackgroundSync());
-  }
-});
-
-async function doBackgroundSync() {
-  // Handle offline actions when back online
-  console.log('Background sync triggered');
-}
-
 // Push notifications
 self.addEventListener('push', (event) => {
   if (!event.data) return;
   
-  const data = event.data.json();
+  let data;
+  try {
+    data = event.data.json();
+  } catch {
+    return;
+  }
   
   const options = {
     body: data.body,
     icon: '/autofans-logo-pack/icons/android-chrome-192x192.png',
-    badge: '/badge-72x72.png',
+    badge: '/autofans-logo-pack/icons/android-chrome-192x192.png',
     data: data.data,
     actions: data.actions || []
   };
@@ -193,26 +140,16 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   
-  if (event.action) {
-    // Handle action clicks
-    handleNotificationAction(event.action, event.notification.data);
-  } else {
-    // Handle notification click
-    event.waitUntil(
-      clients.openWindow(event.notification.data?.url || '/')
-    );
-  }
+  event.waitUntil(handleNotificationAction(event.action, event.notification.data));
 });
 
 function handleNotificationAction(action, data) {
   switch (action) {
     case 'view':
-      clients.openWindow(data?.url || '/');
-      break;
+      return clients.openWindow(data?.url || '/');
     case 'dismiss':
-      // Just close the notification
-      break;
+      return Promise.resolve();
     default:
-      clients.openWindow('/');
+      return clients.openWindow(data?.url || '/');
   }
 }

@@ -148,7 +148,9 @@ const FilterGroup: React.FC<FilterGroupProps> = ({
   return (
     <div className="border-b border-white/10 last:border-b-0">
       <button
+        type="button"
         onClick={onToggle}
+        aria-expanded={isOpen}
         className="flex w-full items-center justify-between px-5 py-4 text-left text-white transition-all duration-200 hover:bg-white/5 focus:outline-none focus:ring-2 focus:ring-accent-gold/40"
       >
         <div className="flex items-center space-x-3">
@@ -192,14 +194,12 @@ interface QuickFilterChipProps {
   label: string;
   isActive: boolean;
   onClick: () => void;
-  onRemove?: () => void;
 }
 
 const QuickFilterChip: React.FC<QuickFilterChipProps> = ({
   label,
   isActive,
-  onClick,
-  onRemove
+  onClick
 }) => {
   return (
     <button
@@ -213,25 +213,6 @@ const QuickFilterChip: React.FC<QuickFilterChipProps> = ({
       )}
     >
       <span>{label}</span>
-      {isActive && onRemove && (
-        <span
-          role="button"
-          tabIndex={0}
-          onClick={(e) => {
-            e.stopPropagation();
-            onRemove();
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              onRemove();
-            }
-          }}
-          className="ml-1 rounded-full bg-white/10 p-1 text-accent-gold hover:bg-accent-gold/30 focus:outline-none focus:ring-2 focus:ring-accent-gold/40"
-        >
-          <XIcon />
-        </span>
-      )}
     </button>
   );
 };
@@ -260,13 +241,16 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
   onClose,
   onApply
 }) => {
-  const { isMobile, isTouchDevice } = useResponsive();
+  const { isMobile } = useResponsive();
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
     price: true,
     brand: !isMobile, // Collapse brand on mobile by default
-    specs: false,
+    year: false,
+    mileage: false,
+    fuel: false,
+    transmission: false,
     location: false,
-    features: false
+    condition: false
   });
 
   const [saveSearchName, setSaveSearchName] = useState('');
@@ -579,8 +563,8 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
         {/* Year Range */}
         <FilterGroup
           title="An fabricație"
-          isOpen={openGroups.specs}
-          onToggle={() => toggleGroup('specs')}
+          isOpen={openGroups.year}
+          onToggle={() => toggleGroup('year')}
           count={filters.yearRange ? 1 : 0}
         >
           <RangeSlider
@@ -599,8 +583,8 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
         {/* Mileage Range */}
         <FilterGroup
           title="Kilometraj"
-          isOpen={openGroups.specs}
-          onToggle={() => toggleGroup('specs')}
+          isOpen={openGroups.mileage}
+          onToggle={() => toggleGroup('mileage')}
           count={filters.mileageRange ? 1 : 0}
         >
           <RangeSlider
@@ -676,8 +660,8 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
         {/* Fuel Type */}
         <FilterGroup
           title="Combustibil"
-          isOpen={openGroups.specs}
-          onToggle={() => toggleGroup('specs')}
+          isOpen={openGroups.fuel}
+          onToggle={() => toggleGroup('fuel')}
           count={filters.fuelType?.length || 0}
         >
           <div className="space-y-2">
@@ -701,8 +685,8 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
         {/* Transmission */}
         <FilterGroup
           title="Transmisie"
-          isOpen={openGroups.specs}
-          onToggle={() => toggleGroup('specs')}
+          isOpen={openGroups.transmission}
+          onToggle={() => toggleGroup('transmission')}
           count={filters.transmission?.length || 0}
         >
           <div className="space-y-2">
@@ -726,8 +710,8 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
         {/* Condition */}
         <FilterGroup
           title="Stare"
-          isOpen={openGroups.features}
-          onToggle={() => toggleGroup('features')}
+          isOpen={openGroups.condition}
+          onToggle={() => toggleGroup('condition')}
           count={filters.condition?.length || 0}
         >
           <div className="space-y-2">

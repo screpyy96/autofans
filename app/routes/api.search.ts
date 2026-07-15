@@ -10,6 +10,19 @@ const SORTS = new Set([
   'mileage_asc', 'mileage_desc', 'date_desc', 'date_asc',
 ]);
 
+/** A search result needs one display image, not every original upload. Keeping
+ * the total separately preserves the gallery count on the card while avoiding
+ * dozens of signed URLs and JSON entries per results page. */
+function toSearchPreview(listing: any) {
+  const images = Array.isArray(listing?.images) ? listing.images : [];
+  const cover = images.find((image: any) => image?.isMain) || images[0];
+  return {
+    ...listing,
+    images: cover ? [cover] : [],
+    image_count: images.length,
+  };
+}
+
 const asStringArray = (value: unknown, maximum = 20) => {
   if (!Array.isArray(value)) return null;
   const values = value
@@ -86,7 +99,7 @@ export async function action({ request }: ActionFunctionArgs) {
       p_max_owners: asBoundedNumber(rawFilters.maxOwners, 1, 100),
       p_sort: sort,
     }, { count: 'exact' })
-    .select('id, slug, owner_id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, body_type, vin, vin_verified, history_checked, images, created_at, city, county, latitude, longitude, owners, service_history, engine_size, power, doors, seats, condition_overall, condition_exterior, condition_interior, condition_engine, condition_transmission, has_accidents, features')
+    .select('id, slug, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, vin, vin_verified, history_checked, images, created_at, city, county, latitude, longitude')
     .range((page - 1) * pageSize, page * pageSize - 1);
 
   if (error) {
@@ -94,10 +107,15 @@ export async function action({ request }: ActionFunctionArgs) {
     return Response.json({ error: 'Nu am putut încărca anunțurile.' }, { status: 500, headers });
   }
 
-  const signedMap = await signListingImages(supabase as any, listings || []);
+  // Search cards never need original camera files. A compact cover image keeps
+  // the first mobile render fast even when sellers upload large photos.
+  const previews = (listings || []).map(toSearchPreview);
+  const signedMap = await signListingImages(supabase as any, previews, 60 * 60, {
+    width: 720, height: 450, quality: 70, resize: 'cover',
+  });
   const total = count || 0;
   return Response.json({
-    listings: listings || [],
+    listings: previews,
     signedMap,
     total,
     hasMore: page * pageSize < total,

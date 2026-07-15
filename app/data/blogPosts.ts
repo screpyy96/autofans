@@ -21,6 +21,228 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    id: "7",
+    slug: "cum-vinzi-o-masina-rapid-si-in-siguranta-2026",
+    title: "Cum vinzi o mașină rapid și în siguranță în 2026: preț, anunț, acte și negociere",
+    excerpt: "Ghid complet pentru vânzarea unei mașini second-hand: cum stabilești prețul, faci poze care vând, alegi cumpărători serioși și închei tranzacția corect.",
+    content: `
+Să vinzi o mașină bine nu înseamnă să pui un preț mic și să răspunzi la zeci de mesaje. Înseamnă să prezinți corect exemplarul, să elimini din start cumpărătorii nepotriviți și să faci tranzacția cu acte și plată verificabile. Un anunț auto transparent atrage mai puține conversații inutile și mai mulți oameni care chiar au bugetul, întrebările și intenția de a cumpăra.
+
+> **Pe scurt:** pregătește mașina, compară prețuri pentru exemplare echivalente, publică fotografii reale, spune clar ce lucrări are și nu preda cheile sau actele originale înainte ca plata și contractul să fie confirmate.
+
+## 1. Stabilește prețul corect înainte să publici anunțul auto
+
+Primul pas când vrei să vinzi o mașină este să nu alegi prețul după cât ai investit în ea sau după cea mai optimistă ofertă găsită online. Cumpărătorii compară rapid anunțurile după marcă, model, an, motorizare, cutie, kilometraj, dotări, stare, istoric și zonă. Caută pe AutoFans și pe piață mașini apropiate ca specificație, apoi separă exemplarele comparabile de cele care doar au același nume în titlu.
+
+Un preț realist ia în calcul:
+
+| Element | Cum influențează prețul de vânzare |
+| --- | --- |
+| Istoric documentat | Poate susține un preț mai bun dacă există facturi, revizii și verificări coerente. |
+| Dotări și motorizare | Contează doar când sunt descrise precis și comparate cu aceeași versiune. |
+| Consumabile | Anvelopele, frânele și reviziile recente cresc încrederea, nu trebuie prezentate ca „bonusuri misterioase”. |
+| Daune sau defecte | O problemă explicată corect se negociază; una ascunsă rupe încrederea la vizionare. |
+| Sezon și cerere | Poate schimba viteza de vânzare, dar nu transformă un preț nerealist într-unul corect. |
+
+Pune un prag sub care nu vrei să cobori și un mic spațiu de negociere, dar evită să umfli artificial prețul. Un anunț cu preț bun poate genera cerere în primele zile; unul prea sus poate rămâne luni întregi și ajunge să pară problematic chiar dacă mașina este bună. Dacă vrei **să vinzi mașina repede**, de regulă e mai eficient să pornești aproape de piața reală decât să faci reduceri repetate.
+
+## 2. Pregătește mașina ca pentru prima vizionare
+
+Nu ai nevoie de o cosmetizare care să ascundă defecte. Ai nevoie ca mașina să fie curată, ușor de inspectat și exact cum ai descris-o. Spală exteriorul, aspiră interiorul, scoate obiectele personale, verifică becurile și presiunea în anvelope. Dacă există o problemă minoră simplu de rezolvat — un bec ars, un capac lipsă, o eroare evidentă de întreținere — rezolv-o înainte de poze.
+
+Nu masca o defecțiune, un martor în bord sau o daună. Cumpărătorii serioși observă aceste lucruri la test drive sau la inspecție, iar o surpriză scade șansele de vânzare mai tare decât un defect anunțat corect. Pentru pasionații auto, transparența contează și mai mult: o jantă revopsită, o piesă aftermarket sau un soft motor trebuie explicate simplu, cu facturi și cu informația dacă piesele originale sunt disponibile.
+
+Pregătește într-un dosar: CIV, certificatul de înmatriculare, documentele de service, facturile importante, dovada lucrărilor recente, ambele chei și orice raport de istoric disponibil. Nu posta online poze lizibile cu date personale sau documente complete.
+
+## 3. Fotografiile care vând o mașină, fără să inducă în eroare
+
+Pozele fac diferența dintre un anunț care primește întrebarea „mai este disponibilă?” și unul care primește o cerere de vizionare. Fotografiază mașina ziua, pe o suprafață curată și într-un loc fără fundal aglomerat. Evită filtrele puternice, ploaia, parcările întunecate și pozele făcute într-o benzinărie noaptea.
+
+Setul minim de fotografii pentru o **mașină de vânzare** ar trebui să includă:
+
+- exteriorul din față, spate și fiecare laterală;
+- jantele și anvelopele, dacă sunt relevante pentru stare;
+- interiorul față/spate, portbagajul, bordul pornit și kilometrajul;
+- motorul, cu aspect normal și fără editări;
+- dotările importante: faruri, cameră, plafon, scaune, cârlig, trapa sau sistem audio;
+- imperfecțiunile vizibile: zgârieturi, îndoiri, uzură de interior sau elemente revopsite, când le cunoști.
+
+Fotografiile sincere nu scad automat valoarea. Dimpotrivă, economisesc timp pentru ambele părți și arată că vinzi o mașină reală, nu o promisiune. Dacă ai o mașină rară, sportivă sau configurată pentru un fan auto, adaugă cadre pentru detaliile care justifică alegerea: întreținere, frâne, suspensie, evacuare omologată, interior sau pachet de dotări.
+
+## 4. Scrie un anunț auto pe care îl înțelege cumpărătorul
+
+Titlul trebuie să spună clar ce este mașina: marcă, model, motorizare, cutie, anul relevant și un diferențiator real. „BMW Seria 3 320d xDrive, automată, 2018, istoric service” este mai util decât „Super ofertă, impecabilă”.
+
+În descriere, răspunde înainte să fii întrebat. O structură bună pentru un anunț de vânzare auto este:
+
+1. anul, motorizarea, transmisia, combustibilul și kilometrajul declarat;
+2. proveniența, numărul de proprietari dacă îl cunoști și tipul de utilizare;
+3. istoricul de service, cu lucrările și datele pe care le poți dovedi;
+4. dotările care chiar există pe mașină;
+5. defectele, daunele cunoscute și ce urmează să necesite atenție;
+6. ce intră în preț: roți, anvelope, bare, accesorii sau piese originale;
+7. când poate fi văzută, dacă accepți verificare în service și modalitatea de contact.
+
+Folosește cu grijă expresii precum „fără accidente”, „kilometri reali”, „impecabilă” sau „full options”. Dacă nu poți susține afirmația cu acte, verificări sau o explicație precisă, nu o transforma în promisiune. Pentru istoricul disponibil în România poți solicita un [RAR Auto-Pass](https://www.rarom.ro/?p=298531): documentul poate fi cerut atât de vânzător, cât și de cumpărător, pe baza VIN-ului. RAR arată că raportul include, în funcție de datele disponibile, citiri ale odometrului, informații despre intervenții și reparații, ITP și campanii de rechemare.
+
+## 5. Cum filtrezi cumpărătorii serioși fără să pierzi vânzarea
+
+Oferă răspunsuri politicoase, dar nu negocia ore întregi cu cineva care nu a citit anunțul. Spune din prima dacă prețul este negociabil, unde se poate vedea mașina și dacă accepți inspecție într-un service. Un cumpărător hotărât va întreba despre stare, acte, revizii, VIN, test drive și condițiile plății — exact întrebările la care vrei să răspunzi.
+
+Evită linkurile suspecte, cererile de „curier” care pretind plata fără vizionare și orice solicitare de coduri bancare, date de card sau acces la cont. Nu trimite copii complete ale actelor personale necunoscuților și nu accepta avansuri sau taxe care vin prin proceduri neclare. Dacă cineva vrea să rezerve mașina, stabilește în scris condițiile: suma, termenul, ce se întâmplă dacă inspecția arată probleme majore și când se restituie sau nu se restituie banii.
+
+La vizionare, alege un loc sigur și luminos. Permite test drive-ul doar după ce verifici permisul și stai în mașină. Pentru un exemplar valoros, e normal să prevezi traseul și să nu lași mașina, cheile sau documentele la dispoziția unui necunoscut.
+
+## 6. Negocierea: apără prețul cu fapte, nu cu emoții
+
+Înainte de întâlnire, scrie-ți pentru tine trei argumente reale pentru preț: istoric, lucrări recente, echipare, stare, seturi de roți sau raritatea configurației. Când cumpărătorul aduce o problemă documentată de service, ascultă și decide dacă este o negociere corectă. Când negociază doar cu „atât am la mine”, nu trebuie să cobori automat.
+
+O negociere bună se termină cu un acord clar asupra prețului, a actelor, a plății și a momentului predării. Nu promite lucrări suplimentare în ultimul moment dacă nu vrei să le faci și nu modifica verbal ce ai convenit fără să notați schimbarea. Dacă mașina nu se vinde imediat, actualizează întâi pozele, descrierea și poziționarea de preț; nu transforma anunțul într-un șir de reduceri inexplicabile.
+
+## 7. Acte, plată și predare: partea care trebuie făcută impecabil
+
+Înainte de semnare, compară din nou VIN-ul de pe mașină cu CIV, certificatul de înmatriculare și contractul. Verifică numele părților, adresele, prețul, data și numărul de exemplare ale contractului. Predă cheile, actele originale promise și accesoriile doar în același flux cu plata confirmată.
+
+Pentru transfer bancar, verifică în cont încasarea efectivă, nu doar o captură de ecran sau un ordin de plată. Pentru numerar, numărați banii într-un loc sigur și păstrați dovada plății. Păstrează copii ale contractului, dovada plății, conversațiile relevante și un proces-verbal de predare cu kilometrajul, numărul de chei și documentele predate. Acesta este util când vinzi mașina între persoane fizice și la fel de important când vinzi prin firmă.
+
+Cumpărătorul va face transcrierea dreptului de proprietate la serviciul competent din județul de domiciliu; informațiile, taxele și pașii actualizați sunt publicate de [MAI](https://hub.mai.gov.ro/serviciu/view?id=75). Pentru formalitățile fiscale ale vânzătorului și cumpărătorului, verifică și instrucțiunile autorității locale, deoarece fluxurile pot diferi.
+
+## Checklist final pentru vânzarea unei mașini
+
+- [ ] Preț comparat cu mașini similare, nu doar cu anunțuri optimiste.
+- [ ] Exterior, interior și fotografii pregătite fără să ascunzi defecte.
+- [ ] Descriere clară cu kilometraj, istoric, dotări și probleme cunoscute.
+- [ ] VIN, CIV și certificat comparate înainte de contract.
+- [ ] Test drive controlat și verificare în service acceptată.
+- [ ] Plata confirmată înainte de predarea cheilor și actelor originale.
+- [ ] Contract, dovadă de plată și predare arhivate.
+
+Publică anunțul pe [AutoFans](/search) cu toate detaliile care ajută un cumpărător să decidă. O mașină întreținută și prezentată transparent are cele mai bune șanse să se vândă repede, corect și fără surprize pentru nimeni.
+    `,
+    coverImage: "/blog/cum-vinzi-masina-rapid-sigur-2026.webp",
+    author: { name: "AutoFans", role: "Echipa editorială AutoFans" },
+    category: "Vânzare auto",
+    tags: ["Vânzare mașină", "Vând mașina", "Anunț auto", "Preț mașină second-hand", "Acte vânzare auto", "Negociere auto", "RAR Auto-Pass", "Mașină second-hand"],
+    readTime: 12,
+    publishedAt: "2026-07-15T10:00:00Z",
+    updatedAt: "2026-07-15T10:00:00Z",
+    faqs: [
+      { question: "Cum vând o mașină repede?", answer: "Stabilește un preț apropiat de piața reală, publică poze clare și o descriere completă, răspunde consecvent și acceptă verificarea într-un service independent." },
+      { question: "Ce trebuie să scriu într-un anunț de vânzare auto?", answer: "Include modelul, anul, motorizarea, cutia, kilometrajul declarat, istoricul documentat, dotările, starea reală, defectele cunoscute și condițiile de vizionare sau plată." },
+      { question: "Când predau actele și cheile mașinii?", answer: "Predă-le numai în același flux cu semnarea contractului și plata confirmată. Păstrează copii ale contractului, dovada plății și un proces-verbal de predare." },
+      { question: "Merită să ofer VIN-ul cumpărătorului?", answer: "Da, după ce ai stabilit un contact serios. VIN-ul permite verificări relevante și crește încrederea; nu publica însă date personale sau copii integrale ale documentelor." },
+    ],
+    isFeatured: true,
+  },
+  {
+    id: "8",
+    slug: "cum-cumperi-o-masina-second-hand-fara-tepe-2026",
+    title: "Cum cumperi o mașină second-hand fără țepe în 2026: ghid complet pentru verificare",
+    excerpt: "Învață cum cumperi o mașină rulată fără surprize: buget, filtre, VIN, istoric, acte, test drive, inspecție tehnică și negociere bazată pe fapte.",
+    content: `
+Când cauți să cumperi o mașină second-hand, alegerea bună nu este cea care arată cel mai bine în prima poză, ci cea ale cărei preț, istoric, stare și costuri pot fi explicate. Piața are exemplare foarte bune, dar și anunțuri incomplete, kilometraje neclare și mașini pregătite doar pentru vânzare. Un proces simplu, repetat la fiecare vizionare, te ajută să alegi mai calm și să păstrezi banii pentru mașină, nu pentru reparații ascunse.
+
+> **Pe scurt:** alege modelul după nevoile tale, nu după o singură dotare. Cere VIN-ul înainte de drum, vezi mașina ziua, pornește-o la rece, fă test drive, compară actele și nu cumpăra fără o inspecție independentă când miza este importantă.
+
+## 1. Începe cu bugetul total, nu cu prețul din anunț
+
+O greșeală frecventă când vrei să **cumperi mașină** este să aloci tot bugetul prețului de achiziție. După tranzacție apar aproape întotdeauna formalități, RCA, impozit local, o revizie de început, anvelope, frâne sau mici reparații. Lasă o rezervă clară înainte să salvezi primul anunț.
+
+Formula utilă este: **buget total = preț mașină + verificare înainte de cumpărare + acte + asigurare + revizie inițială + consumabile + rezervă de reparații**. Ghidul nostru despre [costul real al unei mașini](/blog/costul-real-al-unei-masini-in-2026) te ajută să compari exemplare care par similare, dar nu vor costa la fel după prima lună.
+
+Definește apoi utilizarea reală: oraș, navetă, familie, drumuri lungi, pasiune pentru condus, iarnă la munte sau remorcare. Un pasionat poate prefera o configurație sportivă și va accepta costuri specifice; un șofer urban poate avea nevoie de o mașină mai simplă și mai ușor de întreținut. Nu există o motorizare perfectă pentru toată lumea, există doar o potrivire bună între drumurile tale, buget și istoricul exemplarului.
+
+## 2. Cum alegi mașina potrivită din anunțuri
+
+Folosește filtrele pentru anul fabricației, kilometraj, combustibil, transmisie, buget și zonă. Salvează doar mașinile care au informații suficiente pentru comparație. Pentru fiecare candidat, notează: prețul, anul, rulajul declarat, motorul, cutia, proprietarii cunoscuți, istoricul, lucrările declarate, dotările importante și orice semnal de întrebare.
+
+Nu compara un diesel de autostradă cu o benzină de oraș doar pentru că au același preț sau un model premium cu o variantă standard numai după anul de fabricație. Uită-te la versiunea exactă, întreținere și costurile probabile. Pentru mașinile apreciate de fani — hot hatch, coupe, break performant, 4x4 sau model cu pachet sport — verifică suplimentar dacă modificările sunt documentate, dacă piesele sunt potrivite și dacă mașina a fost întreținută, nu doar „tunată”.
+
+Semnele care merită o întrebare înainte de vizionare sunt pozele puține, descrierea vagă, prețul mult sub piață, lipsa VIN-ului, anunțul copiat, kilometrajul fără dovezi și refuzul verificării într-un service. Ele nu dovedesc singure o problemă, dar te ajută să nu faci drumuri de sute de kilometri pentru un exemplar care nu se poate explica.
+
+## 3. Întrebările de pus înainte să pleci la vizionare
+
+Sună sau scrie înainte de deplasare și cere răspunsuri scurte, concrete:
+
+- Care este VIN-ul și îl pot compara cu actele la vizionare?
+- De când este mașina în proprietate și de ce se vinde?
+- Care sunt ultimele revizii, distribuția și lucrările importante? Există facturi?
+- A avut daune? Ce s-a reparat și unde?
+- Ce defecte are acum, inclusiv erori în bord, consumabile sau probleme de caroserie?
+- Câte chei sunt disponibile și ce documente vor fi predate?
+- Este acceptată o verificare într-un service ales de cumpărător?
+
+Răspunsurile nu trebuie să fie perfecte. Un proprietar sincer poate să nu știe fiecare operațiune făcută înaintea lui, dar va face diferența între ce știe, ce poate dovedi și ce nu poate confirma. Dacă povestea se schimbă de la un mesaj la altul sau apare presiunea pentru avans înainte de acte și inspecție, treci la următorul anunț.
+
+## 4. VIN, istoric și documente: verificarea înainte de avans
+
+VIN-ul trebuie să fie identic pe mașină, în Cartea de Identitate a Vehiculului și în certificatul de înmatriculare. Compară seria fizic, nu doar într-o poză. Pentru istoricul disponibil în bazele românești, [RAR Auto-Pass](https://www.rarom.ro/?p=298531) poate fi solicitat online de cumpărător sau vânzător și se bazează pe VIN. Conform RAR, informațiile disponibile pot include citiri de odometru, intervenții și reparații în ateliere autorizate, ITP și campanii de rechemare. Lipsa unei mențiuni nu este o garanție că nimic nu s-a întâmplat; este un motiv să păstrezi inspecția tehnică în proces.
+
+Uită-te și la coerență: o revizie la un anumit kilometraj, o factură mai veche, o uzură de interior și raportul de istoric ar trebui să spună aproximativ aceeași poveste. Ghidul nostru cu [actele necesare la cumpărare și vânzare](/blog/acte-necesare-cumparare-vanzare-masina-2026) explică ce documente compari înainte de contract.
+
+Pentru un vehicul adus din afara țării sau pentru o situație de înmatriculare specifică, RAR oferă informații actualizate despre [certificarea autenticității](https://www.rarom.ro/?page_id=619). Nu presupune că procedura unei mașini deja înmatriculate în România este identică cu cea pentru un import: verifică din timp pașii potriviți cazului tău.
+
+## 5. Ce verifici când vezi mașina: exterior, interior și pornire la rece
+
+Programează vizionarea ziua și cere ca motorul să fie rece. Începe cu o privire de la distanță: culori diferite între elemente, spații neuniforme, faruri cu aspect foarte diferit sau urme de vopsea în zone greu de mascat merită întrebări. Apoi verifică pragurile, muchiile ușilor, portbagajul, geamurile, anvelopele și partea de jos a mașinii, dacă o poți vedea în siguranță.
+
+În interior, compară uzura volanului, pedalelor, scaunului șoferului și butoanelor cu kilometrajul declarat. Nu există o regulă absolută — o mașină de oraș se poate uza repede, una de autostradă poate arăta excelent — dar nepotrivirile mari trebuie explicate. Testează echipamentele pentru care plătești: climatizare, geamuri, oglinzi, senzori, cameră, pilot automat, încălzire, navigație, plafon și toate cheile.
+
+La pornire, urmărește martorii, zgomotele, fumul persistent, vibrațiile și reacția motorului. Nu diagnostica tu o mașină în parcare; notează ce observi și du informația la un mecanic. Pentru un checklist mai detaliat, vezi [ce verifici la vizionarea unei mașini second-hand](/blog/ce-verifici-la-vizionarea-unei-masini-second-hand-checklist).
+
+## 6. Test drive-ul care îți spune ceva util
+
+Test drive-ul trebuie să includă pornire, mers normal în oraș, frânare, schimbarea treptelor, viraje și o porțiune unde poți evalua legal stabilitatea la viteză. Observă dacă direcția trage, dacă mașina frânează drept, dacă apar vibrații, bătăi pe denivelări, șocuri la schimbarea vitezelor sau zgomote la viraj.
+
+Lasă motorul să ajungă la temperatura normală și verifică din nou bordul. Dacă te uiți la o automată, urmărește plecarea de pe loc, schimbările la rece și după încălzire, precum și mersul înapoi. Dacă te uiți la un model sportiv sau modificat, nu te lăsa convins doar de sunet sau accelerație: întreabă cine a montat piesele, dacă există facturi, ce s-a schimbat în soft și dacă piesele originale au fost păstrate.
+
+Un test drive bun nu înlocuiește elevatorul, diagnoza sau verificarea caroseriei. El îți răspunde doar la întrebarea: „merită mașina următorul pas?”
+
+## 7. Inspecția pre-cumpărare: banii cel mai bine cheltuiți
+
+Alege un service independent sau un specialist care nu are interesul să vândă mașina. Spune-i înainte modelul și simptomele observate, apoi cere o evaluare clară: caroserie, scurgeri, frâne, suspensie, direcție, transmisie, motor, diagnoză, anvelope și eventual grosimea vopselei. Dacă mașina are defecte, nu înseamnă automat că trebuie să pleci; ai nevoie de o estimare realistă pentru lucrări și de o negociere pe bază de dovezi.
+
+Un vânzător serios nu trebuie să garanteze perfecțiunea unei mașini rulate, dar ar trebui să accepte o verificare rezonabilă. Refuzul inspecției, presiunea pentru plată rapidă sau diferențele majore dintre anunț și realitate sunt motive suficient de bune să oprești tranzacția.
+
+## 8. Cum negociezi când cumperi o mașină
+
+Negociază după ce ai văzut mașina, ai verificat documentele și ai înțeles costurile apropiate. Vino cu o listă concisă: distribuție fără dovadă, anvelope la limită, frâne, o eroare la diagnoză, o zgârietură sau o lucrare recomandată de service. Fiecare punct trebuie să fie real și proporțional cu costul; altfel, vânzătorul va ignora și obiecțiile valide.
+
+Nu te grăbi doar fiindcă „mai sunt alți doritori”. Piața se mișcă, dar o mașină bună suportă o verificare de câteva ore sau o zi. Dacă nu poți ajunge la un acord corect, păstrează-ți bugetul și caută mai departe. Cumpărarea unei mașini second-hand este una dintre situațiile în care răbdarea poate economisi mii de lei.
+
+## 9. Contract, plată și pașii de după cumpărare
+
+Înainte de plată, citește contractul cu CIV și certificatul de înmatriculare lângă tine. Verifică părțile, VIN-ul, prețul, data și documentele care se predau. Pentru transfer bancar, confirmă că banii au ajuns în cont; pentru numerar, folosește un loc sigur și păstrează dovada plății. Primește toate cheile, actele originale promise, facturile și orice accesoriu inclus.
+
+După semnare urmează obligațiile fiscale și transcrierea dreptului de proprietate. MAI arată că transcrierea se face la SPCRPCIV din județul de domiciliu al cumpărătorului și publică procedura, taxele și informațiile actualizate pe [pagina oficială de transcriere](https://hub.mai.gov.ro/serviciu/view?id=75). Verifică și autoritatea fiscală locală înainte să pleci la ghișeu.
+
+## Checklist: cum cumperi o mașină fără surprize
+
+- [ ] Buget total cu rezervă pentru primul an, nu doar pentru prețul mașinii.
+- [ ] Anunț comparat cu exemplare echivalente și întrebări puse înainte de drum.
+- [ ] VIN comparat pe mașină, în CIV și în certificat.
+- [ ] Istoric verificat și facturi discutate, fără a confunda lipsa datelor cu o garanție.
+- [ ] Motor pornit la rece, interior și dotări testate, test drive făcut.
+- [ ] Inspecție independentă înainte de avans sau plată finală.
+- [ ] Contract, plată și predare făcute în același flux.
+
+[Caută mașini pe AutoFans](/search) și salvează doar exemplarele pentru care poți verifica datele de bază. O mașină bună pentru tine nu este cea mai ieftină ofertă, ci cea a cărei stare o înțelegi, o poți întreține și o poți cumpăra fără grabă.
+    `,
+    coverImage: "/blog/cum-cumperi-masina-second-hand-2026.webp",
+    author: { name: "AutoFans", role: "Echipa editorială AutoFans" },
+    category: "Ghid cumpărare",
+    tags: ["Cumpăr mașină", "Cumpărare mașină second-hand", "Mașini rulate", "Verificare auto", "VIN", "Test drive", "Inspecție auto", "RAR Auto-Pass", "Pasionați auto"],
+    readTime: 14,
+    publishedAt: "2026-07-15T10:05:00Z",
+    updatedAt: "2026-07-15T10:05:00Z",
+    faqs: [
+      { question: "Ce verific înainte să cumpăr o mașină second-hand?", answer: "Verifică bugetul total, VIN-ul, documentele, istoricul disponibil, exteriorul, pornirea la rece, test drive-ul și rezultatul unei inspecții independente." },
+      { question: "Este suficient un raport de istoric auto?", answer: "Nu. Un raport completează informațiile din acte și service, dar nu înlocuiește test drive-ul și inspecția fizică a mașinii într-un service independent." },
+      { question: "Când plătesc mașina?", answer: "Doar după ce actele, VIN-ul și condițiile contractului sunt clare. Plata, semnarea și predarea cheilor sau documentelor trebuie să fie parte din același flux verificabil." },
+      { question: "Merită o inspecție înainte de cumpărare?", answer: "Da. Costul unei inspecții este mic raportat la riscul unor reparații de motor, transmisie, caroserie sau siguranță descoperite după achiziție." },
+    ],
+  },
+  {
     id: "4",
     slug: "acte-necesare-cumparare-vanzare-masina-2026",
     title: "Acte necesare la cumpărarea și vânzarea unei mașini în 2026: checklist complet",

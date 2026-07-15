@@ -1,8 +1,7 @@
 import { forwardRef, useRef, useId } from 'react';
-import { motion } from 'framer-motion';
-import { cn } from '~/lib/utils';
-import { useAccessibility } from '~/hooks/useAccessibility';
 import { getAriaLabel, getAriaDescribedBy } from '~/utils/accessibility';
+
+const cn = (...values: unknown[]) => values.filter(Boolean).join(' ');
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -15,22 +14,11 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, label, error, helperText, leftIcon, rightIcon, leftIconClassName, id, required, ...props }, ref) => {
-    const { reduceMotion } = useAccessibility();
     const reactId = useId();
     // Ensure stable IDs across server and client to avoid hydration mismatches
     const inputId = useRef(id ?? `input-${reactId}`).current;
     const errorId = useRef(`input-error-${reactId}`).current;
     const helperId = useRef(`input-helper-${reactId}`).current;
-    
-    const { 
-      onDrag, 
-      onDragEnd, 
-      onDragStart, 
-      onAnimationStart, 
-      onAnimationEnd, 
-      onAnimationIteration,
-      ...restProps 
-    } = props;
     
     const ariaLabel = label ? getAriaLabel(label, helperText, required, !!error) : undefined;
     const ariaDescribedBy = getAriaDescribedBy(
@@ -65,7 +53,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               </div>
             </div>
           )}
-          <motion.input
+          <input
             ref={ref}
             id={inputId}
             aria-label={!label ? ariaLabel : undefined}
@@ -82,8 +70,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               error && 'border-red-500 focus:ring-red-500',
               className
             )}
-            whileFocus={reduceMotion ? {} : { scale: 1.01 }}
-            {...restProps}
+            {...props}
           />
           {rightIcon && (
             <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
@@ -94,16 +81,14 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           )}
         </div>
         {error && (
-          <motion.p
+          <p
             id={errorId}
             role="alert"
             aria-live="polite"
-            initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-2 text-sm text-red-400"
+            className="mt-2 text-sm text-red-400 motion-safe:animate-[autofans-fade-in_160ms_ease-out]"
           >
             {error}
-          </motion.p>
+          </p>
         )}
         {helperText && !error && (
           <p id={helperId} className="mt-2 text-sm text-gray-400">

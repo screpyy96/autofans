@@ -24,47 +24,48 @@ const modalSizes = {
 export const Modal = forwardRef<HTMLDivElement, ModalProps>(
   ({ isOpen, onClose, title, description, size = 'md', children, className }, ref) => {
     const modalRef = useRef<HTMLDivElement>(null);
-    const { saveFocus, restoreFocus, focusFirst, trapFocus } = useFocusManagement();
+    const previousFocusRef = useRef<HTMLElement | null>(null);
+    const onCloseRef = useRef(onClose);
+    const { focusFirst, trapFocus } = useFocusManagement();
     const { reduceMotion } = useAccessibility();
     
     const titleId = useRef(generateId('modal-title')).current;
     const descriptionId = useRef(generateId('modal-description')).current;
 
     useEffect(() => {
+      onCloseRef.current = onClose;
+    }, [onClose]);
+
+    useEffect(() => {
+      if (!isOpen) return;
+
       const handleEscape = (e: KeyboardEvent) => {
         if (e.key === 'Escape') {
-          onClose();
+          onCloseRef.current();
         }
       };
 
-      if (isOpen) {
-        // Save current focus and manage focus
-        saveFocus();
-        document.addEventListener('keydown', handleEscape);
-        document.body.style.overflow = 'hidden';
-        
-        // Announce modal opening to screen readers
-        createAriaLiveRegion(title ? `Modal deschis: ${title}` : 'Modal deschis', 'assertive');
-        
-        // Focus first element in modal after animation
-        setTimeout(() => {
-          if (modalRef.current) {
-            focusFirst(modalRef.current);
-            // Set up focus trap
-            const cleanup = trapFocus(modalRef.current);
-            return cleanup;
-          }
-        }, reduceMotion ? 0 : 200);
-      }
+      previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      const previousOverflow = document.body.style.overflow;
+      let removeFocusTrap: (() => void) | undefined;
+      const focusTimer = window.setTimeout(() => {
+        if (!modalRef.current) return;
+        focusFirst(modalRef.current);
+        removeFocusTrap = trapFocus(modalRef.current);
+      }, reduceMotion ? 0 : 200);
+
+      document.addEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'hidden';
+      createAriaLiveRegion(title ? `Modal deschis: ${title}` : 'Modal deschis', 'assertive');
 
       return () => {
+        window.clearTimeout(focusTimer);
+        removeFocusTrap?.();
         document.removeEventListener('keydown', handleEscape);
-        document.body.style.overflow = 'unset';
-        if (!isOpen) {
-          restoreFocus();
-        }
+        document.body.style.overflow = previousOverflow;
+        previousFocusRef.current?.focus();
       };
-    }, [isOpen, onClose, saveFocus, restoreFocus, focusFirst, trapFocus, title, reduceMotion]);
+    }, [isOpen, focusFirst, trapFocus, title, reduceMotion]);
 
     return (
       <AnimatePresence>

@@ -8,12 +8,10 @@ export function getSupabaseBrowserClient() {
   // Vite exposes only VITE_* to the browser. Try REMIX_PUBLIC_* as a fallback if present.
   const url = (
     import.meta.env.VITE_SUPABASE_URL ||
-    // @ts-expect-error non-standard env prefix fallback
     import.meta.env.REMIX_PUBLIC_SUPABASE_URL
   ) as string | undefined;
   const anon = (
     import.meta.env.VITE_SUPABASE_ANON_KEY ||
-    // @ts-expect-error non-standard env prefix fallback
     import.meta.env.REMIX_PUBLIC_SUPABASE_ANON_KEY
   ) as string | undefined;
 

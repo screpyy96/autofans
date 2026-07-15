@@ -46,13 +46,15 @@ describe('CarCard', () => {
     expect(handlers.onCompare).toHaveBeenCalledWith(car.id);
   });
 
-  it('opens the listing when the card content is clicked', async () => {
+  it('uses the canonical listing URL and keeps the legacy view callback', async () => {
     const user = userEvent.setup();
     const car = mockCar();
     renderWithRouter(<CarCard car={car} {...handlers} />);
 
-    await user.click(screen.getByRole('heading', { name: car.title }));
-    expect(handlers.onView).toHaveBeenCalledWith(car.id);
+    const link = screen.getByRole('link', { name: `Vezi anunțul: ${car.title}` });
+    expect(link).toHaveAttribute('href', `/car/${car.slug}`);
+    await user.click(link);
+    expect(handlers.onView).toHaveBeenCalledWith(car.slug);
   });
 
   it('shows selected favorite and comparison states', () => {

@@ -20,7 +20,7 @@ class ServiceWorkerManager {
       return;
     }
 
-    if (process.env.NODE_ENV !== 'production') {
+    if (!import.meta.env.PROD) {
       console.log('Service Worker registration skipped in development');
       return;
     }
@@ -154,26 +154,6 @@ class ServiceWorkerManager {
 }
 
 export const serviceWorkerManager = new ServiceWorkerManager();
-
-// Auto-register service worker
-if (typeof window !== 'undefined') {
-  window.addEventListener('load', () => {
-    serviceWorkerManager.register({
-      onUpdate: (registration) => {
-        // Show update notification to user
-        if (confirm('Versiune nouă disponibilă! Reîncarcă pagina?')) {
-          serviceWorkerManager.skipWaiting();
-        }
-      },
-      onSuccess: (registration) => {
-        console.log('App ready for offline use');
-      },
-      onError: (error) => {
-        console.error('Service Worker error:', error);
-      }
-    });
-  });
-}
 
 // Utility functions for PWA features
 export function isOnline(): boolean {

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Link, Form, useLoaderData, useActionData, useNavigation, redirect, useNavigate } from 'react-router';
+import { Link, Form, useLoaderData, useActionData, useNavigation, redirect } from 'react-router';
 import type { LoaderFunctionArgs, ActionFunctionArgs } from 'react-router';
-import { getSupabaseServerClient } from '~/lib/supabase.server';
+import { getSupabaseServerClient, hasSupabaseAuthCookie } from '~/lib/supabase.server';
 import type { Route } from "./+types/seller.$id";
 import { Card, CardContent } from '~/components/ui/Card';
 import { Button } from '~/components/ui/Button';
@@ -15,29 +15,33 @@ import {
   Shield, 
   ArrowLeft, 
   Calendar, 
-  Mail, 
   Phone, 
   User,
   AlertCircle,
   CheckCircle2
 } from 'lucide-react';
 import { formatRelativeTime } from '~/utils/helpers';
+import { useComparison, useFavorites } from '~/stores/useAppStore';
 
 export function meta({ data }: Route.MetaArgs) {
   const seller = (data as any)?.seller;
   const sellerName = seller?.display_name || 'Vânzător Auto';
   const isDealer = seller?.role === 'dealer';
+  const canonicalUrl = seller?.id ? `https://www.autofans.ro/seller/${encodeURIComponent(seller.id)}` : 'https://www.autofans.ro/seller';
 
   const title = `Profil ${sellerName} - ${isDealer ? 'Dealer' : 'Vânzător'} pe AutoFans.ro`;
-  const description = `Vezi cele mai noi anunțuri auto și recenziile pentru ${sellerName} pe platforma noastră. Cumpără mașina ta direct de la un vânzător de încredere.`;
-  const image = seller?.avatar_url || "https://autofans.ro/hero_background.jpg";
+  const description = `Vezi anunțurile publicate și informațiile de profil pentru ${sellerName} pe AutoFans.ro.`;
+  const image = seller?.avatar_url || "https://www.autofans.ro/hero_background.jpg";
 
   return [
     { title },
     { name: "description", content: description },
+    { name: "robots", content: "index,follow,max-image-preview:large" },
+    { tagName: "link", rel: "canonical", href: canonicalUrl },
     { property: "og:title", content: title },
     { property: "og:description", content: description },
     { property: "og:image", content: image },
+    { property: "og:url", content: canonicalUrl },
     { property: "og:type", content: "profile" },
     { property: "og:site_name", content: "AutoFans.ro" },
     { name: "twitter:card", content: "summary_large_image" },
@@ -51,45 +55,65 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   const { id: sellerId } = params;
   const { supabase, headers } = getSupabaseServerClient(request);
   
-  // 1. Fetch current logged-in user
-  const { data: { user } } = await supabase.auth.getUser();
-
-  // 2. Fetch seller profile
-  const { data: seller, error: sellerError } = await supabase
-    .from('profiles')
-    .select('id, email, display_name, phone, avatar_url, role, is_verified, created_at')
-    .eq('id', sellerId)
-    .single();
+  // Public seller pages should not wait for an auth validation when the
+  // visitor has no Supabase session. The three public data sources are
+  // independent, so fetch them concurrently instead of serially.
+  const userResult = hasSupabaseAuthCookie(request)
+    ? supabase.auth.getUser()
+    : Promise.resolve({ data: { user: null } });
+  const [userResponse, sellerResult, listingsResult, reviewsResult] = await Promise.all([
+    userResult,
+    supabase
+      .from('profiles')
+      // Seller profiles are public, but email addresses are never public
+      // profile data. Contact happens through the protected conversation flow.
+      .select('id, display_name, phone, avatar_url, role, is_verified, created_at')
+      .eq('id', sellerId)
+      .single(),
+    supabase
+      .from('listings')
+      .select('id, slug, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, body_type, images, created_at, city, county')
+      .eq('owner_id', sellerId)
+      .eq('status', 'published')
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('seller_reviews')
+      .select(`
+        id,
+        reviewer_id,
+        rating,
+        comment,
+        created_at,
+        reviewer:profiles!reviewer_id(display_name, avatar_url)
+      `)
+      .eq('seller_id', sellerId)
+      .order('created_at', { ascending: false }),
+  ]);
+  const user = userResponse.data.user;
+  const seller = sellerResult.data;
+  const sellerError = sellerResult.error;
 
   if (sellerError || !seller) {
     throw new Response("Vânzătorul nu a fost găsit", { status: 404, headers });
   }
 
-  // 3. Fetch listings for this seller
-  const { data: listings } = await supabase
-    .from('listings')
-    .select('id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, body_type, images, created_at, city, county')
-    .eq('owner_id', sellerId)
-    .eq('status', 'published')
-    .order('created_at', { ascending: false });
-
-  // 4. Fetch reviews with reviewer profile details
-  const { data: reviews } = await supabase
-    .from('seller_reviews')
-    .select(`
-      id,
-      reviewer_id,
-      rating,
-      comment,
-      created_at,
-      reviewer:profiles!reviewer_id(display_name, avatar_url, email)
-    `)
-    .eq('seller_id', sellerId)
-    .order('created_at', { ascending: false });
+  const listings = listingsResult.data;
+  const reviews = reviewsResult.data;
+  const reviewsAvailable = !reviewsResult.error;
+  const { data: priorConversation } = user
+    ? await supabase
+        .from('conversations')
+        .select('id')
+        .eq('buyer_id', user.id)
+        .eq('seller_id', sellerId)
+        .limit(1)
+        .maybeSingle()
+    : { data: null };
 
   // Convert schema listings to matches expected by CarCard (mapping snake_case to camelCase keys)
   const mappedListings = (listings || []).map(l => ({
     id: l.id.toString(),
+    slug: l.slug || l.id.toString(),
     title: l.title,
     price: Number(l.price),
     currency: l.currency,
@@ -109,8 +133,8 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     seller: {
       id: seller.id,
       type: seller.role === 'seller' ? 'dealer' : 'individual',
-      name: seller.display_name || seller.email?.split('@')[0] || 'Vânzător',
-      email: seller.email || '',
+      name: seller.display_name || 'Vânzător',
+      email: '',
       phone: seller.phone || '',
       location: { id: 'loc-1', city: l.city || 'București', county: l.county || 'București', country: 'RO' },
       isVerified: !!seller.is_verified,
@@ -128,16 +152,18 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     });
     
     if (paths.length) {
-      const { data: signedUrls } = await supabase.storage
-        .from('listing-images')
-        .createSignedUrls(paths, 3600);
+      const { data: signedUrls } = await (supabase.storage
+        .from('listing-images') as any)
+        .createSignedUrls(paths, 3600, {
+          transform: { width: 720, height: 450, quality: 70, resize: 'cover' },
+        });
         
       if (signedUrls) {
         signedListings = mappedListings.map((l, index) => {
           const orig = listings[index];
           const imgs = orig.images as any[];
           if (imgs?.length) {
-            const match = signedUrls.find(s => s.path === imgs[0].path);
+            const match = signedUrls.find((s: { path?: string; signedUrl?: string }) => s.path === imgs[0].path);
             if (match) {
               return {
                 ...l,
@@ -155,7 +181,9 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     seller,
     listings: signedListings,
     reviews: reviews || [],
+    reviewsAvailable,
     currentUser: user,
+    canReview: Boolean(priorConversation),
   };
 }
 
@@ -172,16 +200,30 @@ export async function action({ request, params }: ActionFunctionArgs) {
     return Response.json({ error: "Nu îți poți lăsa recenzie propriului cont." }, { status: 400, headers });
   }
 
+  const { data: priorConversation } = await supabase
+    .from('conversations')
+    .select('id')
+    .eq('buyer_id', user.id)
+    .eq('seller_id', sellerId)
+    .limit(1)
+    .maybeSingle();
+  if (!priorConversation) {
+    return Response.json({ error: 'Poți lăsa o recenzie după ce ai discutat cu acest vânzător prin AutoFans.' }, { status: 403, headers });
+  }
+
   const formData = await request.formData();
   const rating = Number(formData.get("rating"));
-  const comment = formData.get("comment") as string;
+  const comment = String(formData.get("comment") || '').trim();
 
-  if (!rating || rating < 1 || rating > 5) {
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
     return Response.json({ error: "Te rugăm să alegi o notă de la 1 la 5 stele." }, { status: 400, headers });
   }
 
-  if (!comment || comment.trim().length < 10) {
+  if (comment.length < 10) {
     return Response.json({ error: "Comentariul trebuie să aibă cel puțin 10 caractere." }, { status: 400, headers });
+  }
+  if (comment.length > 1000) {
+    return Response.json({ error: "Comentariul poate avea cel mult 1000 de caractere." }, { status: 400, headers });
   }
 
   const { error } = await supabase
@@ -204,10 +246,11 @@ export async function action({ request, params }: ActionFunctionArgs) {
 }
 
 export default function SellerProfile() {
-  const { seller, listings, reviews, currentUser } = useLoaderData<typeof loader>();
+  const { seller, listings, reviews, reviewsAvailable, currentUser, canReview } = useLoaderData<typeof loader>();
   const actionData = useActionData() as any;
   const navigation = useNavigation();
-  const navigate = useNavigate();
+  const { isFavorited, addToFavorites, removeFromFavorites } = useFavorites();
+  const { isInComparison, addToComparison, removeFromComparison } = useComparison();
   
   const [activeTab, setActiveTab] = useState<'listings' | 'reviews'>('listings');
   const [rating, setRating] = useState(5);
@@ -227,6 +270,16 @@ export default function SellerProfile() {
     const percentage = totalReviews > 0 ? (count / totalReviews) * 100 : 0;
     return { star, count, percentage };
   });
+
+  const handleFavorite = (listingId: string) => {
+    if (isFavorited(listingId)) removeFromFavorites(listingId);
+    else addToFavorites(listingId);
+  };
+
+  const handleCompare = (listingId: string) => {
+    if (isInComparison(listingId)) removeFromComparison(listingId);
+    else addToComparison(listingId);
+  };
 
   // Clear form on successful submission
   useEffect(() => {
@@ -270,12 +323,12 @@ export default function SellerProfile() {
             </div>
 
             <h1 className="text-xl sm:text-2xl font-extrabold text-white line-clamp-1 mb-1 px-2">
-              {seller.display_name || seller.email?.split('@')[0] || 'Vânzător'}
+              {seller.display_name || 'Vânzător'}
             </h1>
             
             <div className="flex items-center justify-center gap-1.5 mb-4">
               <Badge variant="secondary" className="bg-white/5 border-white/10 text-gray-300 text-xs py-0.5">
-                {seller.role === 'seller' ? 'Dealer Autorizat' : 'Persoană Fizică'}
+                {seller.role === 'seller' ? 'Dealer' : 'Persoană Fizică'}
               </Badge>
               {seller.is_verified && (
                 <Badge variant="success" className="bg-green-500/10 text-green-400 border-green-500/20 text-xs py-0.5">
@@ -284,15 +337,16 @@ export default function SellerProfile() {
               )}
             </div>
 
-            {/* Ratings Summary */}
-            <div className="flex items-center justify-center gap-2 mb-6 bg-white/5 py-2 px-4 rounded-xl border border-white/5 max-w-[200px] mx-auto">
-              <div className="flex items-center text-accent-gold">
-                <Star className="h-5 w-5 fill-accent-gold" />
-                <span className="font-bold text-white ml-1 text-base">{averageRating}</span>
+            {reviewsAvailable && (
+              <div className="flex items-center justify-center gap-2 mb-6 bg-white/5 py-2 px-4 rounded-xl border border-white/5 max-w-[200px] mx-auto">
+                <div className="flex items-center text-accent-gold">
+                  <Star className="h-5 w-5 fill-accent-gold" />
+                  <span className="font-bold text-white ml-1 text-base">{averageRating}</span>
+                </div>
+                <span className="text-white/10">•</span>
+                <span className="text-xs text-gray-400 font-semibold">{totalReviews} recenzii</span>
               </div>
-              <span className="text-white/10">•</span>
-              <span className="text-xs text-gray-400 font-semibold">{totalReviews} recenzii</span>
-            </div>
+            )}
 
             {/* Contact details */}
             <div className="border-t border-white/5 pt-6 text-left space-y-4">
@@ -322,17 +376,6 @@ export default function SellerProfile() {
                 </a>
               )}
 
-              <a href={`mailto:${seller.email}`} className="flex items-center gap-3 group hover:opacity-85 transition-opacity">
-                <div className="h-9 w-9 rounded-lg bg-white/5 flex items-center justify-center border border-white/5 text-accent-gold group-hover:border-accent-gold/30">
-                  <Mail className="h-4.5 w-4.5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <span className="block text-[10px] text-gray-400 leading-none">Adresă email</span>
-                  <span className="text-sm font-semibold text-white mt-1 block group-hover:text-accent-gold transition-colors truncate">
-                    {seller.email}
-                  </span>
-                </div>
-              </a>
             </div>
           </Card>
         </div>
@@ -353,7 +396,7 @@ export default function SellerProfile() {
               <Car className="h-4.5 w-4.5" />
               Anunțuri active ({listings.length})
             </button>
-            <button
+            {reviewsAvailable && <button
               onClick={() => setActiveTab('reviews')}
               className={cn(
                 "flex-1 py-3 px-4 rounded-lg font-semibold text-sm transition-all flex items-center justify-center gap-2",
@@ -364,7 +407,7 @@ export default function SellerProfile() {
             >
               <Star className="h-4.5 w-4.5" />
               Recenzii ({totalReviews})
-            </button>
+            </button>}
           </div>
 
           {/* Active Listings Tab */}
@@ -376,9 +419,10 @@ export default function SellerProfile() {
                     <CarCard
                       key={car.id}
                       car={car as any}
-                      onFavorite={() => {}}
-                      onCompare={() => {}}
-                      onView={(carId) => navigate(`/car/${carId}`)}
+                      onFavorite={handleFavorite}
+                      onCompare={handleCompare}
+                      isFavorited={isFavorited(car.id)}
+                      isInComparison={isInComparison(car.id)}
                     />
                   ))}
                 </div>
@@ -397,7 +441,7 @@ export default function SellerProfile() {
           )}
 
           {/* Reviews Tab */}
-          {activeTab === 'reviews' && (
+          {reviewsAvailable && activeTab === 'reviews' && (
             <div className="space-y-6">
               {/* Reviews rating overview card */}
               <Card variant="elevated" padding="lg" className="bg-glass border-white/10 shadow-2xl">
@@ -437,7 +481,7 @@ export default function SellerProfile() {
               </Card>
 
               {/* Review submit form */}
-              {currentUser && currentUser.id !== seller.id ? (
+              {currentUser && currentUser.id !== seller.id && canReview ? (
                 <Card variant="elevated" padding="lg" className="bg-glass border-white/10 shadow-2xl">
                   <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                     <MessageCircle className="h-5 w-5 text-accent-gold" />
@@ -498,6 +542,7 @@ export default function SellerProfile() {
                         id="comment"
                         name="comment"
                         rows={4}
+                        maxLength={1000}
                         value={commentText}
                         onChange={(e) => setCommentText(e.target.value)}
                         placeholder="Cum a fost experiența de tranzacționare cu acest vânzător? (minim 10 caractere)"
@@ -509,7 +554,7 @@ export default function SellerProfile() {
                           "text-[10px] sm:text-xs",
                           commentText.length >= 10 ? "text-gray-400" : "text-orange-400 font-semibold"
                         )}>
-                          {commentText.length} caractere (minim 10)
+                          {commentText.length}/1000 caractere (minim 10)
                         </span>
                       </div>
                     </div>
@@ -523,6 +568,12 @@ export default function SellerProfile() {
                     </Button>
                   </Form>
                 </Card>
+              ) : currentUser && currentUser.id !== seller.id ? (
+                <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-center sm:p-5">
+                  <p className="text-xs font-medium text-gray-300 sm:text-sm">
+                    După ce discuți cu acest vânzător prin AutoFans, poți lăsa o recenzie verificată aici.
+                  </p>
+                </div>
               ) : !currentUser ? (
                 <div className="bg-white/5 border border-white/5 rounded-xl p-4 sm:p-5 text-center">
                   <p className="text-gray-300 text-xs sm:text-sm font-medium">
@@ -539,7 +590,7 @@ export default function SellerProfile() {
                 {reviews.length > 0 ? (
                   reviews.map((review) => {
                     const revReviewer = review.reviewer as any;
-                    const reviewerName = revReviewer?.display_name || revReviewer?.email?.split('@')[0] || 'Utilizator';
+                    const reviewerName = revReviewer?.display_name || 'Utilizator';
                     const reviewerAvatar = revReviewer?.avatar_url;
                     
                     return (

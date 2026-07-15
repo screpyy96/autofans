@@ -1,6 +1,7 @@
 import { Link } from 'react-router';
 import { Shield, ArrowLeft, Eye, Lock, Database } from 'lucide-react';
 import { Button } from '~/components/ui/Button';
+import { resetAnalyticsConsent } from '~/utils/analyticsConsent.client';
 
 export function meta() {
   return [
@@ -100,17 +101,29 @@ export default function Privacy() {
             <p>
               Folosim cookie-uri tehnice și funcționale de sesiune (inclusiv pentru stocarea token-ului de sesiune Supabase sau a preferințelor de favorite în Zustand) pentru a asigura funcționarea corectă a site-ului. Google Analytics (ID de măsurare G-1LFYZC3LT9) este încărcat numai dacă îl accepți din bannerul de preferințe și ne oferă statistici agregate despre trafic și utilizarea paginilor. Nu folosim aceste date pentru profilare publicitară invazivă.
             </p>
+            <Button
+              type="button"
+              variant="outline"
+              className="border-white/20 text-white hover:border-accent-gold hover:bg-accent-gold/10"
+              onClick={() => {
+                resetAnalyticsConsent();
+                window.location.reload();
+              }}
+            >
+              Modifică preferințele analitice
+            </Button>
+            <p className="text-xs text-gray-500">Vei putea alege din nou dacă dorești sau nu cookie-uri analitice.</p>
           </section>
 
           <div className="pt-6 border-t border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <p className="text-xs text-gray-400">
               Pentru exercitarea drepturilor sau alte detalii, ne puteți scrie la <span className="text-accent-gold font-semibold">suport@autofans.ro</span>.
             </p>
-            <Link to="/login">
-              <Button variant="outline" className="border-accent-gold/45 text-accent-gold hover:bg-accent-gold/10 font-bold transition-all text-sm">
+            <Button asChild variant="outline" className="border-accent-gold/45 text-accent-gold hover:bg-accent-gold/10 font-bold transition-all text-sm">
+              <Link to="/login">
                 Înapoi la autentificare
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </div>
 
         </div>

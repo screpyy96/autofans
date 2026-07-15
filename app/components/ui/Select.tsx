@@ -1,6 +1,6 @@
-import { forwardRef } from 'react';
-import { motion } from 'framer-motion';
-import { cn } from '~/lib/utils';
+import { forwardRef, useId } from 'react';
+
+const cn = (...values: unknown[]) => values.filter(Boolean).join(' ');
 
 export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
@@ -12,26 +12,20 @@ export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElemen
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ className, label, error, helperText, placeholder, options, ...props }, ref) => {
-    const { 
-      onDrag, 
-      onDragEnd, 
-      onDragStart, 
-      onAnimationStart, 
-      onAnimationEnd, 
-      onAnimationIteration,
-      ...restProps 
-    } = props;
+    const generatedId = useId();
+    const selectId = props.id ?? `select-${generatedId}`;
     
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-sm font-medium text-white mb-2">
+          <label htmlFor={selectId} className="block text-sm font-medium text-white mb-2">
             {label}
           </label>
         )}
         <div className="relative">
-          <motion.select
+          <select
             ref={ref}
+            id={selectId}
             className={cn(
               'block w-full px-4 py-3 border border-accent-gold/30 rounded-xl',
               'text-white bg-secondary-800/50 backdrop-blur-sm',
@@ -41,8 +35,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
               error && 'border-red-500 focus:ring-red-500',
               className
             )}
-            whileFocus={{ scale: 1.01 }}
-            {...restProps}
+            {...props}
           >
             {placeholder && (
               <option value="" disabled>
@@ -59,7 +52,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
                 {option.label}
               </option>
             ))}
-          </motion.select>
+          </select>
           {/* Custom dropdown arrow */}
           <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
             <svg className="h-5 w-5 text-accent-gold" viewBox="0 0 20 20" fill="currentColor">
@@ -68,13 +61,10 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           </div>
         </div>
         {error && (
-          <motion.p
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-2 text-sm text-red-400"
+          <p className="mt-2 text-sm text-red-400 motion-safe:animate-[autofans-fade-in_160ms_ease-out]"
           >
             {error}
-          </motion.p>
+          </p>
         )}
         {helperText && !error && (
           <p className="mt-2 text-sm text-gray-400">

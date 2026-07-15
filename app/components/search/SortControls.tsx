@@ -1,9 +1,8 @@
-import { useState, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { cn } from '~/lib/utils';
 import { Select } from '~/components/ui/Select';
 import type { SortOption } from '~/types';
 import { SORT_OPTIONS } from '~/constants';
+
+const cn = (...values: Array<string | false | null | undefined>) => values.filter(Boolean).join(' ');
 
 // Icons
 const GridIcon = () => (
@@ -65,8 +64,11 @@ const ViewModeToggle: React.FC<ViewModeToggleProps> = ({
 }) => {
   return (
     <div className="flex items-center bg-secondary-800/80 border border-accent-gold/30 rounded-xl p-1 shadow-[0_4px_16px_rgba(15,23,42,0.35)] backdrop-blur hover:shadow-glow transition-shadow">
-      <motion.button
+      <button
+        type="button"
         onClick={() => onViewModeChange('grid')}
+        aria-label="Afișare grilă"
+        aria-pressed={viewMode === 'grid'}
         className={cn(
           "flex items-center justify-center rounded-lg transition-all duration-200",
           compact ? "px-2 py-1" : "px-3 py-2",
@@ -74,15 +76,16 @@ const ViewModeToggle: React.FC<ViewModeToggleProps> = ({
             ? "bg-gold-gradient text-secondary-900 shadow-card"
             : "text-white/60 hover:text-accent-gold hover:bg-accent-gold/10"
         )}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
       >
         <GridIcon />
         {!compact && <span className="ml-2 text-sm font-medium">Grid</span>}
-      </motion.button>
+      </button>
       
-      <motion.button
+      <button
+        type="button"
         onClick={() => onViewModeChange('list')}
+        aria-label="Afișare listă"
+        aria-pressed={viewMode === 'list'}
         className={cn(
           "flex items-center justify-center rounded-lg transition-all duration-200",
           compact ? "px-2 py-1" : "px-3 py-2",
@@ -90,12 +93,10 @@ const ViewModeToggle: React.FC<ViewModeToggleProps> = ({
             ? "bg-gold-gradient text-secondary-900 shadow-card"
             : "text-white/60 hover:text-accent-gold hover:bg-accent-gold/10"
         )}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
       >
         <ListIcon />
         {!compact && <span className="ml-2 text-sm font-medium">Listă</span>}
-      </motion.button>
+      </button>
     </div>
   );
 };
@@ -220,20 +221,9 @@ export const SortControls: React.FC<SortControlsProps> = ({
   className,
   compact = false
 }) => {
-  const [isAnimating, setIsAnimating] = useState(false);
-
-  // Handle view mode change with animation
-  const handleViewModeChange = useCallback((mode: ViewMode) => {
-    if (mode !== viewMode) {
-      setIsAnimating(true);
-      onViewModeChange(mode);
-      
-      // Reset animation state after transition
-      setTimeout(() => {
-        setIsAnimating(false);
-      }, 300);
-    }
-  }, [viewMode, onViewModeChange]);
+  const handleViewModeChange = (mode: ViewMode) => {
+    if (mode !== viewMode) onViewModeChange(mode);
+  };
 
   if (compact) {
     return (
@@ -272,13 +262,11 @@ export const SortControls: React.FC<SortControlsProps> = ({
   }
 
   return (
-    <motion.div
+    <div
       className={cn(
         "bg-white rounded-lg shadow-sm border border-gray-200 p-4",
         className
       )}
-      animate={isAnimating ? { scale: [1, 0.98, 1] } : {}}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
     >
       {/* Desktop Layout */}
       <div className="hidden md:flex items-center justify-between">
@@ -351,6 +339,6 @@ export const SortControls: React.FC<SortControlsProps> = ({
           />
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 };

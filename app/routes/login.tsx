@@ -2,9 +2,16 @@ import { useEffect, useMemo, useState } from "react";
 import { getSupabaseBrowserClient } from "~/lib/supabase.client";
 import { getSupabaseServerClient } from "~/lib/supabase.server";
 import type { LoaderFunctionArgs } from "react-router";
-import { redirect, useLocation } from "react-router";
+import { Link, redirect, useLocation } from "react-router";
 import { Button } from "~/components/ui/Button";
 import { Input } from "~/components/ui/Input";
+
+export function meta() {
+  return [
+    { title: 'Autentificare - AutoFans.ro' },
+    { name: 'robots', content: 'noindex,nofollow' },
+  ];
+}
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const { supabase, headers } = getSupabaseServerClient(request);

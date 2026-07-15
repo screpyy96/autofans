@@ -7,6 +7,7 @@ import { FuelType, TransmissionType, ConditionType, ListingStatus } from '~/type
 // Mock data generators
 export const mockCar = (overrides = {}) => ({
   id: '1',
+  slug: 'bmw-x5-2020',
   title: 'BMW X5 2020',
   brand: 'BMW',
   model: 'X5',

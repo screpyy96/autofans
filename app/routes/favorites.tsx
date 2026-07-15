@@ -15,6 +15,7 @@ export function meta({}: Route.MetaArgs) {
   return [
     { title: "Favorite - AutoFans" },
     { name: "description", content: "Mașinile tale favorite salvate pentru vizualizare rapidă." },
+    { name: 'robots', content: 'noindex,nofollow' },
   ];
 }
 
@@ -43,7 +44,9 @@ export default function Favorites() {
           .eq('status', 'published');
         if (error) throw error;
 
-        const signedMap = await signListingImages(supabase, listings || []);
+        const signedMap = await signListingImages(supabase, listings || [], 60 * 60, {
+          width: 720, height: 450, quality: 70, resize: 'cover',
+        });
 
         const cars: Car[] = (listings || []).map((listing: any) => mapListingToCar(listing, signedMap));
         if (!cancelled) setFavoriteCars(cars);
@@ -134,12 +137,12 @@ export default function Favorites() {
                 Salvează mașinile care îți plac pentru a le găsi mai ușor mai târziu.
                 Apasă pe inima din colțul unei mașini pentru a o adăuga la favorite.
               </p>
-              <Link to="/search">
-                <Button variant="primary" className="flex items-center gap-2 mx-auto">
+              <Button asChild variant="primary" className="flex items-center gap-2 mx-auto">
+                <Link to="/search">
                   <Search className="h-4 w-4" />
                   Caută mașini
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </div>
           </Card>
         )}

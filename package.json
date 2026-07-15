@@ -6,6 +6,7 @@
     "build": "react-router build",
     "dev": "react-router dev",
     "start": "react-router-serve ./build/server/index.js",
+    "start:local": "node --env-file-if-exists=.env.local ./node_modules/@react-router/serve/bin.js ./build/server/index.js",
     "typecheck": "react-router typegen && tsc",
     "test": "vitest",
     "test:ui": "vitest --ui",

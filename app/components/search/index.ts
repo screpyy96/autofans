@@ -19,7 +19,3 @@ export type { UseFiltersOptions, UseFiltersReturn } from '~/hooks/useFilters';
 
 export { useSortAndView } from '~/hooks/useSortAndView';
 export type { UseSortAndViewOptions, UseSortAndViewReturn } from '~/hooks/useSortAndView';
-
-// Services
-export { searchService } from '~/services/searchService';
-export type { SearchSuggestionOptions, SearchResult } from '~/services/searchService';

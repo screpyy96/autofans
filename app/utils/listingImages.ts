@@ -1,11 +1,7 @@
 type StorageClient = {
   storage: {
     from: (bucket: string) => {
-      createSignedUrls: (
-        paths: string[],
-        expiresIn: number,
-        options?: { transform?: { width?: number; height?: number; quality?: number; resize?: 'cover' | 'contain' | 'fill' } },
-      ) => Promise<{ data: Array<{ path?: string; signedUrl?: string }> | null }>;
+      createSignedUrls: (...args: any[]) => Promise<any>;
     };
   };
 };
@@ -30,8 +26,25 @@ export async function signListingImages(
   const { data: signed } = await supabase.storage
     .from('listing-images')
     .createSignedUrls(paths, expiresIn, transform ? { transform } : undefined);
-  return (signed || []).reduce<Record<string, string>>((result, item) => {
+  const result = ((signed || []) as Array<{ path?: string; signedUrl?: string }>).reduce<Record<string, string>>((result, item) => {
     if (item.path && item.signedUrl) result[item.path] = item.signedUrl;
     return result;
   }, {});
+
+  // Image transformations are a performance enhancement, never a reason to
+  // hide a listing. If a project/plan does not support a requested transform,
+  // sign just the missing files in their original form.
+  if (transform) {
+    const missingPaths = paths.filter((path) => !result[path]);
+    if (missingPaths.length) {
+      const { data: fallback } = await supabase.storage
+        .from('listing-images')
+        .createSignedUrls(missingPaths, expiresIn);
+      for (const item of (fallback || []) as Array<{ path?: string; signedUrl?: string }>) {
+        if (item.path && item.signedUrl) result[item.path] = item.signedUrl;
+      }
+    }
+  }
+
+  return result;
 }

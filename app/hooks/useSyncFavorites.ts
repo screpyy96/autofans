@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react';
-import { getSupabaseBrowserClient } from '~/lib/supabase.client';
 import { useAppStore } from '~/stores/useAppStore';
 
 /**
@@ -16,41 +15,46 @@ export function useSyncFavorites(userId: string | null | undefined) {
 
     if (!userId) return;
 
-    const supabase = getSupabaseBrowserClient();
     let cancelled = false;
-
-    const syncChanges = async (nextIds: string[]) => {
-      const previousIds = lastSyncedIdsRef.current;
-      const addedIds = nextIds.filter((id) => !previousIds.includes(id));
-      const removedIds = previousIds.filter((id) => !nextIds.includes(id));
-      const addedRows = addedIds
-        .map((id) => ({ user_id: userId, listing_id: Number(id) }))
-        .filter((row) => Number.isInteger(row.listing_id));
-      const removedListingIds = removedIds
-        .map((id) => Number(id))
-        .filter((id) => Number.isInteger(id));
-
-      if (addedRows.length) {
-        const { error } = await supabase
-          .from('favorites')
-          .upsert(addedRows, { onConflict: 'user_id,listing_id' });
-        if (error) throw error;
-      }
-
-      if (removedListingIds.length) {
-        const { error } = await supabase
-          .from('favorites')
-          .delete()
-          .eq('user_id', userId)
-          .in('listing_id', removedListingIds);
-        if (error) throw error;
-      }
-
-      lastSyncedIdsRef.current = nextIds;
-    };
+    let syncChanges: ((nextIds: string[]) => Promise<void>) | null = null;
+    let syncQueue = Promise.resolve();
 
     const initializeSync = async () => {
       try {
+        // Do not put the Supabase SDK on the public homepage's critical path.
+        const { getSupabaseBrowserClient } = await import('~/lib/supabase.client');
+        const supabase = getSupabaseBrowserClient();
+        const persistChanges = async (nextIds: string[]) => {
+          const previousIds = lastSyncedIdsRef.current;
+          const addedIds = nextIds.filter((id) => !previousIds.includes(id));
+          const removedIds = previousIds.filter((id) => !nextIds.includes(id));
+          const addedRows = addedIds
+            .map((id) => ({ user_id: userId, listing_id: Number(id) }))
+            .filter((row) => Number.isInteger(row.listing_id));
+          const removedListingIds = removedIds
+            .map((id) => Number(id))
+            .filter((id) => Number.isInteger(id));
+
+          if (addedRows.length) {
+            const { error } = await supabase
+              .from('favorites')
+              .upsert(addedRows, { onConflict: 'user_id,listing_id' });
+            if (error) throw error;
+          }
+
+          if (removedListingIds.length) {
+            const { error } = await supabase
+              .from('favorites')
+              .delete()
+              .eq('user_id', userId)
+              .in('listing_id', removedListingIds);
+            if (error) throw error;
+          }
+
+          lastSyncedIdsRef.current = nextIds;
+        };
+
+        syncChanges = persistChanges;
         const { data: dbFavorites, error } = await supabase
           .from('favorites')
           .select('listing_id')
@@ -61,12 +65,30 @@ export function useSyncFavorites(userId: string | null | undefined) {
         const remoteIds = (dbFavorites || []).map((row: { listing_id: number | string }) => String(row.listing_id));
         const mergedIds = Array.from(new Set([...localIds, ...remoteIds]));
 
-        // Mark the merged state as the baseline before updating Zustand, so the
-        // subscription below does not race the initial hydration.
-        lastSyncedIdsRef.current = mergedIds;
+        // Start from the server state. Using the merged state as the baseline
+        // would make anonymous favorites appear in the UI without ever being
+        // inserted into the user's `favorites` rows.
+        lastSyncedIdsRef.current = remoteIds;
         useAppStore.setState({ favorites: mergedIds });
+
+        const enqueueSync = (nextIds: string[]) => {
+          syncQueue = syncQueue
+            .catch(() => undefined)
+            .then(() => persistChanges(nextIds));
+          return syncQueue;
+        };
+
+        await enqueueSync(mergedIds);
+        if (cancelled) return;
+
+        // Changes made while the first merge was in flight were intentionally
+        // held back until the initial baseline was persisted. Reconcile once
+        // before enabling live writes so no favorite is lost.
         readyRef.current = true;
-        await syncChanges(mergedIds);
+        const latestIds = useAppStore.getState().favorites || [];
+        if (latestIds.some((id) => !lastSyncedIdsRef.current.includes(id)) || lastSyncedIdsRef.current.some((id) => !latestIds.includes(id))) {
+          await enqueueSync(latestIds);
+        }
       } catch (error) {
         console.error('Failed to sync favorites:', error);
       }
@@ -75,8 +97,11 @@ export function useSyncFavorites(userId: string | null | undefined) {
     const unsubscribe = useAppStore.subscribe(
       (state) => state.favorites,
       (nextIds) => {
-        if (!readyRef.current || cancelled) return;
-        void syncChanges(nextIds).catch((error) => {
+        if (!readyRef.current || cancelled || !syncChanges) return;
+        syncQueue = syncQueue
+          .catch(() => undefined)
+          .then(() => syncChanges?.(nextIds));
+        void syncQueue.catch((error) => {
           console.error('Failed to persist favorite change:', error);
         });
       },

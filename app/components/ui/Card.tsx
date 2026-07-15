@@ -1,6 +1,4 @@
 import { forwardRef } from 'react';
-import { motion } from 'framer-motion';
-import { cn } from '~/lib/utils';
 
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: 'default' | 'elevated' | 'outlined';
@@ -21,53 +19,22 @@ const cardPadding = {
   lg: 'p-8',
 };
 
+const cn = (...values: Array<string | false | null | undefined>) => values.filter(Boolean).join(' ');
+
 export const Card = forwardRef<HTMLDivElement, CardProps>(
-  ({ className, variant = 'default', padding = 'md', hoverable = false, children, ...props }, ref) => {
-    const { 
-      onDrag, 
-      onDragEnd, 
-      onDragStart, 
-      onAnimationStart, 
-      onAnimationEnd, 
-      onAnimationIteration,
-      ...restProps 
-    } = props;
-    const MotionDiv = hoverable ? motion.div : 'div';
-    
-    if (hoverable) {
-      return (
-        <MotionDiv
-          ref={ref}
-          className={cn(
-            'rounded-2xl transition-all duration-300 backdrop-blur-xl',
-            cardVariants[variant],
-            cardPadding[padding],
-            'cursor-pointer hover:border-accent-gold hover:shadow-glow hover:bg-secondary-900/80',
-            className
-          )}
-          whileHover={{ 
-            boxShadow: 'var(--shadow-card-hover)',
-            y: -4,
-            scale: 1.02
-          }}
-          whileTap={{ scale: 0.98 }}
-          {...restProps}
-        >
-          {children}
-        </MotionDiv>
-      );
-    }
-    
+  ({ className, variant = 'default', padding = 'md', hoverable = false, children, tabIndex, ...props }, ref) => {
     return (
       <div
         ref={ref}
+        tabIndex={hoverable ? tabIndex ?? 0 : tabIndex}
         className={cn(
           'rounded-2xl transition-all duration-300 backdrop-blur-xl',
           cardVariants[variant],
           cardPadding[padding],
+          hoverable && 'cursor-pointer hover:-translate-y-1 hover:scale-[1.02] hover:border-accent-gold hover:bg-secondary-900/80 hover:shadow-card-hover active:scale-[0.98]',
           className
         )}
-        {...restProps}
+        {...props}
       >
         {children}
       </div>

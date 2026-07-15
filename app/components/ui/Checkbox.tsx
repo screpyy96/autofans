@@ -1,6 +1,6 @@
-import { forwardRef } from 'react';
-import { motion } from 'framer-motion';
-import { cn } from '~/lib/utils';
+import { forwardRef, useId } from 'react';
+
+const cn = (...values: unknown[]) => values.filter(Boolean).join(' ');
 
 export interface CheckboxProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> {
   label?: string | React.ReactNode;
@@ -10,22 +10,16 @@ export interface CheckboxProps extends Omit<React.InputHTMLAttributes<HTMLInputE
 
 export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
   ({ className, label, description, error, ...props }, ref) => {
-    const { 
-      onDrag, 
-      onDragEnd, 
-      onDragStart, 
-      onAnimationStart, 
-      onAnimationEnd, 
-      onAnimationIteration,
-      ...restProps 
-    } = props;
+    const generatedId = useId();
+    const checkboxId = props.id ?? `checkbox-${generatedId}`;
     
     return (
       <div className="w-full">
         <div className="flex items-start">
           <div className="flex items-center h-5">
-            <motion.input
+            <input
               ref={ref}
+              id={checkboxId}
               type="checkbox"
               className={cn(
                 'h-4 w-4 text-accent-gold border-premium rounded',
@@ -34,14 +28,13 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
                 error && 'border-red-500',
                 className
               )}
-              whileTap={{ scale: 0.95 }}
-              {...restProps}
+              {...props}
             />
           </div>
           {(label || description) && (
             <div className="ml-3 text-sm">
               {label && (
-                <label className="font-medium text-white">
+              <label htmlFor={checkboxId} className="font-medium text-white">
                   {label}
                 </label>
               )}
@@ -54,13 +47,10 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
           )}
         </div>
         {error && (
-          <motion.p
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-2 text-sm text-red-400"
+          <p className="mt-2 text-sm text-red-400 motion-safe:animate-[autofans-fade-in_160ms_ease-out]"
           >
             {error}
-          </motion.p>
+          </p>
         )}
       </div>
     );

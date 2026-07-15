@@ -1,10 +1,10 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Car as CarIcon, Plus } from 'lucide-react';
 import { CarCard } from './CarCard';
 import { Button } from '~/components/ui/Button';
-import { cn } from '~/lib/utils';
 import type { Car } from '~/types';
+
+const cn = (...values: Array<string | false | null | undefined>) => values.filter(Boolean).join(' ');
 
 export interface CarGridProps {
   cars: Car[];
@@ -110,12 +110,7 @@ function EmptyState({
   };
 }) {
   return (
-    <motion.div
-      className="flex flex-col items-center justify-center py-16 px-4 text-center"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
+    <div className="flex flex-col items-center justify-center px-4 py-16 text-center motion-safe:animate-[autofans-fade-in_220ms_ease-out]">
       <div className="mb-6 rounded-full bg-secondary-800/60 p-6">
         <Search className="h-12 w-12 text-accent-gold" />
       </div>
@@ -138,7 +133,7 @@ function EmptyState({
           {action.label}
         </Button>
       )}
-    </motion.div>
+    </div>
   );
 }
 
@@ -187,28 +182,6 @@ export function CarGrid({
     };
   }, [handleIntersection]);
 
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.5,
-      },
-    },
-  };
-
   // Show empty state if no cars and not loading
   if (cars.length === 0 && !loading) {
     return (
@@ -224,56 +197,39 @@ export function CarGrid({
 
   return (
     <div className={className}>
-      <motion.div
+      <div
         className={cn(
           'gap-6',
           isListView 
             ? 'flex flex-col' 
             : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
         )}
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
       >
-        <AnimatePresence mode="popLayout">
-          {cars.map((car) => (
-            <motion.div
-              key={car.id}
-              variants={itemVariants}
-              layout
-              exit={{ opacity: 0, scale: 0.8 }}
-              transition={{ duration: 0.3 }}
-            >
-              <CarCard
-                car={car}
-                onFavorite={onFavorite}
-                onCompare={onCompare}
-                onView={onView}
-                variant={viewMode}
-                isFavorited={favoritedCars.includes(car.id)}
-                isInComparison={comparisonCars.includes(car.id)}
-              />
-            </motion.div>
-          ))}
-        </AnimatePresence>
+        {cars.map((car) => (
+          <div key={car.id}>
+            <CarCard
+              car={car}
+              onFavorite={onFavorite}
+              onCompare={onCompare}
+              onView={onView}
+              variant={viewMode}
+              isFavorited={favoritedCars.includes(car.id)}
+              isInComparison={comparisonCars.includes(car.id)}
+            />
+          </div>
+        ))}
 
         {/* Loading skeletons */}
         {loading && (
           <>
             {Array.from({ length: isListView ? 3 : 8 }).map((_, index) => (
-              <motion.div
-                key={`skeleton-${index}`}
-                variants={itemVariants}
-                initial="hidden"
-                animate="visible"
-                transition={{ delay: index * 0.1 }}
-              >
+              <div key={`skeleton-${index}`}>
                 <CarCardSkeleton variant={viewMode} />
-              </motion.div>
+              </div>
             ))}
           </>
         )}
-      </motion.div>
+      </div>
 
       {/* Infinite scroll trigger */}
       <div ref={loadMoreRef} className="h-10" />
@@ -294,17 +250,12 @@ export function CarGrid({
 
       {/* End of results message */}
       {!hasMore && cars.length > 0 && (
-        <motion.div
-          className="mt-8 text-center text-gray-300"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-        >
+        <div className="mt-8 text-center text-gray-300 motion-safe:animate-[autofans-fade-in_220ms_ease-out]">
           <div className="inline-flex items-center gap-2 rounded-full bg-secondary-800/60 px-4 py-2">
             <CarIcon className="h-4 w-4" />
             <span>Ai văzut toate mașinile disponibile</span>
           </div>
-        </motion.div>
+        </div>
       )}
     </div>
   );

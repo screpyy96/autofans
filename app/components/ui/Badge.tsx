@@ -1,6 +1,4 @@
 import { forwardRef } from 'react';
-import { motion } from 'framer-motion';
-import { cn } from '~/lib/utils';
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'outline';
@@ -23,35 +21,23 @@ const badgeSizes = {
   lg: 'px-3 py-1.5 text-base',
 };
 
+const cn = (...values: Array<string | false | null | undefined>) => values.filter(Boolean).join(' ');
+
 export const Badge = forwardRef<HTMLDivElement, BadgeProps>(
   ({ className, variant = 'default', size = 'md', children, ...props }, ref) => {
-    const { 
-      onDrag, 
-      onDragEnd, 
-      onDragStart, 
-      onAnimationStart, 
-      onAnimationEnd, 
-      onAnimationIteration,
-      ...restProps 
-    } = props;
-    
     return (
-      <motion.div
+      <div
         ref={ref}
         className={cn(
-          'inline-flex items-center rounded-full font-medium backdrop-blur-sm transition-all duration-300',
+          'inline-flex items-center rounded-full font-medium backdrop-blur-sm transition-all duration-300 hover:scale-105',
           badgeVariants[variant],
           badgeSizes[size],
           className
         )}
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.2 }}
-        whileHover={{ scale: 1.05 }}
-        {...restProps}
+        {...props}
       >
         {children}
-      </motion.div>
+      </div>
     );
   }
 );

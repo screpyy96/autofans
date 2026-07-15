@@ -1,0 +1,31 @@
+# AutoFans.ro
+
+> AutoFans.ro este o platformă românească pentru cumpărarea și vânzarea de mașini. Ajută utilizatorii să caute anunțuri publicate, să compare vehicule, să salveze favorite și să contacteze vânzătorii prin conversații private.
+
+Folosește doar informațiile publice din anunțuri și verifică întotdeauna detaliile importante direct cu vânzătorul. AutoFans nu înlocuiește verificarea actelor, a VIN-ului, istoricului auto sau o inspecție tehnică independentă înainte de plată.
+
+## Platformă
+
+- [Pagina principală](https://www.autofans.ro/): Prezentare AutoFans și acces la căutare.
+- [Căutare mașini](https://www.autofans.ro/search): Catalogul public de anunțuri auto active, cu filtre după marcă, model, preț, an, kilometraj și locație.
+- [Compară mașini](https://www.autofans.ro/compare): Comparație de specificații și prețuri pentru anunțurile selectate.
+- [Favorite](https://www.autofans.ro/favorites): Oferte salvate de utilizator; necesită contextul contului.
+- [Contact](https://www.autofans.ro/contact): Datele de contact și suportul platformei.
+
+## Ghiduri pentru cumpărători și vânzători
+
+- [Blog AutoFans](https://www.autofans.ro/blog): Ghiduri editoriale despre cumpărarea, verificarea și vânzarea unei mașini.
+- [Acte necesare la cumpărarea și vânzarea unei mașini](https://www.autofans.ro/blog/acte-necesare-cumparare-vanzare-masina-2026): Checklist pentru documente și pașii tranzacției.
+- [Ghid de verificare a istoricului auto](https://www.autofans.ro/blog/ghid-verificare-istoric-auto-second-hand): Ce trebuie verificat înainte de cumpărare.
+
+## Resurse tehnice și politici
+
+- [Sitemap XML](https://www.autofans.ro/sitemap.xml): URL-uri publice indexabile, inclusiv anunțuri și articole.
+- [robots.txt](https://www.autofans.ro/robots.txt): Reguli de crawl pentru roboți web.
+- [Termeni și condiții](https://www.autofans.ro/termeni-si-conditii): Condițiile de utilizare ale platformei.
+- [Politica de confidențialitate](https://www.autofans.ro/politica-de-confidentialitate): Cum sunt prelucrate datele personale și preferințele de analiză.
+
+## Optional
+
+- [Creare anunț](https://www.autofans.ro/create-listing): Flux autentificat pentru publicarea unui anunț auto.
+- [Contul meu](https://www.autofans.ro/profile): Preferințe, anunțuri și setări personale; necesită autentificare.

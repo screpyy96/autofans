@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { Link } from 'react-router';
 import { Heart, GitCompare, MapPin } from 'lucide-react';
 import { Card } from '~/components/ui/Card';
 import { LazyImage } from '~/components/ui/LazyImage';
-import { cn } from '~/lib/utils';
 import { 
   formatPrice, 
   formatMileage, 
@@ -13,9 +12,10 @@ import {
   formatRelativeTime 
 } from '~/utils/helpers';
 import type { Car } from '~/types';
-import { useResponsive } from '~/hooks/useResponsive';
 import { useCurrency } from '~/stores/useAppStore';
 import { TrustScoreBadge } from './TrustScoreBadge';
+
+const cn = (...values: Array<string | false | null | undefined>) => values.filter(Boolean).join(' ');
 
 export interface CarCardProps {
   car: Car;
@@ -54,17 +54,10 @@ export function CarCard({
     setHasHydrated(true);
   }, []);
 
-  const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   
   const mainImage = getMainImage(car);
   const isListView = variant === 'list';
-  const { isMobile, isTouchDevice } = useResponsive();
-
-  const handleCardClick = () => {
-    onClick?.(car.id);
-    onView?.(car.slug || car.id);
-  };
 
   const handleActionClick = (e: React.MouseEvent, action: () => void) => {
     e.stopPropagation();
@@ -77,15 +70,26 @@ export function CarCard({
       padding="none"
       hoverable
       className={cn(
-        'group overflow-hidden transition-all duration-300 bg-glass border-white/10 hover:border-accent-gold/45 hover:shadow-glow cursor-pointer flex flex-col',
+        'group relative overflow-hidden transition-all duration-300 bg-glass border-white/10 hover:border-accent-gold/45 hover:shadow-glow flex flex-col',
         isListView && 'sm:flex-row',
         className
       )}
-      onClick={handleCardClick}
     >
+      {/* A real URL makes result cards keyboard-accessible and crawlable.
+          Interactive overlays stay above this full-card link. */}
+      <Link
+        to={`/car/${encodeURIComponent(car.slug || car.id)}`}
+        aria-label={`Vezi anunțul: ${car.title}`}
+        onClick={() => {
+          onClick?.(car.id);
+          onView?.(car.slug || car.id);
+        }}
+        className="absolute inset-0 z-0 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-gold focus-visible:ring-offset-2 focus-visible:ring-offset-secondary-950"
+      />
+
       {/* Image Section */}
       <div className={cn(
-        'relative overflow-hidden bg-secondary-900 aspect-[16/10] w-full',
+        'pointer-events-none relative z-10 overflow-hidden bg-secondary-900 aspect-[16/10] w-full',
         isListView && 'sm:w-72 sm:aspect-[4/3] flex-shrink-0'
       )}>
         {mainImage && !imageError ? (
@@ -93,7 +97,6 @@ export function CarCard({
             src={mainImage}
             alt={car.title}
             className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-            onLoad={() => setImageLoaded(true)}
             onError={() => setImageError(true)}
             placeholder="Încărcare..."
           />
@@ -104,50 +107,48 @@ export function CarCard({
         )}
 
         {/* Favorite & Compare Overlay Buttons */}
-        <div className="absolute top-2.5 right-2.5 flex gap-1.5 z-10">
-          <motion.button
+        <div className="pointer-events-auto absolute top-2.5 right-2.5 flex gap-1.5 z-10">
+          <button
+            type="button"
             className={cn(
-              'rounded-full p-2 backdrop-blur-md transition-colors border',
+              'rounded-full border p-2 backdrop-blur-md transition-transform duration-150 hover:scale-105 active:scale-95',
               isFavorited 
                 ? 'bg-red-500 text-white border-red-500 shadow-glow' 
                 : 'bg-glass/80 text-gray-300 border-white/10 hover:bg-red-500/20 hover:text-red-400'
             )}
             onClick={(e) => handleActionClick(e, () => onFavorite(car.id))}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
             aria-label="Adaugă la favorite"
           >
             <Heart className={cn('h-3.5 w-3.5', isFavorited && 'fill-current')} />
-          </motion.button>
+          </button>
           
-          <motion.button
+          <button
+            type="button"
             className={cn(
-              'rounded-full p-2 backdrop-blur-md transition-colors border',
+              'rounded-full border p-2 backdrop-blur-md transition-transform duration-150 hover:scale-105 active:scale-95',
               isInComparison
                 ? 'bg-accent-gold text-secondary-900 border-accent-gold shadow-glow'
                 : 'bg-glass/80 text-gray-300 border-white/10 hover:bg-accent-gold/20 hover:text-accent-gold'
             )}
             onClick={(e) => handleActionClick(e, () => onCompare(car.id))}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
             aria-label="Adaugă la comparare"
           >
             <GitCompare className="h-3.5 w-3.5" />
-          </motion.button>
+          </button>
         </div>
 
         {/* Image Count Badge */}
-        {car.images.length > 1 && (
+        {(car.imageCount ?? car.images.length) > 1 && (
           <div className="absolute bottom-2.5 right-2.5 z-10">
             <div className="bg-secondary-950/80 text-white text-[10px] px-2 py-0.5 rounded border border-white/10 font-medium">
-              {car.images.length} poze
+              {car.imageCount ?? car.images.length} poze
             </div>
           </div>
         )}
       </div>
 
       {/* Content Section */}
-      <div className="p-4 flex flex-col justify-between flex-1 min-w-0">
+      <div className="pointer-events-none relative z-10 p-4 flex flex-col justify-between flex-1 min-w-0">
         
         {/* Header (Title and Price) */}
         <div className="space-y-1.5">

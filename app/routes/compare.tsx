@@ -7,22 +7,31 @@ import { Button } from '~/components/ui/Button';
 import { Card } from '~/components/ui/Card';
 import { Badge } from '~/components/ui/Badge';
 import { ArrowLeft, Plus, X, Download, Share2 } from 'lucide-react';
-import { Link, useLoaderData } from 'react-router';
+import { Link, useLoaderData, useNavigate } from 'react-router';
 import { getSupabaseServerClient } from '~/lib/supabase.server';
 import type { Car } from '~/types';
 import { mapListingToCar } from '~/utils/listingMapper';
 import { signListingImages } from '~/utils/listingImages';
+import { useComparison, useFavorites } from '~/stores/useAppStore';
+import { trackAnalyticsEvent } from '~/utils/analytics.client';
+
+const csvCell = (value: string | number) => `"${String(value).replace(/"/g, '""')}"`;
 
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "Compară mașini - AutoFans" },
     { name: "description", content: "Compară specificațiile și prețurile mașinilor pentru a lua cea mai bună decizie." },
+    { name: "robots", content: "noindex,follow" },
+    { tagName: "link", rel: "canonical", href: "https://www.autofans.ro/compare" },
   ];
 }
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const ids = new URL(request.url).searchParams.get('cars')?.split(',').filter(Boolean) || [];
-  if (!ids.length) return { listings: [], signedMap: {} as Record<string, string> };
+  const ids = [...new Set(
+    (new URL(request.url).searchParams.get('cars')?.split(',') || [])
+      .filter((id) => /^\d+$/.test(id)),
+  )].slice(0, 3);
+  if (!ids.length) return { listings: [], signedMap: {} as Record<string, string>, unavailableCount: 0, loadError: null };
 
   try {
     const { supabase } = getSupabaseServerClient(request);
@@ -32,59 +41,85 @@ export async function loader({ request }: LoaderFunctionArgs) {
       .in('id', ids)
       .eq('status', 'published');
 
-    const signedMap = await signListingImages(supabase, listings || []);
+    const signedMap = await signListingImages(supabase, listings || [], 60 * 60, {
+      width: 720, height: 450, quality: 72, resize: 'cover',
+    });
 
-    return { listings: listings || [], signedMap };
+    const listingById = new Map((listings || []).map((listing: any) => [String(listing.id), listing]));
+    const orderedListings = ids.map((id) => listingById.get(id)).filter(Boolean);
+    return {
+      listings: orderedListings,
+      signedMap,
+      unavailableCount: ids.length - orderedListings.length,
+      loadError: null,
+    };
   } catch (error) {
     console.error('compare loader error:', error);
-    return { listings: [], signedMap: {} as Record<string, string> };
+    return {
+      listings: [],
+      signedMap: {} as Record<string, string>,
+      unavailableCount: 0,
+      loadError: 'Nu am putut încărca comparația. Reîncarcă pagina și încearcă din nou.',
+    };
   }
 }
 
 export default function Compare() {
   const data = useLoaderData<typeof loader>();
+  const navigate = useNavigate();
   const [comparisonCars, setComparisonCars] = useState<Car[]>([]);
+  const [shareStatus, setShareStatus] = useState('');
+  const { addToComparison, removeFromComparison, clearComparison: clearStoredComparison } = useComparison();
+  const { isFavorited, addToFavorites, removeFromFavorites } = useFavorites();
 
   useEffect(() => {
-    setComparisonCars(data.listings.map((listing: any) => mapListingToCar(listing, data.signedMap)));
-  }, [data]);
+    const mappedCars = data.listings.map((listing: any) => mapListingToCar(listing, data.signedMap));
+    setComparisonCars(mappedCars);
+    mappedCars.forEach((car) => addToComparison(car.id));
+  }, [addToComparison, data]);
+
+  const setComparisonUrl = (cars: Car[]) => {
+    const ids = cars.map((car) => car.id).join(',');
+    navigate(ids ? `/compare?cars=${ids}` : '/compare', { replace: true });
+  };
 
   const removeCarFromComparison = (carId: string) => {
     const newComparison = comparisonCars.filter(car => car.id !== carId);
+    removeFromComparison(carId);
     setComparisonCars(newComparison);
-    
-    // Update localStorage
-    const carIds = newComparison.map(c => c.id);
-    localStorage.setItem('autofans_comparison', JSON.stringify(carIds));
+    setComparisonUrl(newComparison);
   };
 
   const clearComparison = () => {
+    clearStoredComparison();
     setComparisonCars([]);
-    localStorage.removeItem('autofans_comparison');
+    setComparisonUrl([]);
   };
 
   const exportComparison = () => {
-    // Create a simple text export
-    const exportData = comparisonCars.map(car => ({
-      title: car.title,
-      price: car.price,
-      year: car.year,
-      mileage: car.mileage,
-      fuelType: car.fuelType,
-      transmission: car.transmission,
-      location: car.location
-    }));
-    
-    const dataStr = JSON.stringify(exportData, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    if (!comparisonCars.length) return;
+    const columns = comparisonCars.map((car) => car.title);
+    const rows: Array<Array<string | number>> = [
+      ['Caracteristică', ...columns],
+      ['Preț', ...comparisonCars.map((car) => new Intl.NumberFormat('ro-RO', { style: 'currency', currency: car.currency, minimumFractionDigits: 0 }).format(car.price))],
+      ['An fabricație', ...comparisonCars.map((car) => car.year)],
+      ['Kilometraj', ...comparisonCars.map((car) => `${new Intl.NumberFormat('ro-RO').format(car.mileage)} km`)],
+      ['Combustibil', ...comparisonCars.map((car) => car.fuelType)],
+      ['Transmisie', ...comparisonCars.map((car) => car.transmission)],
+      ['Locație', ...comparisonCars.map((car) => `${car.location.city}, ${car.location.county}`)],
+      ['Istoric service', ...comparisonCars.map((car) => car.serviceHistory ? 'Declarat' : 'Nedeclarat')],
+      ['Accidente', ...comparisonCars.map((car) => car.condition.hasAccidents ? 'Declarate' : 'Nedeclarate')],
+      ['Link anunț', ...comparisonCars.map((car) => `${window.location.origin}/car/${encodeURIComponent(car.slug || car.id)}`)],
+    ];
+    const csv = `\uFEFF${rows.map((row) => row.map(csvCell).join(',')).join('\n')}`;
+    const dataBlob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(dataBlob);
-    
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'comparatie-masini-autofans.json';
+    link.download = 'comparatie-masini-autofans.csv';
     link.click();
-    
     URL.revokeObjectURL(url);
+    setShareStatus('Comparația a fost descărcată în format CSV.');
   };
 
   const shareComparison = () => {
@@ -96,37 +131,45 @@ export default function Compare() {
         title: 'Comparație mașini - AutoFans',
         text: `Compară aceste ${comparisonCars.length} mașini pe AutoFans`,
         url: shareUrl,
-      });
+      }).then(() => trackAnalyticsEvent('comparison_shared', { listing_count: comparisonCars.length })).catch(() => undefined);
     } else {
-      navigator.clipboard.writeText(shareUrl);
-      alert('Link-ul de comparație a fost copiat în clipboard!');
+      const copyLink = navigator.clipboard?.writeText(shareUrl);
+      if (!copyLink) {
+        setShareStatus(`Copiază linkul: ${shareUrl}`);
+        return;
+      }
+      copyLink
+        .then(() => {
+          setShareStatus('Linkul de comparație a fost copiat.');
+          trackAnalyticsEvent('comparison_shared', { listing_count: comparisonCars.length });
+        })
+        .catch(() => setShareStatus(`Copiază linkul: ${shareUrl}`));
     }
   };
 
   const handleFavorite = (carId: string) => {
-    // Handle favorite logic
-    console.log('Toggle favorite for car:', carId);
-  };
-
-  const handleView = (carId: string) => {
-    window.location.href = `/car/${encodeURIComponent(carId)}`;
+    if (isFavorited(carId)) removeFromFavorites(carId);
+    else {
+      addToFavorites(carId);
+      trackAnalyticsEvent('favorite_added', { listing_id: carId, source: 'comparison' });
+    }
   };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <Link to="/search" className="inline-flex items-center text-primary-600 hover:text-primary-700 mb-4">
+          <Link to="/search" className="mb-4 inline-flex items-center text-accent-gold hover:text-white">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Înapoi la căutare
           </Link>
           
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              <h1 className="mb-2 text-3xl font-bold text-white">
                 Compară mașini
               </h1>
-              <p className="text-gray-600">
+              <p className="text-gray-400">
                 {comparisonCars.length > 0 
                   ? `Compari ${comparisonCars.length} ${comparisonCars.length === 1 ? 'mașină' : 'mașini'}`
                   : 'Selectează mașini pentru a le compara'
@@ -135,19 +178,19 @@ export default function Compare() {
             </div>
 
             {comparisonCars.length > 0 && (
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button
                   variant="outline"
                   onClick={exportComparison}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 border-white/20 text-white"
                 >
                   <Download className="h-4 w-4" />
-                  Exportă
+                  Descarcă CSV
                 </Button>
                 <Button
                   variant="outline"
                   onClick={shareComparison}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 border-white/20 text-white"
                 >
                   <Share2 className="h-4 w-4" />
                   Partajează
@@ -155,7 +198,7 @@ export default function Compare() {
                 <Button
                   variant="outline"
                   onClick={clearComparison}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 border-white/20 text-white"
                 >
                   <X className="h-4 w-4" />
                   Șterge toate
@@ -163,6 +206,13 @@ export default function Compare() {
               </div>
             )}
           </div>
+          {shareStatus && <p className="mt-3 max-w-2xl break-words text-sm text-gray-300" role="status">{shareStatus}</p>}
+          {data.loadError && <p className="mt-3 rounded-xl border border-red-400/25 bg-red-500/10 p-3 text-sm text-red-100" role="alert">{data.loadError}</p>}
+          {data.unavailableCount > 0 && (
+            <p className="mt-3 rounded-xl border border-accent-gold/25 bg-accent-gold/10 p-3 text-sm text-gray-200" role="status">
+              {data.unavailableCount === 1 ? 'Un anunț din link nu mai este disponibil și nu a fost inclus.' : `${data.unavailableCount} anunțuri din link nu mai sunt disponibile și nu au fost incluse.`}
+            </p>
+          )}
         </div>
 
         {comparisonCars.length > 0 ? (
@@ -175,16 +225,16 @@ export default function Compare() {
                     car={car}
                     onFavorite={handleFavorite}
                     onCompare={() => removeCarFromComparison(car.id)}
-                    onView={handleView}
                     variant="grid"
-                    isFavorited={false}
+                    isFavorited={isFavorited(car.id)}
                     isInComparison={true}
                   />
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => removeCarFromComparison(car.id)}
-                    className="absolute top-2 right-2 bg-white/90 hover:bg-white"
+                  className="absolute right-2 top-2 border border-white/20 bg-secondary-950/90 text-white hover:bg-secondary-900"
+                  aria-label={`Elimină ${car.title} din comparație`}
                   >
                     <X className="h-4 w-4" />
                   </Button>
@@ -192,15 +242,16 @@ export default function Compare() {
               ))}
               
               {comparisonCars.length < 3 && (
-                <Card variant="outlined" padding="lg" className="border-dashed border-2 border-gray-300">
+                <Link to="/search" className="block">
+                <Card variant="outlined" padding="lg" className="h-full border-2 border-dashed border-white/20 bg-white/[0.03] transition hover:border-accent-gold/60 hover:bg-accent-gold/[0.04]">
                   <div className="text-center py-8">
-                    <div className="inline-flex items-center justify-center w-12 h-12 bg-gray-100 rounded-full mb-4">
-                      <Plus className="h-6 w-6 text-gray-400" />
+                    <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-accent-gold/15">
+                      <Plus className="h-6 w-6 text-accent-gold" />
                     </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    <h3 className="mb-2 text-lg font-medium text-white">
                       Adaugă o mașină
                     </h3>
-                    <p className="text-gray-600 mb-4">
+                    <p className="mb-4 text-gray-400">
                       Poți compara până la 3 mașini
                     </p>
                     <Badge variant="secondary">
@@ -208,32 +259,33 @@ export default function Compare() {
                     </Badge>
                   </div>
                 </Card>
+                </Link>
               )}
             </div>
 
             {/* Comparison Table */}
-            <ComparisonTable cars={comparisonCars} onRemoveCar={removeCarFromComparison} />
+            <ComparisonTable cars={comparisonCars} onRemoveCar={removeCarFromComparison} enableExport={false} />
           </div>
         ) : (
           <div className="space-y-8">
             {/* Empty State */}
-            <Card variant="elevated" padding="lg" className="text-center py-16">
+            <Card variant="elevated" padding="lg" className="py-16 text-center">
               <div className="max-w-md mx-auto">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-6">
-                  <Plus className="h-8 w-8 text-gray-400" />
+                <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-full bg-accent-gold/15">
+                  <Plus className="h-8 w-8 text-accent-gold" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                <h3 className="mb-4 text-xl font-semibold text-white">
                   Începe o comparație
                 </h3>
-                <p className="text-gray-600 mb-8">
+                <p className="mb-8 text-gray-400">
                   Selectează mașinile pe care vrei să le compari pentru a vedea diferențele 
                   între specificații, prețuri și caracteristici.
                 </p>
-                <Link to="/search">
-                  <Button variant="primary">
+                <Button asChild variant="primary">
+                  <Link to="/search">
                     Caută mașini
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               </div>
             </Card>
 

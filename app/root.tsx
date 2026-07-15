@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { lazy, Suspense, type ReactNode } from "react";
 import {
   Links,
   Meta,
@@ -16,7 +16,11 @@ import { MainLayout } from "~/components/layout/MainLayout";
 import { useAppInitialization } from "~/hooks/useAppInitialization";
 import { GoogleAnalytics } from "~/components/analytics/GoogleAnalytics";
 import "./app.css";
-import { getSupabaseServerClient } from "~/lib/supabase.server";
+import { getSupabaseServerClient, hasSupabaseAuthCookie } from "~/lib/supabase.server";
+
+const PwaUpdatePrompt = lazy(() =>
+  import('~/components/performance/PwaUpdatePrompt').then(({ PwaUpdatePrompt: PwaUpdatePromptComponent }) => ({ default: PwaUpdatePromptComponent })),
+);
 
 export const links: LinksFunction = () => [
   {
@@ -113,11 +117,11 @@ export function ErrorBoundary() {
 export default function App() {
   // Initialize app once at the root level
   useAppInitialization();
-  const data = useLoaderData<typeof loader>();
   
   return (
     <>
       <GoogleAnalytics />
+      <Suspense fallback={null}><PwaUpdatePrompt /></Suspense>
       <MainLayout>
         <Outlet />
       </MainLayout>
@@ -126,21 +130,35 @@ export default function App() {
 }
 
 export async function loader({ request }: LoaderFunctionArgs) {
+  // Avoid a remote auth validation on every public page view. Logged-in
+  // requests still use getUser(), which validates the user server-side.
+  if (!hasSupabaseAuthCookie(request)) {
+    return { user: null, profile: null, unreadNotificationCount: 0 };
+  }
   try {
     const { supabase, headers } = getSupabaseServerClient(request);
     const { data: { user } } = await supabase.auth.getUser();
     let profile: any = null;
+    let unreadNotificationCount = 0;
     if (user?.id) {
-      const { data } = await supabase
-        .from('profiles')
-        .select('id, email, display_name, avatar_url, role')
-        .eq('id', user.id)
-        .single();
-      profile = data ?? null;
+      const [profileResult, unreadNotificationsResult] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('id, email, display_name, avatar_url, role')
+          .eq('id', user.id)
+          .single(),
+        supabase
+          .from('alert_notifications')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .is('read_at', null),
+      ]);
+      profile = profileResult.data ?? null;
+      unreadNotificationCount = unreadNotificationsResult.count ?? 0;
     }
-    return { user, profile };
+    return { user, profile, unreadNotificationCount };
   } catch (e) {
     console.error("Supabase init error:", e);
-    return { user: null, profile: null };
+    return { user: null, profile: null, unreadNotificationCount: 0 };
   }
 }

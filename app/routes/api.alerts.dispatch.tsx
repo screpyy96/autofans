@@ -11,7 +11,7 @@ async function sendWithResend(input: { id: number; to: string; title: string; bo
   const from = getServerEnv('RESEND_FROM');
   if (!apiKey || !from) return { skipped: true };
 
-  const siteUrl = (getServerEnv('APP_URL') || 'https://autofans.ro').replace(/\/$/, '');
+  const siteUrl = (getServerEnv('APP_URL') || 'https://www.autofans.ro').replace(/\/$/, '');
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {

@@ -4,7 +4,6 @@ import { Link } from "react-router";
 import { useLoaderData } from 'react-router';
 import { useState } from 'react';
 import { Bell, Check, Trash2, Settings, AlertCircle, Info, CheckCircle2 } from "lucide-react";
-import { useNotifications } from "~/hooks/useNotifications";
 import { Button } from "~/components/ui/Button";
 import { getSupabaseServerClient } from '~/lib/supabase.server';
 import { getSupabaseBrowserClient } from '~/lib/supabase.client';
@@ -25,15 +24,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "Notificări - AutoFans.ro" },
+    { name: 'robots', content: 'noindex,nofollow' },
   ];
 }
 
 export default function NotificationsPage() {
   const data = useLoaderData<typeof loader>();
-  const { notifications: localNotifications, markAsRead: markLocalAsRead, markAllAsRead: markAllLocalAsRead, clearAll: clearLocal, handleNotificationClick } = useNotifications();
   const [serverNotifications, setServerNotifications] = useState(data.serverNotifications);
-  const usingServerNotifications = serverNotifications.length > 0;
-  const notifications: any[] = usingServerNotifications ? serverNotifications.map((notification) => ({
+  const notifications: any[] = serverNotifications.map((notification) => ({
     id: String(notification.id),
     type: notification.kind === 'price_drop' ? 'warning' : 'info',
     title: notification.title,
@@ -41,23 +39,20 @@ export default function NotificationsPage() {
     actionUrl: notification.action_url,
     isRead: Boolean(notification.read_at),
     createdAt: new Date(notification.created_at),
-  })) : localNotifications;
+  }));
   const unreadCount = notifications.filter((notification: any) => !notification.isRead).length;
 
   const markAsRead = async (id: string) => {
-    if (!usingServerNotifications) return markLocalAsRead(id);
     setServerNotifications((current) => current.map((notification) => notification.id === Number(id) ? { ...notification, read_at: new Date().toISOString() } : notification));
     const { error } = await getSupabaseBrowserClient().from('alert_notifications').update({ read_at: new Date().toISOString() }).eq('id', Number(id));
     if (error) console.warn('Could not mark alert as read:', error);
   };
   const markAllAsRead = async () => {
-    if (!usingServerNotifications) return markAllLocalAsRead();
     const unreadIds = serverNotifications.filter((notification) => !notification.read_at).map((notification) => notification.id);
     setServerNotifications((current) => current.map((notification) => ({ ...notification, read_at: notification.read_at || new Date().toISOString() })));
     if (unreadIds.length) await getSupabaseBrowserClient().from('alert_notifications').update({ read_at: new Date().toISOString() }).in('id', unreadIds);
   };
   const clearAll = async () => {
-    if (!usingServerNotifications) return clearLocal();
     const ids = serverNotifications.map((notification) => notification.id);
     setServerNotifications([]);
     if (ids.length) await getSupabaseBrowserClient().from('alert_notifications').delete().in('id', ids);
@@ -173,7 +168,7 @@ export default function NotificationsPage() {
                     {notification.actionUrl && (
                       <Link 
                         to={notification.actionUrl}
-                        onClick={() => handleNotificationClick(notification)}
+                        onClick={() => undefined}
                         className="text-sm font-semibold text-accent-gold hover:text-yellow-400 transition-colors"
                       >
                         {notification.actionLabel || "Vezi detalii"}

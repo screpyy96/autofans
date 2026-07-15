@@ -1,16 +1,18 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { act, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { configureAxe } from 'vitest-axe';
-import { toHaveNoViolations } from 'vitest-axe/matchers';
 import { Button } from '~/components/ui/Button';
 import { Card } from '~/components/ui/Card';
 import { Input } from '~/components/ui/Input';
+import { Select } from '~/components/ui/Select';
+import { Textarea } from '~/components/ui/Textarea';
+import { Checkbox } from '~/components/ui/Checkbox';
+import { Radio } from '~/components/ui/Radio';
 import { Modal } from '~/components/ui/Modal';
 import { CarCard } from '~/components/car/CarCard';
+import { FilterPanel } from '~/components/search/FilterPanel';
 import { mockCar, renderWithRouter } from '../utils';
-
-// Extend expect with axe matchers
-expect.extend({ toHaveNoViolations });
 
 // jsdom does not implement canvas, which axe needs only for contrast checks.
 // Contrast remains covered by the browser audit used for production pages.
@@ -21,7 +23,7 @@ describe('Accessibility Tests', () => {
     it('should not have accessibility violations', async () => {
       const { container } = render(<Button>Click me</Button>);
       const results = await axe(container);
-      expect(results).toHaveNoViolations();
+      expect(results.violations).toEqual([]);
     });
 
     it('should have proper ARIA attributes when disabled', async () => {
@@ -31,7 +33,7 @@ describe('Accessibility Tests', () => {
       expect(button).toHaveAttribute('aria-disabled', 'true');
       
       const results = await axe(container);
-      expect(results).toHaveNoViolations();
+      expect(results.violations).toEqual([]);
     });
 
     it('should have proper ARIA attributes when loading', async () => {
@@ -42,7 +44,21 @@ describe('Accessibility Tests', () => {
       expect(button).toHaveAttribute('aria-busy', 'true');
       
       const results = await axe(container);
-      expect(results).toHaveNoViolations();
+      expect(results.violations).toEqual([]);
+    });
+
+    it('can style a link as a button without nesting interactive elements', async () => {
+      const { container } = render(
+        <Button asChild variant="outline">
+          <a href="/search">Caută mașini</a>
+        </Button>,
+      );
+
+      expect(screen.getByRole('link', { name: 'Caută mașini' })).toBeInTheDocument();
+      expect(screen.queryByRole('button')).not.toBeInTheDocument();
+
+      const results = await axe(container);
+      expect(results.violations).toEqual([]);
     });
   });
 
@@ -57,7 +73,7 @@ describe('Accessibility Tests', () => {
       );
       
       const results = await axe(container);
-      expect(results).toHaveNoViolations();
+      expect(results.violations).toEqual([]);
     });
 
     it('should have proper label association', () => {
@@ -90,7 +106,46 @@ describe('Accessibility Tests', () => {
       expect(input).toHaveAttribute('aria-describedby');
       
       const results = await axe(container);
-      expect(results).toHaveNoViolations();
+      expect(results.violations).toEqual([]);
+    });
+  });
+
+  describe('Form control labels', () => {
+    it('associates generated labels with select, textarea, checkbox, and radio controls', () => {
+      render(
+        <div>
+          <Select label="Marcă" options={[{ value: 'bmw', label: 'BMW' }]} value="bmw" onChange={() => {}} />
+          <Textarea label="Descriere" />
+          <Checkbox label="Accept termenii" />
+          <Radio label="Persoană fizică" name="seller-type" />
+        </div>
+      );
+
+      expect(screen.getByLabelText('Marcă')).toBeInstanceOf(HTMLSelectElement);
+      expect(screen.getByLabelText('Descriere')).toBeInstanceOf(HTMLTextAreaElement);
+      expect(screen.getByLabelText('Accept termenii')).toHaveAttribute('type', 'checkbox');
+      expect(screen.getByLabelText('Persoană fizică')).toHaveAttribute('type', 'radio');
+    });
+  });
+
+  describe('Advanced filters', () => {
+    it('keeps filter groups independently operable for keyboard and screen-reader users', async () => {
+      const user = userEvent.setup();
+      render(<FilterPanel filters={{}} onFiltersChange={() => {}} onReset={() => {}} />);
+
+      const year = screen.getByRole('button', { name: 'An fabricație' });
+      const mileage = screen.getByRole('button', { name: 'Kilometraj' });
+
+      expect(year).toHaveAttribute('aria-expanded', 'false');
+      expect(mileage).toHaveAttribute('aria-expanded', 'false');
+
+      await user.click(year);
+      expect(year).toHaveAttribute('aria-expanded', 'true');
+      expect(mileage).toHaveAttribute('aria-expanded', 'false');
+
+      await user.click(mileage);
+      expect(year).toHaveAttribute('aria-expanded', 'true');
+      expect(mileage).toHaveAttribute('aria-expanded', 'true');
     });
   });
 
@@ -104,7 +159,7 @@ describe('Accessibility Tests', () => {
       );
       
       const results = await axe(container);
-      expect(results).toHaveNoViolations();
+      expect(results.violations).toEqual([]);
     });
 
     it('should be focusable when hoverable', () => {
@@ -128,7 +183,7 @@ describe('Accessibility Tests', () => {
       );
       
       const results = await axe(container);
-      expect(results).toHaveNoViolations();
+      expect(results.violations).toEqual([]);
     });
 
     it('should have proper ARIA attributes', () => {
@@ -163,6 +218,34 @@ describe('Accessibility Tests', () => {
       expect(secondButton).toBeInTheDocument();
       expect(closeButton).toBeInTheDocument();
     });
+
+    it('returns focus to the element that opened it and clears the delayed trap', () => {
+      vi.useFakeTimers();
+      const opener = document.createElement('button');
+      opener.textContent = 'Deschide';
+      document.body.appendChild(opener);
+      opener.focus();
+      try {
+        const { rerender } = render(
+          <Modal isOpen={true} onClose={() => {}} title="Test Modal">
+            <button>Acțiune</button>
+          </Modal>
+        );
+
+        act(() => vi.advanceTimersByTime(200));
+        expect(screen.getByRole('button', { name: 'Acțiune' })).toHaveFocus();
+
+        rerender(
+          <Modal isOpen={false} onClose={() => {}} title="Test Modal">
+            <button>Acțiune</button>
+          </Modal>
+        );
+        expect(opener).toHaveFocus();
+      } finally {
+        opener.remove();
+        vi.useRealTimers();
+      }
+    });
   });
 
   describe('CarCard Component', () => {
@@ -180,7 +263,7 @@ describe('Accessibility Tests', () => {
       );
       
       const results = await axe(container);
-      expect(results).toHaveNoViolations();
+      expect(results.violations).toEqual([]);
     });
 
     it('should have proper image alt text', () => {
@@ -239,7 +322,7 @@ describe('Accessibility Tests', () => {
       
       const results = await axe(container);
       
-      expect(results).toHaveNoViolations();
+      expect(results.violations).toEqual([]);
     });
   });
 
@@ -289,7 +372,7 @@ describe('Accessibility Tests', () => {
       expect(h3).toHaveTextContent('Subsection Title');
       
       const results = await axe(container);
-      expect(results).toHaveNoViolations();
+      expect(results.violations).toEqual([]);
     });
 
     it('should have proper landmark roles', async () => {
@@ -313,7 +396,7 @@ describe('Accessibility Tests', () => {
       expect(screen.getByRole('contentinfo')).toBeInTheDocument(); // footer
       
       const results = await axe(container);
-      expect(results).toHaveNoViolations();
+      expect(results.violations).toEqual([]);
     });
   });
 });

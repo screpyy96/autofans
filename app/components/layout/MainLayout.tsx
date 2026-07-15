@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Link, useLocation, useRouteLoaderData } from 'react-router';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Link, useLocation, useNavigate, useRouteLoaderData } from 'react-router';
 import {
   Home,
   Search,
@@ -15,14 +14,13 @@ import {
   MessageCircle,
   LayoutDashboard,
   Newspaper,
-  ShieldCheck
+  ShieldCheck,
+  Flag
 } from 'lucide-react';
 import { PremiumFooter } from '~/components/layout/PremiumFooter';
-import { NotificationBell } from '~/components/ui/NotificationBell';
-import { useNotifications } from '~/hooks/useNotifications';
 import { useSyncFavorites } from '~/hooks/useSyncFavorites';
-import { useUser, useComparison, useCurrency } from '~/stores/useAppStore';
-import { cn } from '~/lib/utils';
+import { useCurrency } from '~/stores/useAppStore';
+import { NotificationPriority, NotificationType, type Notification } from '~/types';
 import React from 'react';
 
 interface MainLayoutProps {
@@ -38,12 +36,21 @@ const baseNavigation = [
   { name: 'Contul meu', href: '/profile', icon: User },
 ];
 
+// The app shell is on every route. Keeping this tiny helper local prevents
+// it from pulling a shared UI/animation chunk into the initial homepage load.
+const cn = (...values: Array<string | false | null | undefined>) => values.filter(Boolean).join(' ');
+const NotificationBell = React.lazy(() =>
+  import('~/components/ui/NotificationBell').then(({ NotificationBell: NotificationBellComponent }) => ({ default: NotificationBellComponent })),
+);
+
 export function MainLayout({ children }: MainLayoutProps) {
   const [isBottomDrawerOpen, setIsBottomDrawerOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const drawerDragStartY = useRef<number | null>(null);
+  const restoreDrawerScroll = useRef(true);
+  const drawerRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
-  const { user } = useUser();
-  const { comparisonCars } = useComparison();
+  const navigate = useNavigate();
   const { currency, toggleCurrency } = useCurrency();
   const [hasHydrated, setHasHydrated] = useState(false);
   useEffect(() => {
@@ -77,18 +84,108 @@ export function MainLayout({ children }: MainLayoutProps) {
       bodyStyle.width = previous.bodyWidth;
       bodyStyle.overflow = previous.bodyOverflow;
       htmlStyle.overflow = previous.htmlOverflow;
-      window.scrollTo(0, scrollY);
+      if (restoreDrawerScroll.current) window.scrollTo(0, scrollY);
+      restoreDrawerScroll.current = true;
     };
   }, [isBottomDrawerOpen]);
-  const {
-    notifications,
-    unreadCount,
-    markAsRead,
-    markAllAsRead,
-    clearAll,
-    handleNotificationClick
-  } = useNotifications();
 
+  useEffect(() => {
+    if (!isBottomDrawerOpen) return;
+    const focusFrame = window.requestAnimationFrame(() => drawerRef.current?.focus());
+    return () => window.cancelAnimationFrame(focusFrame);
+  }, [isBottomDrawerOpen]);
+
+  const openBottomDrawer = useCallback(() => {
+    restoreDrawerScroll.current = true;
+    setIsBottomDrawerOpen(true);
+  }, []);
+
+  /** Do not restore a previous page's scroll position when a drawer link is
+   * navigating to a new route. */
+  const closeBottomDrawer = useCallback((restoreScroll = true) => {
+    restoreDrawerScroll.current = restoreScroll;
+    setIsBottomDrawerOpen(false);
+  }, []);
+  // Auth from root loader (Supabase)
+  const rootData = useRouteLoaderData('root') as
+    | { user?: { id: string; email?: string; user_metadata?: Record<string, any> } | null, profile?: { role?: string, avatar_url?: string, email?: string, display_name?: string } | null, unreadNotificationCount?: number }
+    | undefined;
+  const authUser = rootData?.user ?? null;
+  const profile = (rootData as any)?.profile ?? null;
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notificationsLoaded, setNotificationsLoaded] = useState(false);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const initialUnreadNotificationCount = rootData?.unreadNotificationCount ?? 0;
+
+  useEffect(() => {
+    setNotifications([]);
+    setNotificationsLoaded(false);
+    setNotificationsLoading(false);
+  }, [authUser?.id]);
+
+  const unreadCount = notificationsLoaded
+    ? notifications.filter((notification) => !notification.isRead).length
+    : initialUnreadNotificationCount;
+  const loadNotifications = useCallback(() => {
+    if (!authUser || notificationsLoaded || notificationsLoading) return;
+    setNotificationsLoading(true);
+    void import('~/lib/supabase.client')
+      .then(async ({ getSupabaseBrowserClient }) => {
+        const { data, error } = await getSupabaseBrowserClient()
+          .from('alert_notifications')
+          .select('id, kind, title, body, action_url, read_at, created_at')
+          .eq('user_id', authUser.id)
+          .order('created_at', { ascending: false })
+          .limit(10);
+        if (error) throw error;
+        const validTypes = new Set(Object.values(NotificationType));
+        setNotifications((data || []).map((alert: any) => ({
+          id: String(alert.id),
+          type: validTypes.has(alert.kind) ? alert.kind as NotificationType : NotificationType.SYSTEM,
+          priority: NotificationPriority.MEDIUM,
+          title: alert.title,
+          message: alert.body,
+          actionUrl: alert.action_url,
+          isRead: Boolean(alert.read_at),
+          createdAt: new Date(alert.created_at),
+          readAt: alert.read_at ? new Date(alert.read_at) : undefined,
+          userId: authUser.id,
+        })));
+        setNotificationsLoaded(true);
+      })
+      .catch((error) => console.warn('Could not load alerts:', error))
+      .finally(() => setNotificationsLoading(false));
+  }, [authUser, notificationsLoaded, notificationsLoading]);
+  const persistNotificationUpdate = (id: string, readAt: string) => {
+    void import('~/lib/supabase.client')
+      .then(({ getSupabaseBrowserClient }) => getSupabaseBrowserClient().from('alert_notifications').update({ read_at: readAt }).eq('id', Number(id)))
+      .then(({ error }) => { if (error) console.warn('Could not mark alert as read:', error); })
+      .catch((error) => console.warn('Could not mark alert as read:', error));
+  };
+  const markAsRead = (id: string) => {
+    const readAt = new Date().toISOString();
+    setNotifications((current) => current.map((notification) => notification.id === id ? { ...notification, isRead: true, readAt: new Date(readAt) } : notification));
+    persistNotificationUpdate(id, readAt);
+  };
+  const markAllAsRead = () => {
+    const unreadIds = notifications.filter((notification) => !notification.isRead).map((notification) => notification.id);
+    const readAt = new Date().toISOString();
+    setNotifications((current) => current.map((notification) => ({ ...notification, isRead: true, readAt: notification.readAt || new Date(readAt) })));
+    unreadIds.forEach((id) => persistNotificationUpdate(id, readAt));
+  };
+  const clearAll = () => {
+    const ids = notifications.map((notification) => Number(notification.id)).filter(Number.isInteger);
+    setNotifications([]);
+    if (!ids.length) return;
+    void import('~/lib/supabase.client')
+      .then(({ getSupabaseBrowserClient }) => getSupabaseBrowserClient().from('alert_notifications').delete().in('id', ids))
+      .then(({ error }) => { if (error) console.warn('Could not clear alerts:', error); })
+      .catch((error) => console.warn('Could not clear alerts:', error));
+  };
+  const handleNotificationClick = (notification: Notification) => {
+    if (!notification.isRead) markAsRead(notification.id);
+    if (notification.actionUrl) navigate(notification.actionUrl);
+  };
 
   const isActive = (href: string) => {
     if (href === '/') {
@@ -96,13 +193,6 @@ export function MainLayout({ children }: MainLayoutProps) {
     }
     return location.pathname.startsWith(href);
   };
-
-  // Auth from root loader (Supabase)
-  const rootData = useRouteLoaderData('root') as
-    | { user?: { id: string; email?: string; user_metadata?: Record<string, any> } | null, profile?: { role?: string, avatar_url?: string, email?: string, display_name?: string } | null }
-    | undefined;
-  const authUser = rootData?.user ?? null;
-  const profile = (rootData as any)?.profile ?? null;
   const nextParam = encodeURIComponent(location.pathname || '/');
   const isCarDetailsPage = location.pathname.startsWith('/car/');
 
@@ -112,20 +202,21 @@ export function MainLayout({ children }: MainLayoutProps) {
   // Handle mobile menu keyboard navigation
   const handleMobileMenuKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
-      setIsBottomDrawerOpen(false);
+      closeBottomDrawer();
     }
   };
 
   // Close menus and drawer on route change
   React.useEffect(() => {
     setUserMenuOpen(false);
-    setIsBottomDrawerOpen(false);
-  }, [location.pathname]);
+    closeBottomDrawer(false);
+  }, [location.pathname, closeBottomDrawer]);
 
   // Build navigation dynamically (hide "Contul meu" when logged out)
   const navigation = React.useMemo(() => {
     return baseNavigation.filter((item) => {
       if (item.href === '/profile') return !!authUser; // hide when not logged
+      if (item.href === '/messages') return !!authUser;
       return true;
     });
   }, [authUser]);
@@ -146,13 +237,16 @@ export function MainLayout({ children }: MainLayoutProps) {
               to="/"
               className="group flex items-center rounded-lg bg-white px-2 py-1 shadow-[0_6px_18px_rgba(0,0,0,0.22)]"
             >
-              <motion.img
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                src="/logo-header.png"
-                alt="AutoFans Logo"
-                className="h-10 w-auto"
-              />
+              <picture>
+                <source srcSet="/logo-header.webp" type="image/webp" />
+                <img
+                  src="/logo-header.png"
+                  alt="AutoFans.ro"
+                  width={900}
+                  height={237}
+                  className="h-10 w-auto transition-transform duration-200 group-hover:scale-105 group-active:scale-95"
+                />
+              </picture>
             </Link>
 
             {/* Desktop Navigation */}
@@ -163,7 +257,7 @@ export function MainLayout({ children }: MainLayoutProps) {
               aria-label="Navigare principală"
             >
               {navigation.map((item) => (
-                <motion.div key={item.name} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <div key={item.name} className="transition-transform duration-200 hover:scale-105 active:scale-95">
                   <Link
                     to={item.href}
                     className={cn(
@@ -175,10 +269,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                     )}
                     aria-current={isActive(item.href) ? 'page' : undefined}
                   >
-                    <motion.div
-                      whileHover={{ rotate: 5, scale: 1.1 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                    >
+                    <span className="transition-transform duration-200 group-hover:rotate-[5deg] group-hover:scale-110">
                       <item.icon 
                         className={cn(
                           "h-4 w-4 transition-colors duration-300",
@@ -186,15 +277,12 @@ export function MainLayout({ children }: MainLayoutProps) {
                         )}
                         aria-hidden="true"
                       />
-                    </motion.div>
-                    <motion.span
-                      whileHover={{ x: 2 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                    >
+                    </span>
+                    <span className="transition-transform duration-200 group-hover:translate-x-0.5">
                       {item.name}
-                    </motion.span>
+                    </span>
                   </Link>
-                </motion.div>
+                </div>
               ))}
             </nav>
 
@@ -219,15 +307,20 @@ export function MainLayout({ children }: MainLayoutProps) {
 
               {/* Notification Bell */}
               {authUser && (
-                <NotificationBell
-                  notifications={notifications}
-                  unreadCount={unreadCount}
-                  onNotificationClick={handleNotificationClick}
-                  onMarkAsRead={markAsRead}
-                  onMarkAllAsRead={markAllAsRead}
-                  onClearAll={clearAll}
-                  className="hidden sm:block"
-                />
+                <React.Suspense fallback={<span aria-hidden="true" className="hidden h-10 w-10 sm:block" />}>
+                  <NotificationBell
+                    notifications={notifications}
+                    unreadCount={unreadCount}
+                    onNotificationClick={handleNotificationClick}
+                    onMarkAsRead={markAsRead}
+                    onMarkAllAsRead={markAllAsRead}
+                    onClearAll={clearAll}
+                    onViewAll={() => navigate('/notifications')}
+                    onOpenChange={(isOpen) => { if (isOpen) loadNotifications(); }}
+                    loading={notificationsLoading}
+                    className="hidden sm:block"
+                  />
+                </React.Suspense>
               )}
 
               <Link
@@ -279,6 +372,9 @@ export function MainLayout({ children }: MainLayoutProps) {
                       </Link>
                       <Link to="/favorites" className="block px-3 py-2 text-sm text-gray-200 hover:bg-white/5" role="menuitem">
                         Favorite
+                      </Link>
+                      <Link to="/reports" className="block px-3 py-2 text-sm text-gray-200 hover:bg-white/5" role="menuitem">
+                        Rapoartele mele
                       </Link>
                       <div className="my-1 h-px bg-white/10" />
                       <Link to="/logout" className="block px-3 py-2 text-sm text-gray-200 hover:bg-white/5" role="menuitem">
@@ -367,7 +463,7 @@ export function MainLayout({ children }: MainLayoutProps) {
 
           {/* Meniu (Opens Drawer) */}
           <button
-            onClick={() => setIsBottomDrawerOpen(true)}
+            onClick={openBottomDrawer}
             className={cn(
               "flex flex-col items-center gap-1 text-[10px] font-medium transition-all duration-300 focus:outline-none",
               isBottomDrawerOpen ? "text-accent-gold" : "text-gray-400 hover:text-white"
@@ -382,39 +478,43 @@ export function MainLayout({ children }: MainLayoutProps) {
       </div>
 
       {/* Bottom Drawer Sheet (Mobile only) */}
-      <AnimatePresence>
-        {isBottomDrawerOpen && (
+      {isBottomDrawerOpen && (
           <div className="md:hidden fixed inset-0 z-50 flex items-end justify-center">
             {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsBottomDrawerOpen(false)}
-              className="absolute inset-0 bg-black/75 backdrop-blur-sm"
+            <div
+              onClick={() => closeBottomDrawer()}
+              className="absolute inset-0 bg-black/75 backdrop-blur-sm motion-safe:animate-[autofans-fade-in_160ms_ease-out]"
             />
 
             {/* Drawer Sheet */}
-            <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 220 }}
-              className="relative w-full max-h-[85vh] bg-glass border-t border-white/10 rounded-t-[2rem] shadow-modal z-10 flex flex-col overflow-hidden animate-none"
+            <div
+              ref={drawerRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Meniu principal"
+              tabIndex={-1}
+              onKeyDown={handleMobileMenuKeyDown}
+              className="relative z-10 flex max-h-[85vh] w-full flex-col overflow-hidden rounded-t-[2rem] border-t border-white/10 bg-glass shadow-modal outline-none motion-safe:animate-[autofans-drawer-in_240ms_cubic-bezier(0.22,1,0.36,1)]"
             >
               {/* Drag handle: pull down to close without touching the page behind it. */}
-              <motion.div
-                drag="y"
-                dragConstraints={{ top: 0, bottom: 0 }}
-                dragElastic={0.18}
-                onDragEnd={(_, info) => {
-                  if (info.offset.y > 72 || info.velocity.y > 500) setIsBottomDrawerOpen(false);
+              <button
+                type="button"
+                onClick={() => closeBottomDrawer()}
+                onPointerDown={(event) => {
+                  drawerDragStartY.current = event.clientY;
+                  event.currentTarget.setPointerCapture(event.pointerId);
                 }}
-                className="w-full flex justify-center py-3 touch-none cursor-grab active:cursor-grabbing"
-                aria-label="Trage în jos pentru a închide meniul"
+                onPointerUp={(event) => {
+                  const startY = drawerDragStartY.current;
+                  drawerDragStartY.current = null;
+                  if (startY !== null && event.clientY - startY > 72) closeBottomDrawer();
+                }}
+                onPointerCancel={() => { drawerDragStartY.current = null; }}
+                className="flex w-full justify-center py-3 touch-none cursor-grab active:cursor-grabbing"
+                aria-label="Închide meniul. Poți trage în jos"
               >
                 <div className="w-12 h-1.5 rounded-full bg-white/20" />
-              </motion.div>
+              </button>
 
               {/* Drawer Content */}
               <div className="flex-1 overflow-y-auto px-6 pb-12 pt-2">
@@ -446,7 +546,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                       </div>
                       <Link
                         to="/logout"
-                        onClick={() => setIsBottomDrawerOpen(false)}
+                        onClick={() => closeBottomDrawer(false)}
                         className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors"
                         title="Deconectare"
                       >
@@ -458,7 +558,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                       <p className="text-sm text-gray-400 mb-3">Conectează-te pentru a salva favorite și adăuga anunțuri.</p>
                       <Link
                         to={`/login?next=${nextParam}`}
-                        onClick={() => setIsBottomDrawerOpen(false)}
+                        onClick={() => closeBottomDrawer(false)}
                         className="inline-flex w-full items-center justify-center rounded-xl bg-gold-gradient px-3 py-2.5 text-sm font-bold text-secondary-900 transition-all hover:shadow-glow focus:outline-none focus:ring-2 focus:ring-accent-gold focus:ring-offset-2 focus:ring-offset-secondary-800"
                       >
                         Intră în cont
@@ -473,7 +573,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                   {profile?.role === 'seller' && (
                     <Link
                       to="/dashboard"
-                      onClick={() => setIsBottomDrawerOpen(false)}
+                      onClick={() => closeBottomDrawer(false)}
                       className={cn(
                         "flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-all border border-transparent",
                         location.pathname.startsWith('/dashboard')
@@ -488,25 +588,40 @@ export function MainLayout({ children }: MainLayoutProps) {
 
                   {/* Profil link if logged in */}
                   {authUser && (
-                    <Link
-                      to="/profile"
-                      onClick={() => setIsBottomDrawerOpen(false)}
-                      className={cn(
-                        "flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-all border border-transparent",
-                        location.pathname.startsWith('/profile')
-                          ? "text-white bg-white/5 border-white/20"
-                          : "text-gray-300 hover:text-white hover:bg-white/5"
-                      )}
-                    >
-                      <User className="h-5 w-5 text-accent-gold" />
-                      Profilul meu
-                    </Link>
+                    <>
+                      <Link
+                        to="/profile"
+                        onClick={() => closeBottomDrawer(false)}
+                        className={cn(
+                          "flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-all border border-transparent",
+                          location.pathname.startsWith('/profile')
+                            ? "text-white bg-white/5 border-white/20"
+                            : "text-gray-300 hover:text-white hover:bg-white/5"
+                        )}
+                      >
+                        <User className="h-5 w-5 text-accent-gold" />
+                        Profilul meu
+                      </Link>
+                      <Link
+                        to="/reports"
+                        onClick={() => closeBottomDrawer(false)}
+                        className={cn(
+                          "flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-all border border-transparent",
+                          location.pathname.startsWith('/reports')
+                            ? "text-white bg-white/5 border-white/20"
+                            : "text-gray-300 hover:text-white hover:bg-white/5"
+                        )}
+                      >
+                        <Flag className="h-5 w-5 text-red-300" />
+                        Rapoartele mele
+                      </Link>
+                    </>
                   )}
 
                   {/* Vinde anunt quick link */}
                   <Link
                     to="/create-listing"
-                    onClick={() => setIsBottomDrawerOpen(false)}
+                    onClick={() => closeBottomDrawer(false)}
                     className={cn(
                       "flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-all border border-transparent",
                       location.pathname.startsWith('/create-listing')
@@ -520,7 +635,7 @@ export function MainLayout({ children }: MainLayoutProps) {
 
                   <Link
                     to="/blog"
-                    onClick={() => setIsBottomDrawerOpen(false)}
+                    onClick={() => closeBottomDrawer(false)}
                     className={cn(
                       "flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-all border border-transparent",
                       location.pathname.startsWith('/blog')
@@ -534,7 +649,7 @@ export function MainLayout({ children }: MainLayoutProps) {
 
                   <Link
                     to="/favorites"
-                    onClick={() => setIsBottomDrawerOpen(false)}
+                    onClick={() => closeBottomDrawer(false)}
                     className={cn(
                       "flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-all border border-transparent",
                       location.pathname.startsWith('/favorites')
@@ -549,7 +664,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                   {authUser && (
                     <Link
                       to="/messages"
-                      onClick={() => setIsBottomDrawerOpen(false)}
+                      onClick={() => closeBottomDrawer(false)}
                       className={cn(
                         "flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-all border border-transparent",
                         location.pathname.startsWith('/messages')
@@ -564,7 +679,7 @@ export function MainLayout({ children }: MainLayoutProps) {
 
                   <Link
                     to="/help"
-                    onClick={() => setIsBottomDrawerOpen(false)}
+                    onClick={() => closeBottomDrawer(false)}
                     className={cn(
                       "flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-all border border-transparent",
                       location.pathname.startsWith('/help')
@@ -578,7 +693,7 @@ export function MainLayout({ children }: MainLayoutProps) {
 
                   <Link
                     to="/contact"
-                    onClick={() => setIsBottomDrawerOpen(false)}
+                    onClick={() => closeBottomDrawer(false)}
                     className={cn(
                       "flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-all border border-transparent",
                       location.pathname.startsWith('/contact')
@@ -608,17 +723,16 @@ export function MainLayout({ children }: MainLayoutProps) {
                   {/* Direct link to notifications page for mobile */}
                   <Link 
                     to="/notifications"
-                    onClick={() => setIsBottomDrawerOpen(false)}
+                    onClick={() => closeBottomDrawer(false)}
                     className="flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-2xl py-3 border border-white/5 transition-colors w-full"
                   >
                     <span className="text-sm text-gray-300 font-medium">Vezi toate notificările</span>
                   </Link>
                 </div>
               </div>
-            </motion.div>
+            </div>
           </div>
         )}
-      </AnimatePresence>
 
       {/* Footer */}
       <PremiumFooter navigation={navigation} />

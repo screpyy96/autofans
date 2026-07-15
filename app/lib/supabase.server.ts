@@ -14,6 +14,17 @@ function parseCookie(header: string | null | undefined): Record<string, string> 
   return out;
 }
 
+/**
+ * `auth.getUser()` validates a JWT remotely. Public routes do not need that
+ * network round-trip when the request has no Supabase session cookie at all.
+ * Supabase SSR stores long sessions in one or more `...auth-token(.n)`
+ * cookies; code-verifier cookies are deliberately excluded.
+ */
+export function hasSupabaseAuthCookie(request: Request): boolean {
+  return Object.keys(parseCookie(request.headers.get('cookie')))
+    .some((name) => /^sb-[a-z0-9]+-auth-token(?:\.\d+)?$/i.test(name));
+}
+
 function serializeCookie(
   name: string,
   val: string,
@@ -26,7 +37,8 @@ function serializeCookie(
   if (opts.maxAge != null) segments.push(`Max-Age=${opts.maxAge}`);
   if (opts.expires) segments.push(`Expires=${opts.expires.toUTCString()}`);
   const sameSite = opts.sameSite ?? "lax";
-  if (sameSite) segments.push(`SameSite=${sameSite[0].toUpperCase()}${sameSite.slice(1)}`);
+  if (typeof sameSite === 'string') segments.push(`SameSite=${sameSite[0].toUpperCase()}${sameSite.slice(1)}`);
+  else if (sameSite) segments.push('SameSite=Strict');
   const secure = opts.secure ?? (process.env.NODE_ENV === "production");
   if (secure) segments.push("Secure");
   if (opts.httpOnly) segments.push("HttpOnly");

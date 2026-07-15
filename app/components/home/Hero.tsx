@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Link } from 'react-router';
 import { SearchBar } from '~/components/search/SearchBar';
 
@@ -13,7 +12,11 @@ export function Hero({ onSearch }: HeroProps) {
       <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none">
         {/* Background Image */}
         <picture className="absolute inset-0 h-full w-full">
-          <source srcSet="/hero_background.webp" type="image/webp" />
+          <source
+            srcSet="/hero_background-768.webp 768w, /hero_background-1024.webp 1024w, /hero_background.webp 1376w"
+            sizes="100vw"
+            type="image/webp"
+          />
           <img
             src="/hero_background.jpg"
             alt="Familie fericită pe plajă cu o mașină"
@@ -34,9 +37,9 @@ export function Hero({ onSearch }: HeroProps) {
       {/* Floating Search Container at the bottom */}
       <div className="absolute bottom-6 md:bottom-10 left-1/2 -translate-x-1/2 w-[92%] md:w-[95%] max-w-4xl">
         <div className="bg-glass border border-white/10 rounded-[24px] shadow-2xl p-4 md:p-6 backdrop-blur-xl">
-          <h2 className="text-white text-lg md:text-xl font-bold mb-4 drop-shadow-md text-center">
+          <h1 className="text-white text-lg md:text-xl font-bold mb-4 drop-shadow-md text-center">
             Găsește mașina potrivită
-          </h2>
+          </h1>
           
           <SearchBar
             onSearch={onSearch}

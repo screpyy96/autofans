@@ -26,7 +26,13 @@ export default function handleRequest(
           // Convert Node Readable to Web ReadableStream for the Fetch Response
           const body = Readable.toWeb(nodeStream) as unknown as ReadableStream;
 
-          responseHeaders.set("Content-Type", "text/html");
+          responseHeaders.set("Content-Type", "text/html; charset=utf-8");
+          // Document-level browser safeguards. Keep these deliberately
+          // compatible with Supabase auth, GA and the opt-in Mapbox surface.
+          responseHeaders.set("X-Content-Type-Options", "nosniff");
+          responseHeaders.set("X-Frame-Options", "DENY");
+          responseHeaders.set("Referrer-Policy", "strict-origin-when-cross-origin");
+          responseHeaders.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()");
           resolve(
             new Response(body, {
               headers: responseHeaders,

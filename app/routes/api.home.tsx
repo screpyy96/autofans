@@ -1,12 +1,14 @@
 import type { LoaderFunctionArgs } from 'react-router';
-import { getSupabaseServerClient } from '~/lib/supabase.server';
+import { getSupabaseServerClient, hasSupabaseAuthCookie } from '~/lib/supabase.server';
 import { signListingImages } from '~/utils/listingImages';
 import { buildRecommendations } from '~/utils/recommendations';
 
 export async function loader({ request }: LoaderFunctionArgs) {
   try {
     const { supabase } = getSupabaseServerClient(request);
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = hasSupabaseAuthCookie(request)
+      ? await supabase.auth.getUser()
+      : { data: { user: null } };
     const [publishedCountResult, brandRowsResult, listingsResult] = await Promise.all([
       supabase.from('listings').select('id', { count: 'exact', head: true }).eq('status', 'published'),
       supabase.from('listings').select('make').eq('status', 'published').not('make', 'is', null).limit(500),
@@ -50,9 +52,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
       .map(([name, count]) => ({ name, count: count as number }))
       .sort((a, b) => b.count - a.count).slice(0, 8);
 
-    return Response.json({ listings, recommendations, signedMap, publishedCount: publishedCountResult.count || 0, brands }, {
-      headers: { 'Cache-Control': 'private, max-age=30' },
-    });
+    // Anonymous visitors receive the same catalogue. Let the CDN serve that
+    // short-lived response, while a signed-in visitor's favourites/recommendations
+    // remain strictly private.
+    const headers = user
+      ? { 'Cache-Control': 'private, no-store', Vary: 'Cookie' }
+      : { 'Cache-Control': 'public, max-age=60, s-maxage=120, stale-while-revalidate=300', Vary: 'Cookie' };
+    return Response.json({ listings, recommendations, signedMap, publishedCount: publishedCountResult.count || 0, brands }, { headers });
   } catch (error) {
     console.error('home catalog error:', error);
     return Response.json({ listings: [], recommendations: [], signedMap: {}, publishedCount: 0, brands: [] }, { status: 500 });

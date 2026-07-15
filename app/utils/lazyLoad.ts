@@ -1,18 +1,18 @@
-import { lazy, ComponentType } from 'react';
+import { lazy, type ComponentType } from 'react';
 
 /**
  * Utility for lazy loading components with better error handling
  */
 export function lazyLoad<T extends ComponentType<any>>(
   importFunc: () => Promise<{ default: T }>,
-  fallback?: ComponentType
+  _fallback?: ComponentType
 ): T {
   const LazyComponent = lazy(importFunc);
   
   // Add display name for debugging
-  LazyComponent.displayName = `LazyLoaded(${importFunc.toString().match(/\/([^/]+)\.tsx?/)?.[1] || 'Component'})`;
+  (LazyComponent as any).displayName = `LazyLoaded(${importFunc.toString().match(/\/([^/]+)\.tsx?/)?.[1] || 'Component'})`;
   
-  return LazyComponent as T;
+  return LazyComponent as unknown as T;
 }
 
 /**
@@ -50,5 +50,5 @@ export function lazyLoadWithRetry<T extends ComponentType<any>>(
       
       tryImport();
     });
-  }) as T;
+  }) as unknown as T;
 }

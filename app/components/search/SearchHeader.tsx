@@ -4,11 +4,13 @@ import type { ViewMode } from '~/components/search';
 import { Button } from '~/components/ui/Button';
 import { Badge } from '~/components/ui/Badge';
 import { Filter, X } from 'lucide-react';
-import { cn } from '~/lib/utils';
+
+const cn = (...values: Array<string | false | null | undefined>) => values.filter(Boolean).join(' ');
 
 interface SearchHeaderProps {
   onSearch: (query: string) => void;
-  displayedCarsCount: number;
+  query: string;
+  totalCarsCount: number;
   comparisonCarsCount: number;
   showFilters: boolean;
   setShowFilters: (show: boolean) => void;
@@ -23,7 +25,8 @@ interface SearchHeaderProps {
 
 export function SearchHeader({
   onSearch,
-  displayedCarsCount,
+  query,
+  totalCarsCount,
   comparisonCarsCount,
   showFilters,
   setShowFilters,
@@ -43,10 +46,12 @@ export function SearchHeader({
         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-4 tracking-tight">
           Caută mașini
         </h1>
-        <p className="text-lg text-gray-300 mx-auto leading-relaxed">
-          Găsește mașina perfectă din peste{' '}
-          <span className="text-accent-gold font-semibold">15,000</span>{' '}
-          de anunțuri verificate
+        <p className="text-lg text-gray-300 mx-auto leading-relaxed" aria-live="polite">
+          {totalCarsCount > 0 ? (
+            <>Explorează <span className="text-accent-gold font-semibold">{totalCarsCount.toLocaleString('ro-RO')}</span> {totalCarsCount === 1 ? 'anunț disponibil' : 'anunțuri disponibile'}</>
+          ) : (
+            'Caută în anunțurile auto disponibile'
+          )}
         </p>
       </div>
 
@@ -61,6 +66,7 @@ export function SearchHeader({
             <div className="w-full">
               <SearchBar
                 onSearch={onSearch}
+                value={query}
                 placeholder="Caută după marcă, model, oraș..."
                 className="w-full"
               />
@@ -102,7 +108,7 @@ export function SearchHeader({
 
                 {/* Inline Count Indicator */}
                 <span className="text-xs text-gray-400 ml-1.5 font-medium">
-                  {displayedCarsCount} {displayedCarsCount === 1 ? 'mașină găsită' : 'mașini găsite'}
+                  {totalCarsCount} {totalCarsCount === 1 ? 'mașină găsită' : 'mașini găsite'}
                 </span>
                 
                 {/* Comparison Badge (small inline) */}
@@ -122,7 +128,7 @@ export function SearchHeader({
                   onViewModeChange={setViewMode}
                   resultsPerPage={12}
                   onResultsPerPageChange={() => {}}
-                  totalResults={displayedCarsCount}
+                  totalResults={totalCarsCount}
                   showResultsInfo={false}
                   compact={true}
                 />

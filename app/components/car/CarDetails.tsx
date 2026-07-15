@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   Heart,
   Share2,
@@ -9,6 +8,7 @@ import {
   Phone,
   MapPin,
   Calendar,
+  CalendarDays,
   Gauge,
   Fuel,
   Settings,
@@ -20,6 +20,8 @@ import {
   Wrench,
   FileText,
   AlertTriangle,
+  BadgeCheck,
+  CircleAlert,
   ChevronRight,
   Eye,
   Car as CarIcon
@@ -53,10 +55,11 @@ export interface CarDetailsProps {
   onAddToFavorites: () => void;
   onShare: () => void;
   similarCars?: Car[];
-  onSimilarCarClick?: (carId: string) => void;
   isFavorited?: boolean;
   isInComparison?: boolean;
   priceScore?: PriceScore;
+  /** False only when aggregate metrics cannot be queried; never show fake zero. */
+  metricsAvailable?: boolean;
   className?: string;
 }
 
@@ -80,29 +83,18 @@ function AccordionSection({ title, icon: Icon, children, defaultOpen = false }: 
           <Icon className="h-5 w-5 text-accent-gold" />
           <span className="font-semibold text-white">{title}</span>
         </div>
-        <motion.div
-          animate={{ rotate: isOpen ? 90 : 0 }}
-          transition={{ duration: 0.2 }}
-        >
+        <span className={cn('transition-transform duration-200', isOpen && 'rotate-90')}>
           <ChevronRight className="h-5 w-5 text-gray-400" />
-        </motion.div>
+        </span>
       </button>
       
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="overflow-hidden"
-          >
-            <div className="px-6 pb-6 pt-2">
-              {children}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {isOpen && (
+        <div className="animate-[autofans-fade-in_180ms_ease-out] overflow-hidden">
+          <div className="px-6 pb-6 pt-2">
+            {children}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -118,47 +110,57 @@ function SpecificationRow({ label, value }: { label: string; value: string | num
 
 interface SimilarCarCardProps {
   car: Car;
-  onClick: (carId: string) => void;
   hasHydrated?: boolean;
 }
 
-function SimilarCarCard({ car, onClick, hasHydrated = false }: SimilarCarCardProps) {
+function SimilarCarCard({ car, hasHydrated = false }: SimilarCarCardProps) {
   return (
-    <Card
-      variant="outlined"
-      padding="none"
-      hoverable
-      className="w-64 flex-shrink-0 cursor-pointer bg-white/5 border-white/10 hover:border-accent-gold/40 transition-all duration-300"
-      onClick={() => onClick(car.id)}
+    <Link
+      to={`/car/${encodeURIComponent(car.slug || car.id)}`}
+      aria-label={`Vezi ${car.title}`}
+      className="group block w-64 flex-shrink-0 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-gold focus-visible:ring-offset-2 focus-visible:ring-offset-secondary-950"
     >
-      <div className="aspect-[16/10] overflow-hidden rounded-t-2xl relative">
-        <img
-          src={car.images[0]?.url}
-          alt={car.title}
-          className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
-        />
-        <div className="absolute top-2 right-2 bg-secondary-900/80 px-2 py-0.5 rounded text-xs text-white border border-white/5 font-semibold">
-          {car.year}
-        </div>
-      </div>
-      <div className="p-4">
-        <h4 className="font-semibold text-white line-clamp-1 mb-1 text-sm sm:text-base">
-          {car.title}
-        </h4>
-        <div className="text-base sm:text-lg font-bold text-accent-gold mb-2 min-h-[28px] flex items-center">
-          {hasHydrated ? (
-            formatPrice(car.price, car.currency)
+      <Card
+        variant="outlined"
+        padding="none"
+        hoverable
+        className="h-full overflow-hidden bg-white/5 border-white/10 transition-all duration-300 hover:border-accent-gold/40"
+      >
+        <div className="aspect-[16/10] overflow-hidden rounded-t-2xl relative">
+          {car.images[0]?.url ? (
+            <img
+              src={car.images[0].url}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
           ) : (
-            <div className="h-5 w-24 bg-white/10 rounded animate-pulse" />
+            <div className="flex h-full w-full items-center justify-center bg-secondary-800 text-xs text-gray-400">Fără imagine</div>
           )}
+          <div className="absolute top-2 right-2 bg-secondary-900/80 px-2 py-0.5 rounded text-xs text-white border border-white/5 font-semibold">
+            {car.year}
+          </div>
         </div>
-        <div className="flex items-center gap-2 text-xs text-gray-400">
-          <span>{formatMileage(car.mileage)}</span>
-          <span>•</span>
-          <span>{getFuelTypeLabel(car.fuelType)}</span>
+        <div className="p-4">
+          <h4 className="font-semibold text-white line-clamp-1 mb-1 text-sm sm:text-base">
+            {car.title}
+          </h4>
+          <div className="text-base sm:text-lg font-bold text-accent-gold mb-2 min-h-[28px] flex items-center">
+            {hasHydrated ? (
+              formatPrice(car.price, car.currency)
+            ) : (
+              <div className="h-5 w-24 bg-white/10 rounded animate-pulse" />
+            )}
+          </div>
+          <div className="flex items-center gap-2 text-xs text-gray-400">
+            <span>{formatMileage(car.mileage)}</span>
+            <span>•</span>
+            <span>{getFuelTypeLabel(car.fuelType)}</span>
+          </div>
         </div>
-      </div>
-    </Card>
+      </Card>
+    </Link>
   );
 }
 
@@ -170,10 +172,10 @@ export function CarDetails({
   onAddToFavorites,
   onShare,
   similarCars = [],
-  onSimilarCarClick,
   isFavorited = false,
   isInComparison = false,
   priceScore,
+  metricsAvailable = true,
   className
 }: CarDetailsProps) {
   useCurrency(); // Subscribe to currency changes to trigger details page re-renders
@@ -187,6 +189,20 @@ export function CarDetails({
     { icon: Gauge, label: 'Kilometraj', value: formatMileage(car.mileage) },
     { icon: Fuel, label: 'Combustibil', value: getFuelTypeLabel(car.fuelType) },
     { icon: Settings, label: 'Transmisie', value: getTransmissionLabel(car.transmission) },
+  ];
+  const trustSignals = car.trustSignals || {
+    sellerVerified: car.seller.isVerified,
+    vinProvided: false,
+    vinVerified: false,
+    historyChecked: false,
+    completeListing: Boolean(car.description && car.images.length > 0),
+  };
+  const trustRows = [
+    { label: 'Vânzător verificat', detail: 'Identitatea contului a fost confirmată de AutoFans.', active: trustSignals.sellerVerified },
+    { label: 'Serie VIN furnizată', detail: 'Vânzătorul a adăugat seria de identificare a vehiculului.', active: trustSignals.vinProvided },
+    { label: 'VIN verificat', detail: 'Seria a trecut prin procesul de verificare AutoFans.', active: trustSignals.vinVerified },
+    { label: 'Istoric verificat', detail: 'Au fost verificate informații despre istoricul vehiculului.', active: trustSignals.historyChecked },
+    { label: 'Anunț complet', detail: 'Are informații esențiale și fotografii pentru o evaluare mai bună.', active: trustSignals.completeListing },
   ];
 
   return (
@@ -234,10 +250,12 @@ export function CarDetails({
                   <Clock className="h-4 w-4 text-accent-gold flex-shrink-0" />
                   <span>Adăugat {formatRelativeTime(car.createdAt)}</span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <Eye className="h-4 w-4 text-accent-gold flex-shrink-0" />
-                  <span>{car.viewCount} vizualizări</span>
-                </div>
+                {metricsAvailable && (
+                  <div className="flex items-center gap-1.5">
+                    <Eye className="h-4 w-4 text-accent-gold flex-shrink-0" />
+                    <span>{car.viewCount} vizualizări</span>
+                  </div>
+                )}
               </div>
             </div>
           </Card>
@@ -257,7 +275,7 @@ export function CarDetails({
             <div className="min-w-0 flex-1">
               <p className="text-xs text-gray-400">Vândut de</p>
               <p className="truncate font-semibold text-white">{car.seller.name}</p>
-              <p className="text-xs text-gray-400">{car.seller.type === 'dealer' ? 'Dealer autorizat' : 'Persoană fizică'}</p>
+              <p className="text-xs text-gray-400">{car.seller.type === 'dealer' ? 'Dealer' : 'Persoană fizică'}</p>
             </div>
             <span className="shrink-0 text-sm font-semibold text-accent-gold">Profil →</span>
           </Link>
@@ -276,6 +294,28 @@ export function CarDetails({
           </div>
 
           {priceScore && <PriceScoreCard score={priceScore} />}
+
+          <Card variant="elevated" padding="lg" className="border-white/10 bg-glass">
+            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-white/10 pb-4">
+              <div>
+                <h3 className="flex items-center gap-2 text-lg font-bold text-white"><Shield className="h-5 w-5 text-accent-gold" /> Siguranță și verificări</h3>
+                <p className="mt-1 text-sm text-gray-400">Semnale transparente pentru decizia ta de cumpărare.</p>
+              </div>
+              <TrustScoreBadge score={car.trustScore} level={car.trustLevel} />
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {trustRows.map((signal) => (
+                <div key={signal.label} className={cn('flex gap-3 rounded-xl border p-3', signal.active ? 'border-emerald-400/20 bg-emerald-400/5' : 'border-white/10 bg-white/[0.02]')}>
+                  {signal.active ? <BadgeCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-300" /> : <CircleAlert className="mt-0.5 h-5 w-5 shrink-0 text-gray-500" />}
+                  <div>
+                    <p className={cn('text-sm font-semibold', signal.active ? 'text-emerald-100' : 'text-gray-300')}>{signal.label}</p>
+                    <p className="mt-0.5 text-xs leading-relaxed text-gray-400">{signal.active ? signal.detail : 'Nu este disponibil pentru acest anunț.'}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="mt-4 flex gap-2 rounded-lg bg-white/[0.03] p-3 text-xs leading-relaxed text-gray-400"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-accent-gold" /> Scorul este orientativ și nu înlocuiește verificarea actelor, a VIN-ului și o inspecție independentă înainte de plată.</p>
+          </Card>
 
           {/* Description Section */}
           <Card variant="elevated" padding="lg" className="bg-glass border-white/10">
@@ -402,7 +442,7 @@ export function CarDetails({
                   <div className="flex items-center gap-2.5">
                     <Wrench className="h-5 w-5 text-green-500 flex-shrink-0" />
                     <span className="text-sm text-gray-300">
-                      {car.serviceHistory ? 'Istoric service complet (carte service)' : 'Fără carte service completă'}
+                      {car.serviceHistory ? 'Istoric de service declarat' : 'Fără istoric de service declarat'}
                     </span>
                   </div>
 
@@ -415,13 +455,13 @@ export function CarDetails({
 
                   {!car.condition.hasAccidents ? (
                     <div className="flex items-center gap-2.5">
-                      <Shield className="h-5 w-5 text-green-500 flex-shrink-0" />
-                      <span className="text-sm text-gray-300 font-semibold text-green-400">Fără accidente în istoric</span>
+                      <Shield className="h-5 w-5 flex-shrink-0 text-gray-400" />
+                      <span className="text-sm font-semibold text-gray-300">Fără accidente declarate</span>
                     </div>
                   ) : (
                     <div className="flex items-center gap-2.5">
                       <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0" />
-                      <span className="text-sm text-gray-300 font-semibold text-red-400">Daune raportate anterior</span>
+                      <span className="text-sm font-semibold text-red-300">Accidente declarate</span>
                     </div>
                   )}
 
@@ -453,7 +493,7 @@ export function CarDetails({
                 )}
               </div>
               <div className="text-xs text-gray-400">
-                {car.negotiable ? 'Preț negociabil' : 'Preț fix'} • TVA inclus
+                Preț afișat • {car.negotiable ? 'Negociabil' : 'Preț fix'}
               </div>
             </div>
 
@@ -480,7 +520,7 @@ export function CarDetails({
                       <Shield className="h-4 w-4 text-green-500 flex-shrink-0" />
                     )}
                   </div>
-                  <span className="text-xs text-gray-400 capitalize">{car.seller.type === 'dealer' ? 'Dealer autorizat' : 'Persoană fizică'}</span>
+                  <span className="text-xs text-gray-400 capitalize">{car.seller.type === 'dealer' ? 'Dealer' : 'Persoană fizică'}</span>
                   <span className="text-xs text-accent-gold block hover:underline mt-0.5">Vezi profil vânzător →</span>
                 </div>
               </Link>
@@ -495,7 +535,7 @@ export function CarDetails({
                 onClick={onContactSeller}
               >
                 <Phone className="h-5 w-5" />
-                Afișează Telefon
+                Contactează vânzătorul
               </Button>
 
               <Button
@@ -504,8 +544,8 @@ export function CarDetails({
                 className="w-full border-white/10 hover:border-accent-gold hover:bg-white/5 font-semibold text-white flex items-center justify-center gap-2"
                 onClick={onScheduleViewing}
               >
-                <MessageCircle className="h-5 w-5 text-accent-gold" />
-                Trimite Mesaj
+                <CalendarDays className="h-5 w-5 text-accent-gold" />
+                Programează vizionare
               </Button>
 
               {/* Utility actions */}
@@ -571,7 +611,6 @@ export function CarDetails({
               <SimilarCarCard
                 key={similarCar.id}
                 car={similarCar}
-                onClick={onSimilarCarClick || (() => {})}
                 hasHydrated={hasHydrated}
               />
             ))}
@@ -590,7 +629,7 @@ export function CarDetails({
             )}
           </div>
           <div className="text-[10px] text-gray-400 leading-none">
-            TVA inclus • {car.negotiable ? 'Negociabil' : 'Preț fix'}
+            Preț afișat • {car.negotiable ? 'Negociabil' : 'Preț fix'}
           </div>
         </div>
 
@@ -600,9 +639,9 @@ export function CarDetails({
             size="sm"
             className="border-white/10 hover:border-accent-gold hover:bg-white/5 text-white flex items-center justify-center p-3 rounded-xl"
             onClick={onScheduleViewing}
-            aria-label="Trimite mesaj"
+            aria-label="Programează vizionare"
           >
-            <MessageCircle className="h-5 w-5 text-accent-gold" />
+            <CalendarDays className="h-5 w-5 text-accent-gold" />
           </Button>
           
           <Button

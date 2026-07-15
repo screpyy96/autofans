@@ -46,6 +46,9 @@ export interface Image {
   id: string;
   url: string;
   thumbnailUrl: string;
+  /** Responsive candidates for display surfaces that render the full photo. */
+  srcSet?: string;
+  sizes?: string;
   alt: string;
   order: number;
   isMain: boolean;
@@ -74,6 +77,7 @@ export interface CarSpecs {
   euroStandard?: string;
   doors: number;
   seats: number;
+  bodyType?: string;
   trunkCapacity?: number; // in liters
   weight?: number; // in kg
 }
@@ -111,6 +115,13 @@ export interface Car {
   slug: string;
   trustScore?: number;
   trustLevel?: 'verified' | 'good' | 'basic';
+  trustSignals?: {
+    sellerVerified: boolean;
+    vinProvided: boolean;
+    vinVerified: boolean;
+    historyChecked: boolean;
+    completeListing: boolean;
+  };
   title: string;
   brand: string;
   model: string;
@@ -124,6 +135,8 @@ export interface Car {
   negotiable: boolean;
   location: Location;
   images: Image[];
+  /** Total uploaded images when a result only includes its compact cover. */
+  imageCount?: number;
   specifications: CarSpecs;
   features: Feature[];
   condition: ConditionReport;

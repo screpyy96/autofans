@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { LoaderFunctionArgs } from 'react-router';
 import { redirect, useLoaderData } from 'react-router';
 import { getSupabaseServerClient } from '~/lib/supabase.server';
 import type { Route } from "./+types/create-listing";
 import { CreateListingWizard } from '~/components/listing/CreateListingWizard';
+import type { ListingImageUpload } from '~/components/listing/ImageUpload';
 import { Card } from '~/components/ui/Card';
 import { Button } from '~/components/ui/Button';
 import { ArrowLeft, Shield, Clock, Star } from 'lucide-react';
@@ -12,6 +13,24 @@ import { getSupabaseBrowserClient } from '~/lib/supabase.client';
 import { generateUniqueSlug } from '~/utils/helpers';
 import { coordinatesForLocation } from '~/utils/location';
 import { isValidVin, normalizeVin } from '~/utils/vin';
+import { validateListingForPublication } from '~/utils/listingPublication';
+import { trackAnalyticsEvent } from '~/utils/analytics.client';
+
+type StoredListingImage = { path?: string; isMain?: boolean };
+
+async function getSignedImageMap(
+  supabase: ReturnType<typeof getSupabaseServerClient>['supabase'],
+  images: StoredListingImage[] | undefined,
+) {
+  const paths = (images || []).map((image) => image.path).filter((path): path is string => Boolean(path));
+  if (!paths.length) return {} as Record<string, string>;
+
+  const { data: signed } = await supabase.storage.from('listing-images').createSignedUrls(paths, 3600);
+  return (signed || []).reduce<Record<string, string>>((map, item) => {
+    if (item.path && item.signedUrl) map[item.path] = item.signedUrl;
+    return map;
+  }, {});
+}
 
 async function geocodeListingLocation(city: string, county: string): Promise<{ latitude: number; longitude: number } | null> {
   const fallback = coordinatesForLocation({ city });
@@ -26,7 +45,9 @@ async function geocodeListingLocation(city: string, county: string): Promise<{ l
     if (!response.ok) throw new Error(`Mapbox geocoding failed: ${response.status}`);
     const payload = await response.json() as { features?: Array<{ geometry?: { coordinates?: [number, number] } }> };
     const [longitude, latitude] = payload.features?.[0]?.geometry?.coordinates || [];
-    if (Number.isFinite(latitude) && Number.isFinite(longitude)) return { latitude, longitude };
+    if (typeof latitude === 'number' && typeof longitude === 'number' && Number.isFinite(latitude) && Number.isFinite(longitude)) {
+      return { latitude, longitude };
+    }
   } catch (error) {
     console.warn('Listing geocoding unavailable:', error);
   }
@@ -38,6 +59,7 @@ export function meta({}: Route.MetaArgs) {
   return [
     { title: "Creează anunț - AutoFans" },
     { name: "description", content: "Creează un anunț pentru mașina ta și găsește cumpărători rapid și sigur." },
+    { name: 'robots', content: 'noindex,nofollow' },
   ];
 }
 
@@ -72,22 +94,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         return redirect('/dashboard', { headers });
       }
 
-      let signedMap: Record<string, string> = {};
-      if (listing.images?.length) {
-        const paths = listing.images.map((i: any) => i.path).filter(Boolean);
-        if (paths.length) {
-          const { data: signed } = await supabase
-            .storage
-            .from('listing-images')
-            .createSignedUrls(paths, 3600);
-          for (const item of signed || []) {
-            const it: any = item;
-            if (it?.path && it?.signedUrl) {
-              signedMap[it.path] = it.signedUrl as string;
-            }
-          }
-        }
-      }
+      const signedMap = await getSignedImageMap(supabase, listing.images);
 
       return { listing, signedMap, userId: user.id };
     }
@@ -105,27 +112,35 @@ export async function action({ request }: { request: Request }) {
   const editId = url.searchParams.get("edit");
 
   const body = await request.json().catch(() => ({} as any));
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+  if (profile?.role !== 'seller') {
+    return Response.json({ error: 'Doar conturile de vânzător pot crea sau salva anunțuri.' }, { status: 403 });
+  }
+
   const vin = normalizeVin(body.vin);
   if (body.vin && !isValidVin(body.vin)) {
     return Response.json({ error: 'VIN-ul trebuie să aibă 17 caractere și nu poate conține I, O sau Q.' }, { status: 400 });
   }
-  const coordinates = await geocodeListingLocation(body.city || '', body.county || '');
+  const validation = validateListingForPublication(body, user.id);
+  if ('error' in validation) return Response.json({ error: validation.error }, { status: 400 });
+  const published = validation.data;
+  const coordinates = await geocodeListingLocation(published.city, published.county);
   const insert = {
     owner_id: user.id,
-    title: body.title,
-    description: body.description,
-    price: body.price,
-    currency: body.currency || 'EUR',
-    make: body.make,
-    model: body.model,
-    year: body.year,
-    mileage: body.mileage,
-    fuel_type: body.fuel_type,
-    transmission: body.transmission,
+    title: published.title,
+    description: published.description,
+    price: published.price,
+    currency: published.currency,
+    make: published.make,
+    model: published.model,
+    year: published.year,
+    mileage: published.mileage,
+    fuel_type: published.fuelType,
+    transmission: published.transmission,
     body_type: body.body_type,
     vin,
-    images: body.images || [],
-    status: body.status || 'published',
+    images: published.images,
+    status: 'published',
     // Condition, specs, location and detail columns
     owners: body.owners,
     service_history: body.service_history,
@@ -140,8 +155,8 @@ export async function action({ request }: { request: Request }) {
     condition_transmission: body.condition_transmission,
     has_accidents: body.has_accidents,
     features: body.features || [],
-    city: body.city,
-    county: body.county,
+    city: published.city,
+    county: published.county,
     latitude: coordinates?.latitude ?? null,
     longitude: coordinates?.longitude ?? null,
   };
@@ -169,12 +184,62 @@ export async function action({ request }: { request: Request }) {
   }
 }
 
+type LocalListingDraft = {
+  formData: Record<string, unknown>;
+  images: { path: string; isMain: boolean }[];
+  signedMap: Record<string, string>;
+};
+
 export default function CreateListing() {
   const { listing, signedMap, userId } = useLoaderData<typeof loader>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploaded, setUploaded] = useState<{ path: string; isMain: boolean }[]>(() => {
     return listing?.images || [];
   });
+  const [localDraft, setLocalDraft] = useState<LocalListingDraft | null>(null);
+  const [isDraftHydrated, setIsDraftHydrated] = useState(Boolean(listing));
+  const wizardEventTracked = useRef(false);
+  const draftEventTracked = useRef(false);
+
+  useEffect(() => {
+    if (wizardEventTracked.current) return;
+    wizardEventTracked.current = true;
+    trackAnalyticsEvent('listing_wizard_opened', { mode: listing ? 'edit' : 'create' });
+  }, [listing?.id]);
+
+  useEffect(() => {
+    if (listing || !userId) return;
+
+    let isActive = true;
+    const restoreDraft = async () => {
+      try {
+        const raw = window.localStorage.getItem(`autofans_listing_draft:${userId}`);
+        if (!raw) return;
+        const parsed = JSON.parse(raw) as Omit<LocalListingDraft, 'signedMap'>;
+        if (!parsed?.formData || !Array.isArray(parsed.images)) return;
+
+        const paths = parsed.images.map((image) => image.path).filter(Boolean);
+        const { data: signed } = paths.length
+          ? await getSupabaseBrowserClient().storage.from('listing-images').createSignedUrls(paths, 3600)
+          : { data: [] as Array<{ path?: string; signedUrl?: string }> };
+        const restoredSignedMap = ((signed || []) as Array<{ path?: string; signedUrl?: string }>).reduce<Record<string, string>>((map, item) => {
+          if (item.path && item.signedUrl) map[item.path] = item.signedUrl;
+          return map;
+        }, {});
+
+        if (isActive) {
+          setUploaded(parsed.images);
+          setLocalDraft({ ...parsed, signedMap: restoredSignedMap });
+        }
+      } catch (error) {
+        console.warn('Nu am putut restaura draftul local:', error);
+      } finally {
+        if (isActive) setIsDraftHydrated(true);
+      }
+    };
+    void restoreDraft();
+    return () => { isActive = false; };
+  }, [listing, userId]);
 
   const handleSubmit = async (formDataVal: any) => {
     setIsSubmitting(true);
@@ -222,62 +287,58 @@ export default function CreateListing() {
         const err = await res.json().catch(() => ({}));
         throw new Error(err?.error || 'Eroare la crearea/editarea anunțului');
       }
+      window.localStorage.removeItem(`autofans_listing_draft:${userId}`);
+      trackAnalyticsEvent('listing_publish_completed', {
+        mode: listing ? 'updated' : 'created',
+        image_count: uploaded.length,
+      });
       window.location.href = '/dashboard';
     } catch (error) {
       console.error('Error saving listing:', error);
-      alert('A apărut o eroare. Te rugăm să încerci din nou.');
+      throw error;
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleSaveDraft = async (formDataVal: any) => {
-    localStorage.setItem('autofans_draft_listing', JSON.stringify(formDataVal));
-    alert('Anunțul a fost salvat ca draft.');
+    const { images: _temporaryPreviewImages, ...serializableFormData } = formDataVal;
+    window.localStorage.setItem(`autofans_listing_draft:${userId}`, JSON.stringify({
+      formData: serializableFormData,
+      images: uploaded,
+      savedAt: new Date().toISOString(),
+    }));
+    if (!draftEventTracked.current) {
+      draftEventTracked.current = true;
+      trackAnalyticsEvent('listing_draft_saved', { image_count: uploaded.length });
+    }
   };
 
-  async function onFilesSelected(files: File[]) {
-    if (!userId) return;
+  async function uploadListingImages(files: File[]): Promise<ListingImageUpload[]> {
+    if (!userId) return [];
     const supabase = getSupabaseBrowserClient();
-    const existingList = listing?.images || [];
-    const newUploaded: { path: string; isMain: boolean }[] = [];
+    const newUploaded: ListingImageUpload[] = [];
 
     for (let i = 0; i < files.length; i++) {
       const f = files[i];
-      if (f.size === 0) {
-        // Placeholder for pre-existing file - map back to original path using extracted index
-        const match = f.name.match(/^image-(\d+)\.jpg$/);
-        const origIdx = match ? parseInt(match[1], 10) : -1;
-        if (origIdx >= 0 && origIdx < existingList.length) {
-          newUploaded.push({
-            path: existingList[origIdx].path,
-            isMain: i === 0,
-          });
-        }
-      } else {
-        // Real new upload
-        const safe = f.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-        const path = `${userId}/${Date.now()}-${i}-${safe}`;
-        const { error } = await supabase.storage.from('listing-images').upload(path, f, {
-          upsert: false,
-          cacheControl: '3600',
-          contentType: f.type,
-        });
-        if (error) {
-          console.error('upload error', error.message);
-          alert(`Eroare la încărcarea imaginii ${f.name}: ${error.message}`);
-          continue;
-        }
-        newUploaded.push({
-          path,
-          isMain: i === 0,
-        });
+      const safe = f.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const path = `${userId}/${Date.now()}-${i}-${safe}`;
+      const { error } = await supabase.storage.from('listing-images').upload(path, f, {
+        upsert: false,
+        cacheControl: '31536000',
+        contentType: f.type,
+      });
+      if (error) {
+        throw new Error(`Nu am putut încărca „${f.name}”: ${error.message}`);
       }
+      const { data: signed, error: signedError } = await supabase.storage.from('listing-images').createSignedUrl(path, 60 * 60);
+      if (signedError || !signed?.signedUrl) throw new Error(`Imaginea a fost încărcată, dar previzualizarea nu este disponibilă.`);
+      newUploaded.push({ path, id: path, url: signed.signedUrl, isMain: false });
     }
-    setUploaded(newUploaded);
+    return newUploaded;
   }
 
-  const initialData = listing ? {
+  const listingInitialData = listing ? {
     title: listing.title,
     brand: listing.make,
     model: listing.model,
@@ -291,6 +352,7 @@ export default function CreateListing() {
     description: listing.description,
     images: (listing.images || []).map((img: any) => ({
       ...img,
+      id: img.path,
       url: signedMap?.[img.path] || ''
     })),
     // Mapping existing details back to CreateListingWizard structure
@@ -319,6 +381,15 @@ export default function CreateListing() {
       country: 'RO'
     },
   } : undefined;
+  const draftInitialData = localDraft?.formData ? {
+    ...localDraft.formData,
+    images: localDraft.images.map((image) => ({
+      ...image,
+      id: image.path,
+      url: localDraft.signedMap[image.path] || '',
+    })),
+  } : undefined;
+  const initialData = listingInitialData || draftInitialData;
 
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 py-4 pb-28 sm:py-8 sm:pb-8">
@@ -348,8 +419,8 @@ export default function CreateListing() {
                 <Shield className="h-6 w-6" />
               </div>
               <div>
-                <h4 className="font-semibold text-white text-sm sm:text-base">Vânzare sigură</h4>
-                <p className="text-xs sm:text-sm text-gray-400 mt-0.5">Cumpărători verificați</p>
+              <h4 className="font-semibold text-white text-sm sm:text-base">Anunț transparent</h4>
+                <p className="text-xs sm:text-sm text-gray-400 mt-0.5">Detaliile și fotografiile clare cresc încrederea</p>
               </div>
             </div>
             
@@ -358,8 +429,8 @@ export default function CreateListing() {
                 <Clock className="h-6 w-6" />
               </div>
               <div>
-                <h4 className="font-semibold text-white text-sm sm:text-base">Vânzare rapidă</h4>
-                <p className="text-xs sm:text-sm text-gray-400 mt-0.5">Timp mediu: 12 zile</p>
+                <h4 className="font-semibold text-white text-sm sm:text-base">Publicare simplă</h4>
+                <p className="text-xs sm:text-sm text-gray-400 mt-0.5">Salvezi draftul și revii când ai toate datele</p>
               </div>
             </div>
             
@@ -369,19 +440,26 @@ export default function CreateListing() {
               </div>
               <div>
                 <h4 className="font-semibold text-white text-sm sm:text-base">Suport complet</h4>
-                <p className="text-xs sm:text-sm text-gray-400 mt-0.5">Te ajutăm în tout procesul</p>
+                <p className="text-xs sm:text-sm text-gray-400 mt-0.5">Ai ghiduri și ajutor la fiecare pas</p>
               </div>
             </div>
           </div>
         </Card>
 
         {/* Wizard */}
-        <CreateListingWizard
-          onSubmit={handleSubmit}
-          onSaveDraft={handleSaveDraft}
-          onFilesSelected={onFilesSelected}
-          initialData={initialData as any}
-        />
+        {isDraftHydrated ? (
+          <CreateListingWizard
+            onSubmit={handleSubmit}
+            onSaveDraft={handleSaveDraft}
+            onUploadImages={uploadListingImages}
+            onImageReferencesChange={(images) => setUploaded(images.map(({ path, isMain }) => ({ path, isMain })))}
+            initialData={initialData as any}
+          />
+        ) : (
+          <Card padding="lg" className="bg-glass border-white/10">
+            <p className="text-sm text-gray-400">Se restaurează draftul tău…</p>
+          </Card>
+        )}
     </div>
   );
 }

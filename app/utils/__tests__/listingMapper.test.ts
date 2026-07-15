@@ -9,7 +9,7 @@ describe('mapListingToCar', () => {
     expect(car.slug).toBe('7');
     expect(car.title).toBe('BMW 320d');
     expect(car.location.city).toBe('București');
-    expect(car.images[0].url).toBe('/placeholder-car.jpg');
+    expect(car.images).toEqual([]);
   });
 
   it('maps signed listing images and keeps the main image', () => {

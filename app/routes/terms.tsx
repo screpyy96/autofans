@@ -105,11 +105,11 @@ export default function Terms() {
             <p className="text-xs text-gray-400">
               Dacă aveți întrebări referitoare la acești termeni, contactați-ne la <span className="text-accent-gold font-semibold">suport@autofans.ro</span>.
             </p>
-            <Link to="/login">
-              <Button variant="outline" className="border-accent-gold/45 text-accent-gold hover:bg-accent-gold/10 font-bold transition-all text-sm">
+            <Button asChild variant="outline" className="border-accent-gold/45 text-accent-gold hover:bg-accent-gold/10 font-bold transition-all text-sm">
+              <Link to="/login">
                 Înapoi la autentificare
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </div>
 
         </div>

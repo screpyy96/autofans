@@ -58,6 +58,14 @@ describe('SearchBar', () => {
     expect(input).toHaveValue('');
     expect(input).toHaveFocus();
   });
+
+  it('does not present fabricated popular searches before the visitor searches', () => {
+    render(<SearchBar onSearch={onSearch} />);
+
+    fireEvent.focus(screen.getByRole('textbox'));
+
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+  });
 });
 
 const SEARCH_DELAY = 450;

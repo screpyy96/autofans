@@ -317,26 +317,9 @@ export const useAppStore = create<AppStore>()(
             });
 
             try {
-              // Load user data if authenticated
-              if (typeof window !== 'undefined') {
-                const userData = localStorage.getItem('autofans_user');
-                if (userData) {
-                  try {
-                    const user = JSON.parse(userData);
-                    set((state) => {
-                      state.user = user;
-                      state.isAuthenticated = true;
-                    });
-                  } catch (error) {
-                    console.error('Failed to parse user data:', error);
-                    localStorage.removeItem('autofans_user');
-                  }
-                }
-              }
-
-              // Notifications should be fetched from the backend later, no mock data
-
-
+              // Supabase is the single source of truth for account state. Do not
+              // revive a previous browser user here: it can be stale after logout
+              // or after the session expires.
               set((state) => {
                 state.isLoading = false;
               });
@@ -358,8 +341,6 @@ export const useAppStore = create<AppStore>()(
       {
         name: 'autofans-store',
         partialize: (state) => ({
-          user: state.user,
-          isAuthenticated: state.isAuthenticated,
           theme: state.theme,
           currency: state.currency,
           favorites: state.favorites,
@@ -369,6 +350,18 @@ export const useAppStore = create<AppStore>()(
         }),
         // Add server-side rendering support
         skipHydration: true,
+        version: 2,
+        migrate: (persistedState) => {
+          const stored = persistedState as Partial<AppState>;
+          return {
+            theme: stored.theme ?? initialState.theme,
+            currency: stored.currency ?? initialState.currency,
+            favorites: stored.favorites ?? [],
+            comparisonCars: stored.comparisonCars ?? [],
+            savedSearches: stored.savedSearches ?? [],
+            recentSearches: stored.recentSearches ?? [],
+          };
+        },
       }
     ),
     {

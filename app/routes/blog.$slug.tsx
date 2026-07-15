@@ -1,15 +1,15 @@
 import { useLoaderData, Link } from "react-router";
+import { useState } from 'react';
 import type { Route } from "./+types/blog.$slug";
-import { blogPosts } from "~/data/blogPosts";
+import { blogPosts } from "~/data/blogPosts.server";
 import { ArrowLeft, Calendar, Clock, Share2, ShieldCheck } from "lucide-react";
-import Markdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { renderBlogMarkdown } from '~/utils/blogMarkdown.server';
 
 export function meta({ data }: Route.MetaArgs) {
   const post = data?.post;
   if (!post) return [{ title: "Articol inexistent - AutoFans Blog" }];
-  const canonicalUrl = `https://autofans.ro/blog/${post.slug}`;
-  const imageUrl = `https://autofans.ro${post.coverImage}`;
+  const canonicalUrl = `https://www.autofans.ro/blog/${post.slug}`;
+  const imageUrl = `https://www.autofans.ro${post.coverImage}`;
 
   return [
     { title: `${post.title} | AutoFans Blog` },
@@ -35,24 +35,38 @@ export async function loader({ params }: Route.LoaderArgs) {
   if (!post) {
     throw new Response("Not Found", { status: 404 });
   }
-  return { post };
+  const { content, ...postMetadata } = post;
+  return { post: { ...postMetadata, contentHtml: renderBlogMarkdown(content) } };
 }
 
 export default function BlogPost() {
   const { post } = useLoaderData<typeof loader>();
-  const canonicalUrl = `https://autofans.ro/blog/${post.slug}`;
-  const imageUrl = `https://autofans.ro${post.coverImage}`;
+  const [shareStatus, setShareStatus] = useState('');
+  const canonicalUrl = `https://www.autofans.ro/blog/${post.slug}`;
+  const imageUrl = `https://www.autofans.ro${post.coverImage}`;
   const articleSchema = {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
+    '@id': `${canonicalUrl}#article`,
+    url: canonicalUrl,
     headline: post.title,
     description: post.excerpt,
     image: imageUrl,
     datePublished: post.publishedAt,
     dateModified: post.updatedAt,
-    mainEntityOfPage: canonicalUrl,
-    author: { '@type': 'Organization', name: post.author.name, url: 'https://autofans.ro' },
-    publisher: { '@type': 'Organization', name: 'AutoFans', url: 'https://autofans.ro' },
+    inLanguage: 'ro-RO',
+    articleSection: post.category,
+    keywords: post.tags.join(', '),
+    isAccessibleForFree: true,
+    mainEntityOfPage: { '@type': 'WebPage', '@id': canonicalUrl },
+    author: { '@type': 'Organization', name: post.author.name, url: 'https://www.autofans.ro' },
+    publisher: {
+      '@type': 'Organization',
+      '@id': 'https://www.autofans.ro/#organization',
+      name: 'AutoFans',
+      url: 'https://www.autofans.ro/',
+      logo: { '@type': 'ImageObject', url: 'https://www.autofans.ro/logo-header.webp' },
+    },
   };
   const faqSchema = {
     '@context': 'https://schema.org',
@@ -63,6 +77,15 @@ export default function BlogPost() {
       acceptedAnswer: { '@type': 'Answer', text: faq.answer },
     })),
   };
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Acasă', item: 'https://www.autofans.ro/' },
+      { '@type': 'ListItem', position: 2, name: 'Blog', item: 'https://www.autofans.ro/blog' },
+      { '@type': 'ListItem', position: 3, name: post.title, item: canonicalUrl },
+    ],
+  };
 
   const handleShare = () => {
     if (navigator.share) {
@@ -70,10 +93,11 @@ export default function BlogPost() {
         title: post.title,
         text: post.excerpt,
         url: window.location.href,
-      }).catch(console.error);
+      }).then(() => setShareStatus('Articol distribuit.')).catch(() => undefined);
     } else {
-      navigator.clipboard.writeText(window.location.href);
-      alert("Link copiat în clipboard!");
+      navigator.clipboard.writeText(window.location.href)
+        .then(() => setShareStatus('Link copiat în clipboard.'))
+        .catch(() => setShareStatus('Nu am putut copia linkul.'));
     }
   };
 
@@ -81,6 +105,7 @@ export default function BlogPost() {
     <div className="min-h-screen bg-[#121212] pb-20">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
       {/* Hero Header */}
       <div className="relative h-[60vh] min-h-[400px] w-full">
         <div className="absolute inset-0">
@@ -137,6 +162,7 @@ export default function BlogPost() {
                   <Share2 className="w-4 h-4" />
                   <span className="text-sm font-medium">Distribuie</span>
                 </button>
+                <span className="sr-only" aria-live="polite">{shareStatus}</span>
               </div>
             </div>
           </div>
@@ -152,23 +178,10 @@ export default function BlogPost() {
               <li aria-hidden="true">/</li>
               <li><Link to="/blog">Blog</Link></li>
               <li aria-hidden="true">/</li>
-              <li className="text-gray-200" aria-current="page">{post.category}</li>
+              <li className="min-w-0 truncate text-gray-200" aria-current="page">{post.title}</li>
             </ol>
           </nav>
-          <div className="markdown-content">
-            <Markdown
-              remarkPlugins={[remarkGfm]}
-              components={{
-                a: ({ href, children }) => href?.startsWith("http") ? (
-                  <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>
-                ) : (
-                  <Link to={href || "#"}>{children}</Link>
-                ),
-              }}
-            >
-              {post.content}
-            </Markdown>
-          </div>
+          <div className="markdown-content" dangerouslySetInnerHTML={{ __html: post.contentHtml }} />
 
           <section className="mt-12 border-t border-white/10 pt-8" aria-labelledby="faq-heading">
             <h2 id="faq-heading" className="mb-5 flex items-center gap-2 text-2xl font-bold text-white">
@@ -198,9 +211,9 @@ export default function BlogPost() {
             <h3 className="text-white font-semibold mb-4">Etichete:</h3>
             <div className="flex flex-wrap gap-2">
               {post.tags.map(tag => (
-                <span key={tag} className="px-4 py-2 bg-white/5 border border-white/10 rounded-full text-sm text-gray-300 hover:text-white hover:border-white/30 cursor-pointer transition-colors">
+                <Link key={tag} to={`/blog?tag=${encodeURIComponent(tag)}`} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-gray-300 transition-colors hover:border-accent-gold/50 hover:text-accent-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-gold">
                   #{tag}
-                </span>
+                </Link>
               ))}
             </div>
           </div>

@@ -1,34 +1,42 @@
 import { type RouteConfig, index, route } from "@react-router/dev/routes";
 
+// Current React Router emits the correct lazy route manifest at build time, but
+// its local config type does not yet expose the option. Keep the runtime code
+// split while containing that temporary typing gap in one place.
+const lazyRoute = (path: string, file: string) => route(path, file, { lazy: true } as any);
+
 export default [
   // Core routes - loaded immediately
   route("/sitemap.xml", "routes/sitemap.ts"),
   route("/robots.txt", "routes/robots.ts"),
   index("routes/home.tsx"),
   route("/search", "routes/search.tsx"),
-  route("/login", "routes/login.tsx", { lazy: true }),
-  route("/auth/callback", "routes/auth.callback.tsx", { lazy: true }),
-  route("/logout", "routes/logout.tsx", { lazy: true }),
+  lazyRoute("/login", "routes/login.tsx"),
+  lazyRoute("/auth/callback", "routes/auth.callback.tsx"),
+  lazyRoute("/logout", "routes/logout.tsx"),
   
   // Secondary routes - can be lazy loaded
-  route("/blog", "routes/blog.tsx", { lazy: true }),
+  lazyRoute("/blog", "routes/blog.tsx"),
   route("/blog/:slug", "routes/blog.$slug.tsx"),
-  route("/notifications", "routes/notifications.tsx", { lazy: true }),
-  route("/messages", "routes/messages.tsx", { lazy: true }),
-  route("/contact", "routes/contact.tsx", { lazy: true }),
-  route("/help", "routes/help.tsx", { lazy: true }),
-  route("/favorites", "routes/favorites.tsx", { lazy: true }),
-  route("/profile", "routes/profile.tsx", { lazy: true }),
+  lazyRoute("/notifications", "routes/notifications.tsx"),
+  lazyRoute("/messages", "routes/messages.tsx"),
+  lazyRoute("/contact", "routes/contact.tsx"),
+  lazyRoute("/help", "routes/help.tsx"),
+  lazyRoute("/favorites", "routes/favorites.tsx"),
+  lazyRoute("/reports", "routes/reports.tsx"),
+  lazyRoute("/profile", "routes/profile.tsx"),
   route("/car/:slug", "routes/car.$slug.tsx"),
-  route("/seller/:id", "routes/seller.$id.tsx", { lazy: true }),
-  route("/create-listing", "routes/create-listing.tsx", { lazy: true }),
+  lazyRoute("/seller/:id", "routes/seller.$id.tsx"),
+  lazyRoute("/create-listing", "routes/create-listing.tsx"),
   route("/api/alerts/dispatch", "routes/api.alerts.dispatch.tsx"),
   route("/api/home", "routes/api.home.tsx"),
   route("/api/search", "routes/api.search.ts"),
-  route("/compare", "routes/compare.tsx", { lazy: true }),
-  route("/dashboard", "routes/dashboard.tsx", { lazy: true }),
-  route("/dashboard/listings", "routes/dashboard.listings.tsx", { lazy: true }),
-  route("/termeni-si-conditii", "routes/terms.tsx", { lazy: true }),
-  route("/politica-de-confidentialitate", "routes/privacy.tsx", { lazy: true }),
+  route("/og/car/:slug", "routes/og.car.$slug.ts"),
+  lazyRoute("/compare", "routes/compare.tsx"),
+  lazyRoute("/dashboard", "routes/dashboard.tsx"),
+  lazyRoute("/dashboard/listings", "routes/dashboard.listings.tsx"),
+  lazyRoute("/admin/reports", "routes/admin.reports.tsx"),
+  lazyRoute("/termeni-si-conditii", "routes/terms.tsx"),
+  lazyRoute("/politica-de-confidentialitate", "routes/privacy.tsx"),
   
 ] satisfies RouteConfig;

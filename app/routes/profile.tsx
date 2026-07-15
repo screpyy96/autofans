@@ -28,10 +28,20 @@ import { cn } from '~/lib/utils';
 import { useFavorites } from '~/stores/useAppStore';
 import { getSupabaseBrowserClient } from '~/lib/supabase.client';
 
+const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
+const AVATAR_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+
+type VerificationActionData = {
+  ok?: boolean;
+  message?: string;
+  error?: string;
+};
+
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "Contul meu - AutoFans" },
     { name: "description", content: "Gestionează contul tău, anunțurile și preferințele pe AutoFans." },
+    { name: 'robots', content: 'noindex,nofollow' },
   ];
 }
 
@@ -54,7 +64,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   if (profile?.role === 'seller') {
     const { data: userListings } = await supabase
       .from('listings')
-      .select('id, slug, title, price, status, updated_at, images')
+      .select('id, slug, title, price, currency, status, updated_at, images')
       .eq('owner_id', user.id)
       .order('updated_at', { ascending: false });
     listings = userListings || [];
@@ -63,7 +73,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
       .map((l) => (l.images || []).find((i: any) => i.isMain)?.path || (l.images || [])[0]?.path)
       .filter(Boolean) as string[];
     if (paths.length) {
-      const { data: signed } = await supabase.storage.from('listing-images').createSignedUrls(paths, 60 * 60);
+      const { data: signed } = await (supabase.storage.from('listing-images') as any).createSignedUrls(paths, 60 * 60, {
+        transform: { width: 480, height: 360, quality: 68, resize: 'cover' },
+      });
       const map: Record<string, string> = {};
       for (const s of signed || []) {
         const it: any = s; if (it?.path && it?.signedUrl) map[it.path] = it.signedUrl as string;
@@ -110,15 +122,23 @@ export async function loader({ request }: LoaderFunctionArgs) {
   }
 
   const listingIds = listings.map((listing) => listing.id);
-  let viewsCount = 0;
-  let contactsCount = 0;
+  let viewsCount: number | null = 0;
+  let contactsCount: number | null = 0;
+  let sellerMetricsAvailable = true;
   if (listingIds.length) {
-    const [{ count: views }, { count: contacts }] = await Promise.all([
+    const [viewsResult, contactsResult] = await Promise.all([
       supabase.from('listing_views').select('id', { count: 'exact', head: true }).in('listing_id', listingIds),
       supabase.from('listing_contacts').select('id', { count: 'exact', head: true }).in('listing_id', listingIds),
     ]);
-    viewsCount = views || 0;
-    contactsCount = contacts || 0;
+    if (viewsResult.error || contactsResult.error) {
+      // An unavailable aggregation is not the same as zero buyer interest.
+      sellerMetricsAvailable = false;
+      viewsCount = null;
+      contactsCount = null;
+    } else {
+      viewsCount = viewsResult.count ?? 0;
+      contactsCount = contactsResult.count ?? 0;
+    }
   }
 
   const listingTitleById = new Map(listings.map((listing) => [listing.id, listing.title]));
@@ -135,6 +155,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     favoritesCount: favoritesCount || 0,
     viewsCount,
     contactsCount,
+    sellerMetricsAvailable,
     verificationRequest: verificationRequest || null,
     openRiskFlags,
     userAuth: user,
@@ -201,11 +222,12 @@ export default function Profile() {
     favoritesCount = 0,
     viewsCount = 0,
     contactsCount = 0,
+    sellerMetricsAvailable = true,
     verificationRequest,
     openRiskFlags = [],
     userAuth,
   } = useLoaderData<typeof loader>();
-  const verificationFetcher = useFetcher<typeof action>();
+  const verificationFetcher = useFetcher<VerificationActionData>();
   const { favorites: localFavoriteIds } = useFavorites();
   const [recentFavoriteListings, setRecentFavoriteListings] = useState<any[]>(favoriteListings);
 
@@ -235,6 +257,7 @@ export default function Profile() {
     return () => { cancelled = true; };
   }, [favoriteListings, localFavoriteIds]);
   const role = profile?.role as 'buyer' | 'seller' | undefined;
+  const sellerStatsAvailable = role !== 'seller' || sellerMetricsAvailable;
   const verificationPending = verificationRequest?.status === 'pending' || verificationFetcher.data?.ok === true;
   
   const [activeTab, setActiveTab] = useState<'overview' | 'listings' | 'settings'>('overview');
@@ -274,6 +297,17 @@ export default function Profile() {
   const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !profile?.id) return;
+
+    if (!AVATAR_MIME_TYPES.has(file.type)) {
+      setSaveMessage({ type: 'error', text: 'Alege o imagine JPEG, PNG sau WebP.' });
+      e.target.value = '';
+      return;
+    }
+    if (file.size > MAX_AVATAR_BYTES) {
+      setSaveMessage({ type: 'error', text: 'Imaginea de profil poate avea cel mult 5 MB.' });
+      e.target.value = '';
+      return;
+    }
     
     setIsSaving(true);
     setSaveMessage(null);
@@ -341,17 +375,23 @@ export default function Profile() {
     }
   };
 
+  // The server count is authoritative once sync finishes, while the persisted
+  // store keeps anonymous/offline favorites visible immediately after login.
+  // Taking the larger value prevents the profile from briefly claiming 0 when
+  // the Favorites page already has locally saved cars awaiting sync.
+  const visibleFavoriteCount = Math.max(favoritesCount, localFavoriteIds.length);
+
   // Dynamic user data from profile
   const user = {
     name: displayName || profile?.display_name || 'Utilizator AutoFans',
     email: profile?.email || userAuth?.email || 'email@autofans.ro',
     phone: phone || profile?.phone || 'Adaugă telefon în Setări',
-    avatar: avatarUrl || profile?.avatar_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+    avatar: avatarUrl || profile?.avatar_url || null,
     isVerified: !!profile?.is_verified,
     memberSince: profile?.created_at ? new Date(profile.created_at).getFullYear().toString() : '2026',
     stats: {
       listings: listings.filter((listing) => listing.status === 'published').length,
-      favorites: Math.max(favoritesCount, localFavoriteIds.length),
+      favorites: visibleFavoriteCount,
       views: viewsCount,
       contacts: contactsCount
     }
@@ -391,9 +431,7 @@ export default function Profile() {
               <p className="text-gray-300 text-sm">{role === 'seller' ? 'Vânzător (poți publica anunțuri)' : 'Cumpărător (poți salva favorite și căutări)'}</p>
             </div>
             {role === 'seller' ? (
-              <Link to="/dashboard">
-                <Button variant="outline" size="sm">Deschide Dashboard</Button>
-              </Link>
+              <Button asChild variant="outline" size="sm"><Link to="/dashboard">Deschide Dashboard</Link></Button>
             ) : (
               <Form method="post" action="/dashboard">
                 <input type="hidden" name="intent" value="promote" />
@@ -470,11 +508,21 @@ export default function Profile() {
         <Card variant="elevated" padding="lg" className="mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
             <div className="relative">
-              <img
-                src={user.avatar}
-                alt={user.name}
-                className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-2 border-white/20"
-              />
+              {user.avatar ? (
+                <img
+                  src={user.avatar}
+                  alt={user.name}
+                  className="h-16 w-16 rounded-full border-2 border-white/20 object-cover sm:h-20 sm:w-20"
+                />
+              ) : (
+                <div
+                  className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-accent-gold/40 bg-gradient-to-br from-primary-500/70 to-accent-gold/50 text-xl font-bold text-white sm:h-20 sm:w-20 sm:text-2xl"
+                  aria-label={`Avatar pentru ${user.name}`}
+                  role="img"
+                >
+                  {user.name.trim().charAt(0).toLocaleUpperCase('ro-RO') || 'A'}
+                </div>
+              )}
               {user.isVerified && (
                 <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1.5">
                   <Shield className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
@@ -526,16 +574,16 @@ export default function Profile() {
             <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-center sm:p-4">
               <div className="mb-1.5 flex items-center justify-center gap-2 sm:mb-2">
                 <Eye className="h-4 w-4 text-blue-400" />
-                <div className="text-lg sm:text-2xl font-bold text-white">{user.stats.views}</div>
+                <div className="text-lg sm:text-2xl font-bold text-white" title={sellerStatsAvailable ? undefined : 'Statisticile se actualizează momentan.'}>{sellerStatsAvailable ? user.stats.views : '—'}</div>
               </div>
-              <div className="text-xs sm:text-sm text-gray-300">Vizualizări</div>
+              <div className="text-xs sm:text-sm text-gray-300">{sellerStatsAvailable ? 'Vizualizări' : 'Date în curs'}</div>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-center sm:p-4">
               <div className="mb-1.5 flex items-center justify-center gap-2 sm:mb-2">
                 <MessageCircle className="h-4 w-4 text-green-400" />
-                <div className="text-lg sm:text-2xl font-bold text-white">{user.stats.contacts}</div>
+                <div className="text-lg sm:text-2xl font-bold text-white" title={sellerStatsAvailable ? undefined : 'Statisticile se actualizează momentan.'}>{sellerStatsAvailable ? user.stats.contacts : '—'}</div>
               </div>
-              <div className="text-xs sm:text-sm text-gray-300">Contactări</div>
+              <div className="text-xs sm:text-sm text-gray-300">{sellerStatsAvailable ? 'Contactări' : 'Date în curs'}</div>
             </div>
           </div>
         </Card>
@@ -587,8 +635,38 @@ export default function Profile() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
+                  {listings.length > 0 ? listings.slice(0, 3).map((listing: any) => (
+                    <Link
+                      key={listing.id}
+                      to={`/car/${encodeURIComponent(listing.slug || listing.id)}`}
+                      className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3 transition-colors hover:bg-white/10"
+                    >
+                      {thumbs[listing.id] ? (
+                        <img src={thumbs[listing.id]} alt="" className="h-12 w-16 shrink-0 rounded-lg object-cover" />
+                      ) : (
+                        <div className="flex h-12 w-16 shrink-0 items-center justify-center rounded-lg bg-white/5 text-gray-500" aria-hidden="true"><Car className="h-5 w-5" /></div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <h4 className="truncate font-medium text-white">{listing.title}</h4>
+                        <p className="mt-1 text-sm text-accent-gold">{Number(listing.price || 0).toLocaleString('ro-RO')} {listing.currency || 'EUR'}</p>
+                      </div>
+                      <Badge variant={listing.status === 'published' ? 'success' : 'secondary'} size="sm" className="shrink-0">
+                        {listing.status === 'published' ? 'Publicat' : 'Draft'}
+                      </Badge>
+                    </Link>
+                  )) : (
+                    <p className="py-6 text-center text-gray-400">
+                      {role === 'seller' ? 'Nu ai anunțuri create încă.' : 'Activează contul de vânzător pentru a publica primul anunț.'}
+                    </p>
+                  )}
                 </div>
-                <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                <div className="pt-4 text-center">
+                  <Button asChild variant="outline" className="mx-auto border-white/20 hover:bg-white/5">
+                    <Link to={role === 'seller' ? '/dashboard/listings' : '/dashboard'}>
+                      {role === 'seller' ? 'Gestionează anunțurile' : 'Devino vânzător'}
+                    </Link>
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
@@ -621,13 +699,13 @@ export default function Profile() {
                     <p className="py-6 text-center text-gray-400">Nu ai favorite salvate încă.</p>
                   )}
 
-                  <div className="text-center py-4">
-                    <Link to="/create-listing">
-                      <Button variant="outline" className="flex items-center gap-2 mx-auto border-white/20 hover:bg-white/5 px-4 py-2">
-                        <Plus className="h-4 w-4" />
-                        Adaugă anunț nou
-                      </Button>
-                    </Link>
+                  <div className="pt-4 text-center">
+                    <Button asChild variant="outline" className="mx-auto flex items-center gap-2 border-white/20 px-4 py-2 hover:bg-white/5">
+                      <Link to={recentFavoriteListings.length ? '/favorites' : '/search'}>
+                        <Heart className="h-4 w-4" />
+                        {recentFavoriteListings.length ? 'Vezi toate favoritele' : 'Caută mașini'}
+                      </Link>
+                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -639,12 +717,12 @@ export default function Profile() {
           <div className="space-y-4 text-center">
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <h3 className="text-xl font-bold text-white">Anunțurile mele</h3>
-              <Link to="/create-listing" className="w-full sm:w-auto">
-                <Button className="flex w-full items-center justify-center gap-2 bg-gold-gradient font-semibold text-secondary-900 sm:w-auto">
+              <Button asChild className="flex w-full items-center justify-center gap-2 bg-gold-gradient font-semibold text-secondary-900 sm:w-auto">
+                <Link to="/create-listing">
                   <Plus className="h-4 w-4" />
                   Adaugă anunț
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </div>
             {listings.length === 0 ? (
               <Card variant="elevated" padding="lg" className="text-center relative overflow-hidden">
@@ -661,12 +739,12 @@ export default function Profile() {
                     <p className="text-gray-300 mb-8 max-w-md mx-auto text-sm sm:text-base leading-relaxed">
                       Creează și gestionează toate anunțurile tale de mașini. Adaugă primul tău anunț pentru a începe să vinzi.
                     </p>
-                    <Link to="/create-listing">
-                      <Button variant="primary" className="flex items-center gap-2 mx-auto bg-gold-gradient text-secondary-900 hover:shadow-glow px-6 py-3 font-semibold">
+                    <Button asChild variant="primary" className="flex items-center gap-2 mx-auto bg-gold-gradient text-secondary-900 hover:shadow-glow px-6 py-3 font-semibold">
+                      <Link to="/create-listing">
                         <Plus className="h-4 w-4" />
                         Adaugă primul anunț
-                      </Button>
-                    </Link>
+                      </Link>
+                    </Button>
                   </div>
                 </div>
               </Card>
@@ -687,16 +765,16 @@ export default function Profile() {
                     </div>
                     <div className="flex w-full items-center gap-2 border-t border-white/10 pt-3 sm:w-auto sm:border-0 sm:pt-0">
                       <span className="mr-auto shrink-0 text-sm font-semibold text-accent-gold sm:mr-2 sm:text-base">€{Number(l.price).toLocaleString()}</span>
-                      <Link to={`/create-listing?edit=${l.id}`} className="flex-1 sm:flex-none">
-                        <Button variant="outline" size="sm" className="w-full border-accent-gold/20 text-accent-gold">
+                      <Button asChild variant="outline" size="sm" className="w-full border-accent-gold/20 text-accent-gold">
+                        <Link to={`/create-listing?edit=${l.id}`} className="flex-1 sm:flex-none">
                           Editează
-                        </Button>
-                      </Link>
-                      <Link to={`/car/${l.slug || l.id}`} className="flex-1 sm:flex-none">
-                        <Button variant="outline" size="sm" className="w-full">
+                        </Link>
+                      </Button>
+                      <Button asChild variant="outline" size="sm" className="w-full">
+                        <Link to={`/car/${l.slug || l.id}`} className="flex-1 sm:flex-none">
                           Vezi
-                        </Button>
-                      </Link>
+                        </Link>
+                      </Button>
                     </div>
                   </Card>
                 ))}

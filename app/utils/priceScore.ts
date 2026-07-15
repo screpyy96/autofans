@@ -63,7 +63,7 @@ export function calculatePriceScore(
   const price = Number(listing.price || 0);
   const validComparablePrices = comparables
     .map((comparable) => convertCurrency(Number(comparable.price || 0), String(comparable.currency || currency), currency))
-    .filter((comparablePrice): comparablePrice is number => Number.isFinite(comparablePrice) && comparablePrice > 0);
+    .filter((comparablePrice): comparablePrice is number => typeof comparablePrice === 'number' && Number.isFinite(comparablePrice) && comparablePrice > 0);
   const comparableCount = validComparablePrices.length;
 
   const baseScore: Omit<PriceScore, 'available' | 'level' | 'label' | 'marketMedian' | 'differencePercent' | 'recommendedOffer'> = {
