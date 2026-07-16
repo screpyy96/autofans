@@ -141,6 +141,9 @@ create index if not exists idx_listings_price on public.listings(price);
 create index if not exists idx_favorites_user on public.favorites(user_id);
 create index if not exists idx_saved_searches_user on public.saved_searches(user_id);
 
+-- Dealer CSV imports are added through the dedicated migration
+-- 20260716000000_dealer_csv_imports.sql after the base schema is installed.
+
 -- ===== Row Level Security (RLS) =====
 alter table public.profiles enable row level security;
 alter table public.listings enable row level security;

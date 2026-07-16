@@ -18,6 +18,7 @@ export default [
   // Secondary routes - can be lazy loaded
   lazyRoute("/blog", "routes/blog.tsx"),
   route("/blog/:slug", "routes/blog.$slug.tsx"),
+  lazyRoute("/dealeri", "routes/dealeri.tsx"),
   lazyRoute("/notifications", "routes/notifications.tsx"),
   lazyRoute("/messages", "routes/messages.tsx"),
   lazyRoute("/contact", "routes/contact.tsx"),
@@ -35,6 +36,7 @@ export default [
   lazyRoute("/compare", "routes/compare.tsx"),
   lazyRoute("/dashboard", "routes/dashboard.tsx"),
   lazyRoute("/dashboard/listings", "routes/dashboard.listings.tsx"),
+  lazyRoute("/dashboard/dealer-import", "routes/dashboard.dealer-import.tsx"),
   lazyRoute("/admin/reports", "routes/admin.reports.tsx"),
   lazyRoute("/termeni-si-conditii", "routes/terms.tsx"),
   lazyRoute("/politica-de-confidentialitate", "routes/privacy.tsx"),

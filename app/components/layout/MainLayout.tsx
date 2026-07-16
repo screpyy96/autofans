@@ -13,6 +13,7 @@ import {
   Bell,
   MessageCircle,
   LayoutDashboard,
+  Handshake,
   Newspaper,
   ShieldCheck,
   Flag
@@ -31,6 +32,7 @@ const baseNavigation = [
   { name: 'Acasă', href: '/', icon: Home },
   { name: 'Căutare', href: '/search', icon: Search },
   { name: 'Blog', href: '/blog', icon: Newspaper },
+  { name: 'Dealeri', href: '/dealeri', icon: Handshake },
   { name: 'Favorite', href: '/favorites', icon: Heart },
   { name: 'Mesaje', href: '/messages', icon: MessageCircle },
   { name: 'Contul meu', href: '/profile', icon: User },

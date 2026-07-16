@@ -3,7 +3,7 @@ import { useLoaderData, Link, Form } from "react-router";
 import { getSupabaseServerClient } from "~/lib/supabase.server";
 import { Card } from "~/components/ui/Card";
 import { Button } from "~/components/ui/Button";
-import { Car, Eye, Heart, Lightbulb, MessageCircle, TrendingUp } from 'lucide-react';
+import { Car, Eye, FileSpreadsheet, Heart, Lightbulb, MessageCircle, TrendingUp } from 'lucide-react';
 import { formatPrice } from '~/utils/helpers';
 import { calculatePriceScore } from '~/utils/priceScore';
 import { getSellerRecommendation } from '~/utils/sellerInsights';
@@ -304,6 +304,7 @@ export default function Dashboard() {
           </div>
           <div className="mt-3 grid grid-cols-2 gap-3 sm:flex sm:justify-end">
             <Link to="/dashboard/listings" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/15 px-4 text-sm font-semibold text-white transition-colors hover:bg-white/5">Gestionează</Link>
+            <Link to="/dashboard/dealer-import" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-accent-gold/40 px-4 text-sm font-semibold text-accent-gold transition-colors hover:bg-accent-gold/10"><FileSpreadsheet className="h-4 w-4" />Importă CSV</Link>
             <Link to="/create-listing" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-gold-gradient px-4 text-sm font-bold text-secondary-900 transition-transform hover:scale-[1.01]">Adaugă anunț</Link>
           </div>
         </div>
