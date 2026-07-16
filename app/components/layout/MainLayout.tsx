@@ -450,17 +450,17 @@ export function MainLayout({ children }: MainLayoutProps) {
             <span>Adaugă</span>
           </Link>
 
-          {/* Contact */}
+          {/* Dealeri — direct, because this is a core conversion route on mobile. */}
           <Link
-            to="/contact"
+            to="/dealeri"
             className={cn(
               "flex flex-col items-center gap-1 text-[10px] font-medium transition-all duration-300",
-              location.pathname.startsWith('/contact') ? "text-accent-gold" : "text-gray-400 hover:text-white"
+              location.pathname.startsWith('/dealeri') ? "text-accent-gold" : "text-gray-400 hover:text-white"
             )}
-            aria-label="Contactează AutoFans"
+            aria-label="Pentru dealeri"
           >
-            <MessageCircle className="h-5 w-5" />
-            <span>Contact</span>
+            <Handshake className="h-5 w-5" />
+            <span>Dealeri</span>
           </Link>
 
           {/* Meniu (Opens Drawer) */}
@@ -636,6 +636,20 @@ export function MainLayout({ children }: MainLayoutProps) {
                   </Link>
 
                   <Link
+                    to="/dealeri"
+                    onClick={() => closeBottomDrawer(false)}
+                    className={cn(
+                      "flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-all border border-transparent",
+                      location.pathname.startsWith('/dealeri')
+                        ? "text-white bg-white/5 border-white/20"
+                        : "text-gray-300 hover:text-white hover:bg-white/5"
+                    )}
+                  >
+                    <Handshake className="h-5 w-5 text-accent-gold" />
+                    Soluții pentru dealeri
+                  </Link>
+
+                  <Link
                     to="/blog"
                     onClick={() => closeBottomDrawer(false)}
                     className={cn(
@@ -708,29 +722,29 @@ export function MainLayout({ children }: MainLayoutProps) {
                   </Link>
                 </div>
 
-                {/* Notifications segment inside drawer */}
-                <div className="border-t border-white/10 pt-6">
-                  <div className="flex items-center justify-between mb-4 px-2">
-                    <div className="flex items-center gap-2">
-                      <Bell className="h-5 w-5 text-accent-gold" />
-                      <span className="text-base font-semibold text-white">Notificări</span>
+                {/* Notifications are account-specific, so guests never see this entry point. */}
+                {authUser && (
+                  <div className="border-t border-white/10 pt-6">
+                    <div className="flex items-center justify-between mb-4 px-2">
+                      <div className="flex items-center gap-2">
+                        <Bell className="h-5 w-5 text-accent-gold" />
+                        <span className="text-base font-semibold text-white">Notificări</span>
+                      </div>
+                      {unreadCount > 0 && (
+                        <span className="px-2 py-0.5 text-xs font-bold bg-accent-gold text-secondary-900 rounded-full shadow-glow">
+                          {unreadCount} noi
+                        </span>
+                      )}
                     </div>
-                    {unreadCount > 0 && (
-                      <span className="px-2 py-0.5 text-xs font-bold bg-accent-gold text-secondary-900 rounded-full shadow-glow">
-                        {unreadCount} noi
-                      </span>
-                    )}
+                    <Link
+                      to="/notifications"
+                      onClick={() => closeBottomDrawer(false)}
+                      className="flex w-full items-center justify-center rounded-2xl border border-white/5 bg-white/5 py-3 transition-colors hover:bg-white/10"
+                    >
+                      <span className="text-sm font-medium text-gray-300">Vezi toate notificările</span>
+                    </Link>
                   </div>
-                  
-                  {/* Direct link to notifications page for mobile */}
-                  <Link 
-                    to="/notifications"
-                    onClick={() => closeBottomDrawer(false)}
-                    className="flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-2xl py-3 border border-white/5 transition-colors w-full"
-                  >
-                    <span className="text-sm text-gray-300 font-medium">Vezi toate notificările</span>
-                  </Link>
-                </div>
+                )}
               </div>
             </div>
           </div>

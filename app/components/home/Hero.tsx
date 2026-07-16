@@ -1,4 +1,5 @@
 import { Link } from 'react-router';
+import { Plus } from 'lucide-react';
 import { SearchBar } from '~/components/search/SearchBar';
 
 export interface HeroProps {
@@ -46,17 +47,13 @@ export function Hero({ onSearch }: HeroProps) {
             placeholder="Caută după marcă, model, oraș..."
           />
           
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-1.5 text-xs text-gray-300">
-            <span className="opacity-75 hidden md:inline">Mărci populare:</span>
-            {['Dacia', 'Volkswagen', 'BMW', 'Audi', 'Ford'].map((brand) => (
-              <Link
-                key={brand}
-                to={`/search?q=${brand}`}
-                className="text-accent-gold hover:text-white transition-colors px-2 py-1 rounded-full bg-white/5 border border-white/10 hover:border-accent-gold/40"
-              >
-                {brand}
-              </Link>
-            ))}
+          <div className="mt-4 flex justify-center">
+            <Link
+              to="/create-listing"
+              className="inline-flex items-center gap-2 rounded-full border border-accent-gold/50 bg-accent-gold/10 px-4 py-2 text-sm font-bold text-accent-gold transition-colors hover:border-accent-gold hover:bg-accent-gold/20 hover:text-white"
+            >
+              <Plus className="h-4 w-4" /> Ai o mașină de vândut? Listeaz-o aici
+            </Link>
           </div>
         </div>
       </div>

@@ -79,8 +79,8 @@ const config: Config = {
         'glow': 'var(--shadow-glow)',
       },
       backgroundImage: {
-        'premium-gradient': 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)',
-        'gold-gradient': 'linear-gradient(135deg, #d4af37 0%, #f4d03f 50%, #d4af37 100%)',
+        'premium-gradient': 'linear-gradient(135deg, #101827 0%, #0d131d 52%, #111418 100%)',
+        'gold-gradient': 'linear-gradient(135deg, #e2c575 0%, #c8a34b 100%)',
         'glass': 'rgba(15, 23, 42, 0.8)',
       },
       animation: {

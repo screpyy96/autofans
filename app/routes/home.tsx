@@ -1,19 +1,10 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
-import { Link, useLoaderData } from 'react-router';
+import { Link } from 'react-router';
 import type { Route } from "./+types/home";
 import type { LinksFunction } from 'react-router';
-import { Search, Car as CarIcon, Shield, Clock, TrendingUp, GitCompare, Heart, MessageCircle, SlidersHorizontal, Plus } from 'lucide-react';
-import { Button } from '~/components/ui/Button';
+import { Search, Shield, GitCompare, Heart, MessageCircle, SlidersHorizontal, Plus, CircleCheck } from 'lucide-react';
 import { Card } from '~/components/ui/Card';
 import { Hero } from '~/components/home/Hero';
 import { RouteErrorBoundary } from '~/components/error';
-import { DeferredMount } from '~/components/performance/DeferredMount';
-import type { Car } from '~/types';
-import { mapListingToCar } from '~/utils/listingMapper';
-
-const HomeListings = lazy(() =>
-  import('~/components/home/HomeListings').then(({ HomeListings: HomeListingsComponent }) => ({ default: HomeListingsComponent })),
-);
 
 export function meta({ }: Route.MetaArgs) {
   const title = "AutoFans.ro - Platforma Premium de Anunțuri Auto";
@@ -50,64 +41,10 @@ export const links: LinksFunction = () => [
   },
 ];
 
-export async function loader() {
-  return { listings: [], recommendations: [], signedMap: {} as Record<string, string>, publishedCount: 0, brands: [] };
-}
-
 function HomeContent() {
-  const initialData = useLoaderData<typeof loader>();
-  const [data, setData] = useState<any>(initialData);
-  const [catalogLoaded, setCatalogLoaded] = useState(false);
-  const [catalogError, setCatalogError] = useState(false);
-  const [catalogRequest, setCatalogRequest] = useState(0);
-
-  useEffect(() => {
-    let controller: AbortController | undefined;
-    let cancelled = false;
-
-    const loadCatalog = () => {
-      if (cancelled) return;
-      setCatalogError(false);
-      controller = new AbortController();
-      fetch('/api/home', { signal: controller.signal })
-        .then((response) => response.ok ? response.json() : Promise.reject(new Error('Home catalog failed')))
-        .then((catalog) => {
-          if (!cancelled) setData(catalog);
-        })
-        .catch((error) => {
-          if (!cancelled && error.name !== 'AbortError') setCatalogError(true);
-        })
-        .finally(() => {
-          if (!cancelled) setCatalogLoaded(true);
-        });
-    };
-
-    // The hero image is the LCP element. Defer the non-critical catalog request
-    // until the browser is idle so it cannot steal bandwidth on slow mobile data.
-    const idleId = catalogRequest === 0 && 'requestIdleCallback' in window
-      ? window.requestIdleCallback(loadCatalog, { timeout: 900 })
-      : undefined;
-    const timeoutId = idleId === undefined ? window.setTimeout(loadCatalog, catalogRequest === 0 ? 250 : 0) : undefined;
-
-    return () => {
-      cancelled = true;
-      if (idleId !== undefined) window.cancelIdleCallback(idleId);
-      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
-      controller?.abort();
-    };
-  }, [catalogRequest]);
-  const recentCars = data.listings.map((listing: any) => mapListingToCar(listing, data.signedMap));
-  const recommendedCars = data.recommendations.map((item: any) => ({ car: mapListingToCar(item.listing, data.signedMap), reason: item.reason }));
   const handleSearch = (query: string) => {
     window.location.href = `/search?q=${encodeURIComponent(query)}`;
   };
-
-  const stats = [
-    { label: 'Anunțuri active', value: catalogLoaded ? data.publishedCount.toLocaleString('ro-RO') : '—', icon: CarIcon },
-    { label: 'Mărci disponibile', value: catalogLoaded ? String(data.brands.length) : '—', icon: Shield },
-    { label: 'Adăugate recent', value: catalogLoaded ? String(recentCars.length) : '—', icon: TrendingUp },
-    { label: 'Platformă', value: 'LIVE', icon: Clock },
-  ];
   const buyerFeatures = [
     {
       icon: SlidersHorizontal,
@@ -233,67 +170,31 @@ function HomeContent() {
         </div>
       </section>
 
-      {/* Brands Section */}
-      <section className="defer-render py-16 bg-glass/20 backdrop-blur-md w-full border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-10">
-            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
-              Caută după marca ta preferată
-            </h2>
-            <p className="text-sm text-gray-400">Cele mai căutate mărci auto pe platforma noastră în România</p>
+      {/* Seller invitation — intentionally contains no made-up platform statistics. */}
+      <section className="defer-render border-y border-premium bg-glass py-20 backdrop-blur-xl">
+        <div className="mx-auto grid max-w-7xl items-center gap-10 px-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <div>
+            <span className="inline-flex items-center gap-2 rounded-full border border-accent-gold/35 bg-accent-gold/10 px-4 py-2 text-sm font-bold text-accent-gold">
+              <Plus className="h-4 w-4" /> Pentru proprietari
+            </span>
+            <h2 className="mt-5 text-3xl font-bold text-white sm:text-4xl">Ai o mașină de vândut?</h2>
+            <p className="mt-4 max-w-2xl text-lg leading-relaxed text-gray-300">
+              Creează un anunț cu detaliile care contează: fotografii, specificații, preț și locație. Astfel, cumpărătorii pot înțelege clar ce oferi înainte să te contacteze.
+            </p>
+            <Link to="/create-listing" className="mt-8 inline-flex items-center justify-center rounded-xl bg-gold-gradient px-7 py-4 text-lg font-bold text-secondary-900 transition hover:brightness-110">
+              <Plus className="mr-2 h-5 w-5" /> Listează-ți mașina
+            </Link>
           </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4">
-            {data.brands.map((brand: { name: string; count: number }) => (
-              <Link
-                key={brand.name}
-                to={`/search?q=${encodeURIComponent(brand.name)}`}
-                className="flex flex-col items-center justify-center p-5 rounded-2xl bg-glass border border-white/10 hover:border-accent-gold transition-all duration-300 hover:shadow-glow hover:-translate-y-1 text-center group"
-              >
-                <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mb-3 group-hover:bg-accent-gold/20 transition-colors">
-                  <CarIcon className="w-5 h-5 text-gray-400 group-hover:text-accent-gold transition-colors" />
-                </div>
-                <span className="text-base font-bold text-white mb-1 group-hover:text-accent-gold transition-colors">{brand.name}</span>
-                <span className="text-xs text-gray-400">{brand.count} anunțuri</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <DeferredMount
-        placeholder={<section className="defer-render min-h-[440px] py-20" aria-hidden="true" />}
-      >
-        <Suspense fallback={<section className="min-h-[440px] py-20" aria-label="Se încarcă anunțurile" />}>
-          <HomeListings
-            catalogLoaded={catalogLoaded}
-            catalogError={catalogError}
-            recentCars={recentCars}
-            recommendedCars={recommendedCars}
-            onRetry={() => {
-              setCatalogLoaded(false);
-              setCatalogError(false);
-              setCatalogRequest((request) => request + 1);
-            }}
-          />
-        </Suspense>
-      </DeferredMount>
-
-      {/* Stats Section */}
-      <section className="defer-render py-20 bg-glass backdrop-blur-xl border-y border-premium w-full">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center group">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-accent-gold/20 rounded-2xl mb-6 group-hover:bg-accent-gold/30 transition-all duration-300">
-                  <stat.icon className="h-8 w-8 text-accent-gold" />
-                </div>
-                <div className="text-3xl lg:text-4xl font-bold text-white mb-2 group-hover-text-glow transition-all duration-300">
-                  {stat.value}
-                </div>
-                <div className="text-gray-400 group-hover:text-gray-300 transition-colors duration-300">{stat.label}</div>
-              </div>
-            ))}
+          <div className="rounded-3xl border border-white/10 bg-secondary-950/50 p-7 shadow-2xl sm:p-8">
+            <h3 className="text-xl font-bold text-white">Ce poți completa în anunț</h3>
+            <ul className="mt-6 space-y-4 text-gray-300">
+              {['Fotografii relevante ale mașinii', 'Detalii despre echipare, kilometraj și istoric', 'Prețul și localitatea pentru vizionare'].map((item) => (
+                <li key={item} className="flex items-start gap-3">
+                  <CircleCheck className="mt-0.5 h-5 w-5 shrink-0 text-accent-gold" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </section>
@@ -332,7 +233,7 @@ function HomeContent() {
             Gata să-ți schimbi mașina?
           </h2>
           <p className="text-xl text-secondary-800 mb-10 leading-relaxed max-w-2xl mx-auto">
-            Adaugă un anunț acum sau caută ofertele active de pe AutoFans.ro
+            Publică mașina cu informații complete, ca oamenii potriviți să o poată descoperi și contacta.
           </p>
           <div className="flex flex-col sm:flex-row gap-6 justify-center">
             <Link 
@@ -340,14 +241,14 @@ function HomeContent() {
               className="inline-flex items-center justify-center bg-secondary-900 text-white hover:bg-secondary-800 hover:shadow-lg transition-all duration-300 px-8 py-4 rounded-xl font-bold text-lg"
             >
               <Search className="h-5 w-5 mr-2" />
-              Caută Anunțuri
+              Caută mașini
             </Link>
             <Link 
               to="/create-listing" 
               className="inline-flex items-center justify-center text-secondary-900 border-2 border-secondary-900 hover:bg-secondary-900/10 transition-all duration-300 px-8 py-4 rounded-xl font-bold text-lg"
             >
               <Plus className="h-5 w-5 mr-2" />
-              Pune Anunț Gratuit
+              Listează-ți mașina
             </Link>
           </div>
         </div>

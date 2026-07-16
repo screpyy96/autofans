@@ -6,13 +6,13 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const badgeVariants = {
-  default: 'bg-secondary-800/50 text-white border border-accent-gold/20',
-  primary: 'bg-accent-gold/20 text-accent-gold border border-accent-gold/30',
-  secondary: 'bg-secondary-700/50 text-gray-200 border border-accent-gold/20',
+  default: 'border border-white/12 bg-white/[0.06] text-gray-200',
+  primary: 'border border-accent-gold/35 bg-accent-gold/15 text-accent-gold',
+  secondary: 'border border-white/12 bg-secondary-700/50 text-gray-200',
   success: 'bg-green-900/20 text-green-400 border border-green-500/30',
   warning: 'bg-yellow-900/20 text-yellow-400 border border-yellow-500/30',
   danger: 'bg-red-900/20 text-red-400 border border-red-500/30',
-  outline: 'border border-accent-gold/30 text-accent-gold bg-transparent',
+  outline: 'border border-white/20 bg-transparent text-gray-200',
 };
 
 const badgeSizes = {
@@ -29,7 +29,7 @@ export const Badge = forwardRef<HTMLDivElement, BadgeProps>(
       <div
         ref={ref}
         className={cn(
-          'inline-flex items-center rounded-full font-medium backdrop-blur-sm transition-all duration-300 hover:scale-105',
+          'inline-flex items-center rounded-full font-medium backdrop-blur-sm transition-colors duration-200',
           badgeVariants[variant],
           badgeSizes[size],
           className

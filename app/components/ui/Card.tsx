@@ -7,9 +7,9 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const cardVariants = {
-  default: 'bg-secondary-900/50 border border-accent-gold/30 backdrop-blur-xl',
-  elevated: 'bg-secondary-900/70 shadow-card border border-accent-gold/30 backdrop-blur-xl',
-  outlined: 'bg-secondary-900/50 border-2 border-accent-gold/30 backdrop-blur-xl',
+  default: 'border border-white/10 bg-secondary-900/50 backdrop-blur-xl',
+  elevated: 'border border-white/12 bg-secondary-900/70 shadow-card backdrop-blur-xl',
+  outlined: 'border border-white/20 bg-secondary-900/50 backdrop-blur-xl',
 };
 
 const cardPadding = {
@@ -28,10 +28,10 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
         ref={ref}
         tabIndex={hoverable ? tabIndex ?? 0 : tabIndex}
         className={cn(
-          'rounded-2xl transition-all duration-300 backdrop-blur-xl',
+          'rounded-2xl transition-[background-color,border-color,box-shadow,transform] duration-200 backdrop-blur-xl',
           cardVariants[variant],
           cardPadding[padding],
-          hoverable && 'cursor-pointer hover:-translate-y-1 hover:scale-[1.02] hover:border-accent-gold hover:bg-secondary-900/80 hover:shadow-card-hover active:scale-[0.98]',
+          hoverable && 'cursor-pointer hover:-translate-y-0.5 hover:border-accent-gold/55 hover:bg-secondary-900/80 hover:shadow-card-hover',
           className
         )}
         {...props}

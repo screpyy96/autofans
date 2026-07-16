@@ -1,2 +1,2 @@
-stock_id,title,description,make,model,year,mileage,price,currency,fuel_type,transmission,body_type,vin,city,county
-AF-1001,"BMW 320d xDrive 2019","BMW 320d xDrive întreținută, cu istoric de service disponibil și pregătită pentru verificare independentă înainte de cumpărare.",BMW,320d,2019,124000,18500,EUR,diesel,automatic,Sedan,,Cluj-Napoca,Cluj
+id_stoc;titlu;descriere;marca;model;an_fabricatie;kilometraj;pret;moneda;combustibil;transmisie;caroserie;vin;oras;judet;nume_fisiere_poze
+AF-1001;"BMW 320d xDrive 2019";"BMW 320d xDrive întreținută, cu istoric de service disponibil și pregătită pentru verificare independentă înainte de cumpărare.";BMW;320d;2019;124000;18500,00;EUR;Motorină;Automată;Sedan;;Cluj-Napoca;Cluj;"AF-1001__01.jpg|AF-1001__02.jpg"

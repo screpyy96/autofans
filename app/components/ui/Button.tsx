@@ -12,10 +12,10 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 const buttonVariants = {
-  primary: 'bg-gold-gradient text-secondary-900 hover:shadow-glow focus:ring-accent-gold focus:ring-offset-secondary-800',
-  secondary: 'bg-secondary-800/50 text-white hover:bg-secondary-700/50 border border-accent-gold/20 focus:ring-accent-gold focus:ring-offset-secondary-800',
-  outline: 'border-2 border-accent-gold/30 text-accent-gold hover:bg-accent-gold/10 hover:text-accent-gold focus:ring-accent-gold focus:ring-offset-secondary-800',
-  ghost: 'text-white/70 hover:bg-accent-gold/10 hover:text-accent-gold focus:ring-accent-gold focus:ring-offset-secondary-800',
+  primary: 'bg-gold-gradient text-secondary-900 shadow-[0_8px_20px_rgba(214,181,91,0.16)] hover:brightness-[1.04] hover:shadow-glow focus:ring-accent-gold focus:ring-offset-secondary-800',
+  secondary: 'border border-white/12 bg-white/[0.06] text-white hover:bg-white/[0.1] focus:ring-accent-gold focus:ring-offset-secondary-800',
+  outline: 'border border-white/18 text-gray-200 hover:border-accent-gold/65 hover:bg-accent-gold/10 hover:text-white focus:ring-accent-gold focus:ring-offset-secondary-800',
+  ghost: 'text-gray-300 hover:bg-white/[0.06] hover:text-white focus:ring-accent-gold focus:ring-offset-secondary-800',
   danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 focus:ring-offset-secondary-800',
 };
 
@@ -31,7 +31,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', loading = false, loadingText, disabled, asChild = false, children, ...props }, ref) => {
     const isDisabled = disabled || loading;
     const classes = cn(
-      'inline-flex items-center justify-center rounded-xl font-medium transition-all duration-300 enabled:hover:scale-[1.02] enabled:active:scale-[0.98]',
+      'inline-flex items-center justify-center rounded-xl font-medium transition-[background-color,border-color,color,box-shadow,transform] duration-200 enabled:hover:-translate-y-px enabled:active:translate-y-0',
       'focus:outline-none focus:ring-2 focus:ring-offset-2',
       'disabled:opacity-50 disabled:cursor-not-allowed',
       buttonVariants[variant],

@@ -1,6 +1,6 @@
 import { isValidVin, normalizeVin } from './vin';
 
-export const DEALER_CSV_HEADERS = [
+const REQUIRED_FIELDS = [
   'stock_id',
   'title',
   'description',
@@ -17,6 +17,30 @@ export const DEALER_CSV_HEADERS = [
   'city',
   'county',
 ] as const;
+
+type RequiredField = typeof REQUIRED_FIELDS[number];
+
+/** Romanian headers are the public dealer contract. English aliases keep the
+ * first template and exports from existing dealer systems compatible. */
+const HEADER_ALIASES: Record<RequiredField, readonly string[]> = {
+  stock_id: ['id_stoc', 'stock_id'],
+  title: ['titlu', 'title'],
+  description: ['descriere', 'description'],
+  make: ['marca', 'make'],
+  model: ['model'],
+  year: ['an_fabricatie', 'year'],
+  mileage: ['kilometraj', 'mileage'],
+  price: ['pret', 'preț', 'price'],
+  currency: ['moneda', 'monedă', 'currency'],
+  fuel_type: ['combustibil', 'fuel_type'],
+  transmission: ['transmisie', 'transmission'],
+  body_type: ['caroserie', 'body_type'],
+  vin: ['vin'],
+  city: ['oras', 'oraș', 'city'],
+  county: ['judet', 'județ', 'county'],
+};
+
+export const DEALER_CSV_HEADERS = REQUIRED_FIELDS.map((field) => HEADER_ALIASES[field][0]);
 
 export const DEALER_CSV_MAX_ROWS = 100;
 
@@ -66,7 +90,30 @@ const TRANSMISSION_ALIASES: Record<string, DealerCsvListing['transmission']> = {
   cvt: 'cvt',
 };
 
+function detectDelimiter(value: string) {
+  let quoted = false;
+  let commas = 0;
+  let semicolons = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    const char = value[index];
+    const next = value[index + 1];
+    if (char === '"' && quoted && next === '"') {
+      index += 1;
+    } else if (char === '"') {
+      quoted = !quoted;
+    } else if (!quoted && (char === '\n' || char === '\r')) {
+      break;
+    } else if (!quoted && char === ',') {
+      commas += 1;
+    } else if (!quoted && char === ';') {
+      semicolons += 1;
+    }
+  }
+  return semicolons > commas ? ';' : ',';
+}
+
 function parseCsvRecords(value: string): string[][] {
+  const delimiter = detectDelimiter(value);
   const rows: string[][] = [];
   let row: string[] = [];
   let field = '';
@@ -81,7 +128,7 @@ function parseCsvRecords(value: string): string[][] {
       index += 1;
     } else if (char === '"') {
       quoted = !quoted;
-    } else if (char === ',' && !quoted) {
+    } else if (char === delimiter && !quoted) {
       row.push(field.trim());
       field = '';
     } else if ((char === '\n' || char === '\r') && !quoted) {
@@ -124,8 +171,9 @@ function normalizeLookup(value: string) {
 }
 
 function toRecord(headers: string[], values: string[]) {
-  return headers.reduce<Record<string, string>>((result, header, index) => {
-    result[header] = values[index] || '';
+  return REQUIRED_FIELDS.reduce<Record<string, string>>((result, field) => {
+    const index = headers.findIndex((header) => HEADER_ALIASES[field].includes(header));
+    result[field] = index >= 0 ? values[index] || '' : '';
     return result;
   }, {});
 }
@@ -138,7 +186,9 @@ export function parseDealerCsv(value: string): DealerCsvParseResult {
   }
 
   const headers = records[0].map((header) => clean(header, 60).toLocaleLowerCase('ro-RO'));
-  const missingHeaders = DEALER_CSV_HEADERS.filter((header) => !headers.includes(header));
+  const missingHeaders = REQUIRED_FIELDS
+    .filter((field) => !HEADER_ALIASES[field].some((header) => headers.includes(header)))
+    .map((field) => HEADER_ALIASES[field][0]);
   if (missingHeaders.length) return { rows: [], missingHeaders: [...missingHeaders] };
 
   const currentYear = new Date().getFullYear();
