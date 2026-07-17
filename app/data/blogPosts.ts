@@ -1075,6 +1075,7 @@ Negociază pe baza concluziilor clare, nu doar pe baza bugetului tău. Iar dacă
     readTime: 7,
     publishedAt: "2026-07-17T11:10:00Z",
     updatedAt: "2026-07-17T11:10:00Z",
+    isFeatured: true,
     faqs: [
       { question: "Ce verific înainte să merg să văd o mașină în Iași?", answer: "Cere VIN-ul, informații despre proprietate, istoricul lucrărilor, defectele cunoscute, documentele disponibile și acceptul pentru o inspecție independentă." },
       { question: "De ce am nevoie de inspecție dacă mașina merge bine la test drive?", answer: "Test drive-ul arată comportamentul de bază. Un service poate verifica zone, erori și consumabile care nu se observă în parcare sau într-o plimbare scurtă." },
