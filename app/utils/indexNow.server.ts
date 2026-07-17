@@ -2,7 +2,7 @@ import { getServerEnv } from '~/lib/env.server';
 
 // IndexNow keys are intentionally public: ownership is verified by the text
 // file served from the same host, not by keeping this value secret.
-export const INDEXNOW_KEY = '37924a52d33e1d44e8f11b328df05672803e58f45b41d473';
+export const INDEXNOW_KEY = '92fab1be29134b3a9cfbfb55437c9dfb';
 export const INDEXNOW_KEY_LOCATION = `https://www.autofans.ro/${INDEXNOW_KEY}.txt`;
 const INDEXNOW_ENDPOINT = 'https://api.indexnow.org/indexnow';
 const MAX_URLS_PER_REQUEST = 10_000;
