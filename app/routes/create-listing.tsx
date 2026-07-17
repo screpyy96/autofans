@@ -15,6 +15,7 @@ import { coordinatesForLocation } from '~/utils/location';
 import { isValidVin, normalizeVin } from '~/utils/vin';
 import { validateListingForPublication } from '~/utils/listingPublication';
 import { trackAnalyticsEvent } from '~/utils/analytics.client';
+import { listingCanonicalUrl, submitIndexNowBestEffort } from '~/utils/indexNow.server';
 
 type StoredListingImage = { path?: string; isMain?: boolean };
 
@@ -162,24 +163,28 @@ export async function action({ request }: { request: Request }) {
   };
 
   if (editId) {
-    const { error } = await supabase
+    const { data: updatedListing, error } = await supabase
       .from('listings')
       .update(insert)
       .eq('id', Number(editId))
-      .eq('owner_id', user.id);
+      .eq('owner_id', user.id)
+      .select('slug')
+      .maybeSingle();
     if (error) {
       return Response.json({ error: error.message }, { status: 400 });
     }
+    if (updatedListing?.slug) await submitIndexNowBestEffort([listingCanonicalUrl(updatedListing.slug)]);
     return Response.json({ ok: true });
   } else {
     const finalInsert = {
       ...insert,
       slug: generateUniqueSlug(body.make, body.model, body.year)
     };
-    const { error } = await supabase.from('listings').insert(finalInsert);
+    const { data: createdListing, error } = await supabase.from('listings').insert(finalInsert).select('slug').single();
     if (error) {
       return Response.json({ error: error.message }, { status: 400 });
     }
+    if (createdListing?.slug) await submitIndexNowBestEffort([listingCanonicalUrl(createdListing.slug)]);
     return Response.json({ ok: true });
   }
 }

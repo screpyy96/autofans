@@ -1,10 +1,11 @@
 import { validateListingForPublication } from './listingPublication';
+import { listingCanonicalUrl, submitIndexNowBestEffort } from './indexNow.server';
 
 type SupabaseLike = {
   from: (table: string) => any;
 };
 
-const PUBLICATION_FIELDS = 'title, description, price, currency, make, model, year, mileage, fuel_type, transmission, city, county, images';
+const PUBLICATION_FIELDS = 'slug, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, city, county, images';
 
 /**
  * A draft can be changed outside of the wizard, so the final publication gate
@@ -39,7 +40,7 @@ export async function publishOwnedListing(
     .eq('id', listingId)
     .eq('owner_id', ownerId);
 
-  return updateError
-    ? { ok: false, error: 'Anunțul nu a putut fi publicat. Încearcă din nou.' }
-    : { ok: true };
+  if (updateError) return { ok: false, error: 'Anunțul nu a putut fi publicat. Încearcă din nou.' };
+  if (listing.slug) await submitIndexNowBestEffort([listingCanonicalUrl(listing.slug)]);
+  return { ok: true };
 }

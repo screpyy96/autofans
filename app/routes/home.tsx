@@ -1,7 +1,7 @@
 import { Link } from 'react-router';
 import type { Route } from "./+types/home";
 import type { LinksFunction } from 'react-router';
-import { Search, Shield, GitCompare, Heart, MessageCircle, SlidersHorizontal, Plus, CircleCheck } from 'lucide-react';
+import { Search, Shield, GitCompare, Heart, MessageCircle, SlidersHorizontal, Plus, CircleCheck, MapPin } from 'lucide-react';
 import { Card } from '~/components/ui/Card';
 import { Hero } from '~/components/home/Hero';
 import { RouteErrorBoundary } from '~/components/error';
@@ -221,6 +221,19 @@ function HomeContent() {
                 </Link>
               </Card>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="defer-render border-t border-white/5 bg-secondary-950 py-16 text-white">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="flex flex-col gap-6 rounded-3xl border border-white/10 bg-white/[0.03] p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
+            <div className="max-w-2xl">
+              <span className="inline-flex items-center gap-2 text-sm font-bold text-accent-gold"><MapPin className="h-4 w-4" /> Caută mai aproape de tine</span>
+              <h2 className="mt-3 text-2xl font-bold sm:text-3xl">Mașini second-hand în Moldova</h2>
+              <p className="mt-3 text-gray-400">Vezi anunțuri din Suceava, Iași, Botoșani, Neamț, Bacău, Vaslui, Vrancea și Galați — organizate pe județ și oraș.</p>
+            </div>
+            <Link to="/masini-second-hand/moldova" className="inline-flex shrink-0 items-center justify-center rounded-xl border border-accent-gold/40 px-5 py-3 text-sm font-bold text-accent-gold transition-colors hover:bg-accent-gold/10">Explorează Moldova</Link>
           </div>
         </div>
       </section>

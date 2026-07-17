@@ -1,8 +1,9 @@
 import type { LoaderFunctionArgs } from "react-router";
 import { getSupabaseServerClient } from "~/lib/supabase.server";
 import { blogPosts } from '~/data/blogPosts';
+import { cityUrl, countyUrl } from '~/utils/localSeo';
+import { getMoldovaCountySummaries, getMoldovaInventoryStats } from '~/utils/localSeo.server';
 
-// Adăugăm site-ul principal (în producție ar trebui să provină dintr-o variabilă de mediu)
 const DOMAIN = "https://www.autofans.ro";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -79,6 +80,36 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     }
   } catch (error) {
     console.error("Eroare la generarea sitemap-ului pentru mașini:", error);
+  }
+
+  // Local pages are listed only after they pass the same inventory thresholds
+  // used by the routes. This keeps thin, low-stock pages out of Google.
+  try {
+    const stats = await getMoldovaInventoryStats(supabase as any);
+    const counties = getMoldovaCountySummaries(stats).filter((county) => county.isIndexable);
+    if (counties.length) {
+      sitemap += `  <url>\n`;
+      sitemap += `    <loc>${DOMAIN}/masini-second-hand/moldova</loc>\n`;
+      sitemap += `    <changefreq>daily</changefreq>\n`;
+      sitemap += `    <priority>0.8</priority>\n`;
+      sitemap += `  </url>\n`;
+    }
+    for (const county of counties) {
+      sitemap += `  <url>\n`;
+      sitemap += `    <loc>${DOMAIN}${countyUrl(county)}</loc>\n`;
+      sitemap += `    <changefreq>daily</changefreq>\n`;
+      sitemap += `    <priority>0.8</priority>\n`;
+      sitemap += `  </url>\n`;
+      for (const city of county.cities) {
+        sitemap += `  <url>\n`;
+        sitemap += `    <loc>${DOMAIN}${cityUrl(county, city.name)}</loc>\n`;
+        sitemap += `    <changefreq>daily</changefreq>\n`;
+        sitemap += `    <priority>0.7</priority>\n`;
+        sitemap += `  </url>\n`;
+      }
+    }
+  } catch (error) {
+    console.error('Eroare la generarea sitemap-ului local:', error);
   }
 
   sitemap += `</urlset>`;

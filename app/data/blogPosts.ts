@@ -733,5 +733,351 @@ Dacă folosești mașina zilnic pe autostradă și vrei să păstrezi vopseaua o
       { question: 'PPF protejează mai bine decât colantarea?', answer: 'În general, PPF este proiectat pentru protecția vopselei la impacturi ușoare, iar colantarea vinyl este concepută în primul rând pentru schimbarea aspectului.' },
       { question: 'Merită PPF pe toată mașina?', answer: 'Depinde de buget și de utilizare. Pentru multe mașini, protejarea zonelor expuse din față este un compromis mai bun decât aplicarea pe toată caroseria.' },
     ],
+  },
+  {
+    id: "local-1",
+    slug: "cum-verifici-o-masina-second-hand-in-suceava",
+    title: "Cum verifici o mașină second-hand în Suceava înainte să pleci la vizionare",
+    excerpt: "Un proces simplu pentru cumpărătorii din Suceava: ce întrebi înainte de drum, ce verifici la mașină și când merită o inspecție independentă.",
+    content: `
+Când cauți o mașină second-hand în Suceava, cele mai bune decizii se iau înainte să pornești la drum, nu în parcarea vânzătorului. Un anunț bun îți dă suficiente informații ca să decizi dacă merită o vizionare: motorizare, cutie, kilometraj declarat, istoric, poze recente, stare și localitate.
+
+> **Pe scurt:** filtrează înainte de telefon, cere informațiile care pot fi verificate, vezi mașina pe lumină și tratează inspecția într-un service ca pe o parte normală a cumpărării.
+
+## Înainte de vizionare
+
+Compară exemplarul cu alte mașini similare din [Suceava](/masini-second-hand/suceava), nu doar cu cel mai ieftin anunț. Întreabă dacă prețul include roți, anvelope sau revizii recente; întreabă și ce nu este perfect. Un vânzător serios poate descrie simplu o zgârietură, o piesă înlocuită sau o lucrare care urmează.
+
+Cere VIN-ul într-o conversație normală înainte de a bate drumul. Nu folosi seria ca singur verdict: verifică dacă informațiile din raport, actele și mașina de la fața locului spun aceeași poveste. Dacă răspunsurile sunt neclare sau fotografiile nu corespund, nu compensa cu speranța că „poate arată mai bine în realitate”.
+
+## La mașină: ordine, nu grabă
+
+Vezi exteriorul pe lumină naturală și din mai multe unghiuri. Urmărește diferențe de nuanță, goluri neuniforme între elemente, urme de vopsea pe garnituri și uzura neobișnuită a anvelopelor. În interior, verifică funcțiile promise, climatizarea, geamurile, ecranul, martorii din bord și kilometrajul afișat.
+
+Pornește mașina la rece când este posibil. Ascultă motorul, urmărește fum neobișnuit, vibrații persistente sau avertizări care dispar prea repede. La test drive, alege un traseu pe care poți observa frânele, direcția, schimbarea treptelor și zgomotele de rulare fără să transformi întâlnirea într-o cursă.
+
+## Inspecția care economisește bani
+
+Pentru o achiziție importantă, stabilește dinainte că accepți sau ceri o verificare într-un service independent. Nu este o acuzație la adresa vânzătorului; este un filtru corect pentru ambele părți. Mecanicul poate vedea scurgeri, jocuri, coduri de eroare, urme de reparație și consumabile care nu se văd din poze.
+
+Păstrează rezervă în buget pentru revizia de început, acte, asigurare și lucrările confirmate la inspecție. O mașină bună nu este neapărat cea fără niciun cost, ci cea ale cărei costuri sunt cunoscute și suportabile.
+
+[Vezi mașini second-hand în Suceava](/masini-second-hand/suceava) și salvează doar exemplarele pentru care ai suficiente date înainte de vizionare.
+    `,
+    coverImage: "/blog/verificare-istoric-auto.webp",
+    author: { name: "AutoFans", role: "Echipa editorială AutoFans" },
+    category: "Ghid cumpărare",
+    tags: ["Suceava", "Verificare auto", "Mașină second-hand", "Test drive", "Inspecție auto"],
+    readTime: 6,
+    publishedAt: "2026-07-17T08:00:00Z",
+    updatedAt: "2026-07-17T08:00:00Z",
+    faqs: [
+      { question: "Merită inspecția într-un service înainte să cumpăr o mașină în Suceava?", answer: "Da, mai ales când prețul este important pentru bugetul tău. O inspecție independentă poate confirma starea tehnică și lucrările care urmează." },
+      { question: "Ce cer înainte să merg la vizionare?", answer: "Cere detalii despre kilometraj, istoric, lucrări, defecte cunoscute, acte și VIN. Dacă răspunsurile rămân vagi, alege un alt exemplar." },
+    ],
+  },
+  {
+    id: "local-2",
+    slug: "cum-cumperi-masina-rulata-in-iasi",
+    title: "Cum cumperi o mașină rulată în Iași: de la căutare la test drive",
+    excerpt: "Ghid practic pentru cumpărătorii din Iași: cum alegi anunțurile relevante, cum compari exemplarele și cum pregătești o vizionare utilă.",
+    content: `
+O căutare bună de mașină rulată în Iași începe cu o listă scurtă de criterii, nu cu zeci de anunțuri salvate. Stabilește utilizarea: oraș, navetă, familie, drumuri dese sau ieșiri lungi. Apoi fixează bugetul total, inclusiv asigurare, acte, o revizie de început și o rezervă pentru consumabile.
+
+## Filtrează după ce contează
+
+În pagina de [mașini second-hand din Iași](/masini-second-hand/iasi) compară anul, kilometrajul, transmisia, combustibilul și prețul, dar nu trata aceste date ca pe un scor. Două mașini cu aceeași vârstă pot avea istorii, utilizări și costuri complet diferite. Prioritizează anunțurile cu fotografii clare, descriere coerentă și informații despre lucrări sau proveniență.
+
+Nu alege doar după dotări. O configurație atractivă nu compensează lipsa istoricului, un test drive slab sau o reparație greu de explicat. Pentru fiecare candidat, notează ce știi sigur și ce trebuie confirmat la telefon.
+
+## Telefonul înainte de deplasare
+
+O discuție de câteva minute poate elimina multe drumuri inutile. Întreabă direct: de când este proprietarul mașinii, ce lucrări a făcut recent, ce defecte cunoaște, dacă acceptă verificare independentă și când poate fi văzută mașina. Cere să nu fie pornită înainte de întâlnire, dacă vrei să observi comportamentul la rece.
+
+Nu trimite avans doar ca să „ții” un anunț dacă nu ai văzut actele și mașina. O rezervare are sens numai când suma, condițiile și situațiile în care se restituie sunt scrise clar.
+
+## Test drive cu obiectiv
+
+La vizionare, pornește cu exteriorul și documentele, apoi continuă cu interiorul și motorul. Test drive-ul trebuie să includă trafic normal, frânare progresivă, viraje și câteva accelerări moderate. Observă direcția, cutia, frânele și zgomotele, nu doar dacă mașina „trage bine”.
+
+La final, nu decide în grabă. Compară ce ai observat cu celelalte opțiuni și cu raportul de inspecție. Dacă exemplarul rămâne bun după această comparație, ai o bază reală pentru negociere și cumpărare.
+
+Pentru mai multe opțiuni locale, deschide [hub-ul AutoFans pentru Moldova](/masini-second-hand/moldova) și compară anunțurile pe județe.
+    `,
+    coverImage: "/blog/cum-cumperi-masina-second-hand-2026.webp",
+    author: { name: "AutoFans", role: "Echipa editorială AutoFans" },
+    category: "Ghid cumpărare",
+    tags: ["Iași", "Cumpăr mașină", "Mașini rulate", "Test drive", "Buget auto"],
+    readTime: 6,
+    publishedAt: "2026-07-17T08:10:00Z",
+    updatedAt: "2026-07-17T08:10:00Z",
+    faqs: [
+      { question: "Cum compar două mașini similare în Iași?", answer: "Pune lângă preț anul, kilometrajul, motorizarea, istoricul, lucrările recente, dotările relevante și costurile confirmate la inspecție." },
+      { question: "Este normal să cer test drive și verificare independentă?", answer: "Da. Sunt pași normali într-o cumpărare responsabilă, iar un vânzător serios îi poate discuta clar." },
+    ],
+  },
+  {
+    id: "local-3",
+    slug: "checklist-masina-second-hand-drumuri-moldova",
+    title: "Checklist pentru o mașină second-hand folosită pe drumurile din Moldova",
+    excerpt: "Ce verifici când mașina va face navetă, drumuri județene, trasee lungi și ierni cu temperaturi schimbătoare în Moldova.",
+    content: `
+O mașină second-hand bună pentru drumurile din Moldova nu este definită de un singur motor sau de o singură marcă. Contează mai mult cum a fost întreținută, ce tip de drum va face și cât de ușor poți susține costurile după cumpărare.
+
+## Potrivește mașina cu utilizarea reală
+
+Pentru drumuri lungi și navetă, urmărește confortul, stabilitatea, consumul realist și istoricul de service. Pentru utilizare preponderent urbană, contează manevrabilitatea, vizibilitatea, cutia și costurile de întreținere. Nu cumpăra un diesel sau un SUV doar pentru că sunt populare; alege configurația potrivită traseelor și bugetului tău.
+
+## Verifică consumabilele înainte de prețul final
+
+Anvelopele, frânele, suspensia, bateria și reviziile apropiate pot transforma rapid o ofertă aparent bună într-o cheltuială mare. Cere data și kilometrajul la care s-au făcut lucrările importante. La vizionare, urmărește uzura anvelopelor, comportamentul la frânare și eventuale zgomote pe denivelări.
+
+O inspecție într-un service poate confirma ce este urgent, ce poate aștepta și ce nu are sens financiar. Folosește concluziile pentru a decide dacă negociezi, dacă păstrezi bani pentru reparații sau dacă alegi alt exemplar.
+
+## Pregătește cumpărarea pentru toate anotimpurile
+
+Verifică climatizarea, încălzirea, dezaburirea, iluminarea și starea ștergătoarelor. Nu sunt detalii mici când folosești mașina zilnic. Dacă vânzătorul oferă două seturi de roți, întreabă dimensiunea, vechimea și uzura lor, nu doar dacă „sunt bune”.
+
+Înainte să semnezi, repetă lista simplă: actele corespund VIN-ului, plata este clară, ai văzut mașina în condiții normale și ai buget pentru primul service. Apoi compară opțiunile din [Moldova](/masini-second-hand/moldova) după date, nu după urgența de a cumpăra.
+    `,
+    coverImage: "/blog/cum-cumperi-masina-second-hand-2026.webp",
+    author: { name: "AutoFans", role: "Echipa editorială AutoFans" },
+    category: "Ghid cumpărare",
+    tags: ["Moldova", "Checklist auto", "Mașină second-hand", "Revizie auto", "Siguranță"],
+    readTime: 5,
+    publishedAt: "2026-07-17T08:20:00Z",
+    updatedAt: "2026-07-17T08:20:00Z",
+    faqs: [
+      { question: "Ce consumabile verific înainte să cumpăr o mașină rulată?", answer: "Anvelopele, frânele, suspensia, bateria, distribuția când este cazul și lucrările de service care se apropie." },
+      { question: "Cum aleg motorizarea potrivită pentru navetă?", answer: "Pornește de la numărul și tipul de kilometri, trasee, bugetul pentru întreținere și istoricul concret al exemplarului, nu de la o regulă generală." },
+    ],
+  },
+  {
+    id: "local-4",
+    slug: "cum-cumperi-masina-din-alt-judet-moldova",
+    title: "Cum cumperi o mașină din alt județ din Moldova fără drumuri inutile",
+    excerpt: "Planifică telefonul, verificarea, test drive-ul și plata când mașina este într-un alt oraș sau județ din Moldova.",
+    content: `
+Cumpărarea unei mașini din alt județ poate lărgi mult opțiunile, dar merită făcută cu un proces clar. Înainte de deplasare, scopul este să afli suficient cât să nu pleci doar pentru o galerie de poze frumoase.
+
+## Înainte de drum
+
+Păstrează conversația simplă și concretă. Cere videoclipuri recente cu exteriorul, interiorul și pornirea, întreabă despre defecte, lucrări, acte și disponibilitatea pentru o inspecție independentă. Compară VIN-ul cu informațiile comunicate și cere poze needitate ale zonelor care te interesează.
+
+Stabilește dinainte unde poate avea loc verificarea și ce se întâmplă dacă service-ul găsește probleme importante. Nu presupune că un drum lung te obligă să cumperi. Deplasarea este costul unei verificări, nu un avans emoțional pentru tranzacție.
+
+## La întâlnire
+
+Ia cu tine lista de întrebări și verifică aceleași lucruri pe care le-ai verifica lângă casă: actele, VIN-ul, exteriorul, interiorul, pornirea, test drive-ul și concluziile service-ului. Dacă informațiile anunțului nu se potrivesc cu realitatea, oprește procesul politicos.
+
+Nu trimite bani în baza unui mesaj, a unei capturi de ecran sau a promisiunii că alt cumpărător așteaptă. Plata, contractul, cheile și actele trebuie să fie parte din același moment clar. Păstrează copii ale documentelor și dovada plății.
+
+## Compară localitățile înainte să alegi
+
+Folosește paginile locale AutoFans pentru a compara rapid stocul din [Suceava](/masini-second-hand/suceava), [Iași](/masini-second-hand/iasi) și celelalte județe ale Moldovei. Dacă două exemplare sunt apropiate ca preț, alege-l pe cel cu istoric mai bun, informații mai clare și verificare mai ușor de organizat — nu neapărat pe cel mai apropiat sau cel mai spectaculos în poze.
+    `,
+    coverImage: "/blog/acte-cumparare-masina-2026.webp",
+    author: { name: "AutoFans", role: "Echipa editorială AutoFans" },
+    category: "Ghid cumpărare",
+    tags: ["Moldova", "Cumpărare mașină second-hand", "Vizionare auto", "Acte auto", "Negociere auto"],
+    readTime: 5,
+    publishedAt: "2026-07-17T08:30:00Z",
+    updatedAt: "2026-07-17T08:30:00Z",
+    faqs: [
+      { question: "Merită să merg în alt județ pentru o mașină?", answer: "Da, dacă ai filtrat anunțul înainte, ai informații verificabile și poți organiza test drive-ul și inspecția fără presiune." },
+      { question: "Când plătesc pentru mașină?", answer: "După ce ai verificat mașina, actele și condițiile convenite. Confirmă plata înainte de predarea cheilor și documentelor originale." },
+    ],
+  },
+  {
+    id: "local-5",
+    slug: "vand-masina-in-suceava-ghid-anunt-pret-acte",
+    title: "Vând mașina în Suceava: cum stabilești prețul, publici anunțul și alegi cumpărătorul",
+    excerpt: "Ghid local pentru vânzătorii din Suceava: preț realist, poze care explică mașina, anunț complet, vizionări sigure și predare fără surprize.",
+    content: `
+Dacă vrei să vinzi o mașină în Suceava, obiectivul nu este să strângi cele mai multe mesaje. Obiectivul este să ajungi repede la câțiva cumpărători care au văzut informațiile importante, înțeleg ce cumpară și pot organiza o vizionare serioasă. Asta începe cu un preț explicabil și un anunț care nu lasă întrebările esențiale pentru telefon.
+
+> **Pe scurt:** compară mașina cu exemplare echivalente, pregătește fotografii reale, spune clar ce lucrări și defecte cunoști, acceptă o verificare rezonabilă și confirmă plata înainte de predarea cheilor sau actelor.
+
+## Stabilește prețul după piața reală, nu după cât ai investit
+
+Înainte să publici, compară marca, modelul, motorizarea, cutia, anul, kilometrajul, dotările și starea cu alte mașini similare din [Suceava](/masini-second-hand/suceava) și din restul Moldovei. Nu compara doar cu primul anunț mai scump: verifică dacă acel exemplar are mai puțini kilometri declarați, mai mult istoric documentat, o configurație diferită sau pur și simplu nu se vinde.
+
+Lucrările recente pot susține încrederea, dar nu se adaugă automat leu cu leu la preț. O distribuție schimbată, anvelope bune, două chei sau facturi de service sunt argumente pentru un cumpărător serios atunci când le prezinți simplu și le poți dovedi. În schimb, un preț ridicat doar pentru că „ai băgat bani în ea” va aduce multe negocieri fără final.
+
+## Pregătește mașina pentru poze și pentru prima vizionare
+
+Spală mașina, aspiră interiorul și scoate obiectele personale înainte de poze. Alege lumină de zi și un loc fără fundal încărcat. Fă imagini cu exteriorul din toate unghiurile, interiorul față și spate, bordul pornit, portbagajul, jantele, anvelopele și dotările relevante. Pentru fiecare problemă vizibilă pe care o cunoști — zgârietură, uzură, element revopsit — pune o fotografie sau explică direct în descriere.
+
+Nu folosi filtre care schimbă culoarea și nu publica poze vechi, făcute înainte de o daună sau de o reparație. Un cumpărător poate accepta o imperfecțiune; va pleca însă dacă descoperă că a condus până în Suceava pentru o mașină diferită de cea din anunț.
+
+## Scrie un anunț care filtrează întrebările inutile
+
+Un titlu bun spune ce este mașina, nu doar că este „impecabilă”. Include modelul, motorizarea, transmisia, anul și un diferențiator real, de exemplu istoricul sau o dotare importantă. În descriere, răspunde la întrebările pe care un cumpărător le pune înainte de plecare:
+
+- kilometrajul declarat, combustibilul, cutia și anul;
+- proveniența și istoricul de service pe care îl poți arăta;
+- lucrările importante, cu dată sau kilometraj când le cunoști;
+- dotările care există efectiv pe mașină;
+- defectele, daunele sau consumabilele care urmează;
+- câte chei și ce documente vei preda;
+- localitatea, intervalul de vizionare și dacă accepți verificare într-un service.
+
+Evită formulele absolute dacă nu le poți susține: „fără accident”, „kilometri garantați”, „full options” sau „nu necesită niciun ban”. Claritatea vinde mai bine decât promisiunile mari. Publică apoi anunțul prin [Adaugă anunț pe AutoFans](/create-listing), unde poți pune toate datele, fotografiile și dotările într-o structură ușor de comparat.
+
+## Alege vizionări care îți protejează timpul
+
+Înainte să stabilești întâlnirea, confirmă că persoana a citit informațiile esențiale: prețul, motorizarea, kilometrajul, localitatea și defectele declarate. Alege un loc luminat și o oră la care mașina poate fi văzută fără grabă. La test drive, verifică permisul, stai în mașină și stabiliți traseul înainte de plecare.
+
+Un cumpărător care cere VIN-ul, facturile, un test drive și o verificare tehnică nu este automat un cumpărător dificil. Pentru o mașină rulată, acestea sunt întrebări normale. Stabiliți înainte unde poate avea loc inspecția și cine suportă costul ei; astfel nu pierdeți timp cu presupuneri la finalul vizionării.
+
+## Plata și predarea trebuie să fie același proces clar
+
+Compară VIN-ul din mașină cu actele înainte de semnare. Contractul, plata confirmată, cheile și documentele originale se predau în același flux. Pentru transfer, verifică în cont încasarea efectivă, nu doar un ordin de plată sau o captură de ecran. Păstrează copia contractului, dovada plății și o listă scurtă cu cheile, documentele și accesoriile predate.
+
+Vrei să vezi cum arată piața locală înainte să alegi prețul? Compară [mașinile second-hand din Suceava](/masini-second-hand/suceava), apoi publică un anunț complet, sincer și ușor de verificat.
+    `,
+    coverImage: "/blog/cum-vinzi-masina-rapid-sigur-2026.webp",
+    author: { name: "AutoFans", role: "Echipa editorială AutoFans" },
+    category: "Vânzare auto",
+    tags: ["Suceava", "Vând mașina", "Anunț auto", "Preț mașină second-hand"],
+    readTime: 8,
+    publishedAt: "2026-07-17T10:00:00Z",
+    updatedAt: "2026-07-17T10:00:00Z",
+    faqs: [
+      { question: "Cum aleg prețul pentru o mașină de vânzare în Suceava?", answer: "Compară exemplare cu aceeași versiune, an, rulaj, cutie și stare. Lucrările documentate pot susține prețul, dar nu înlocuiesc comparația cu piața reală." },
+      { question: "Ce fotografii trebuie să pun într-un anunț auto?", answer: "Exteriorul complet, interiorul, bordul, portbagajul, roțile, dotările importante și orice imperfecțiune cunoscută. Fotografiile reale reduc vizionările inutile." },
+    ],
+  },
+  {
+    id: "local-6",
+    slug: "masini-second-hand-suceava-cum-alegi-anunturi-bune",
+    title: "Mașini second-hand în Suceava: cum alegi anunțurile care merită văzute",
+    excerpt: "Cum filtrezi mașinile second-hand din Suceava după buget, istoric și stare, ce întrebi înainte de drum și cum compari corect două exemplare.",
+    content: `
+O căutare bună de mașini second-hand în Suceava nu începe cu întrebarea „care este cea mai ieftină?”. Începe cu întrebarea „ce mașină pot cumpăra, verifica și întreține fără să îmi consum tot bugetul?”. Prețul din anunț este doar primul număr; starea, istoricul, actele și costurile apropiate decid dacă oferta este bună.
+
+> **Pe scurt:** fixează bugetul total, caută după criterii clare, compară numai mașini cu date suficiente și mergi la vizionare doar după ce ai discutat VIN-ul, istoricul și verificarea într-un service.
+
+## Începe cu o listă scurtă de criterii
+
+Stabilește câți kilometri faci, unde conduci cel mai mult, câți pasageri ai de obicei și care sunt costurile pe care le poți susține după cumpărare. Include în buget o revizie de început, asigurare, acte, anvelope sau alte consumabile care pot fi aproape de termen. Astfel nu vei compara o mașină mai ieftină care necesită lucrări urgente cu una mai bine întreținută doar după prețul afișat.
+
+În [anunțurile din Suceava](/masini-second-hand/suceava), filtrează după buget, marcă, an, kilometraj, combustibil și transmisie. Apoi citește descrierea și uită-te la fotografii înainte să salvezi un exemplar. O ofertă merită o conversație când poți înțelege ce se vinde, nu doar când are o poză bună și o rată aparent mică.
+
+## Compară exemplarele pe aceeași fișă
+
+Pentru fiecare mașină salvată, notează prețul, anul, kilometrajul declarat, motorizarea, cutia, istoricul, lucrările recente, dotările relevante și ce trebuie confirmat. Această listă te ferește de comparații greșite: două modele identice ca nume pot avea întreținere, utilizare și costuri foarte diferite.
+
+Un exemplu simplu: o mașină cu anvelope bune, distribuție documentată și istoric coerent poate fi mai potrivită decât una cu preț mai mic, dar cu consumabile aproape terminate și răspunsuri vagi despre service. Nu presupune niciodată că o dotare bună compensează lipsa actelor sau refuzul unei verificări.
+
+## Ce întrebi înainte să pleci la vizionare
+
+O discuție de câteva minute poate elimina un drum inutil. Cere VIN-ul, întreabă de când este mașina la proprietar, ce lucrări s-au făcut recent, ce defecte sunt cunoscute și dacă se acceptă inspecție independentă. Întreabă și dacă mașina poate fi pornită la rece când ajungi. Răspunsurile clare nu înlocuiesc verificarea, dar arată dacă anunțul merită următorul pas.
+
+Nu trimite avans doar pentru că cineva spune că mai are cumpărători. O rezervare are sens numai după ce ai văzut mașina, condițiile sunt scrise clar și știi ce se întâmplă dacă verificarea tehnică descoperă probleme importante.
+
+## Vizionarea: verifică înainte să negociezi
+
+Vezi mașina pe lumină, compară VIN-ul cu actele, observă exteriorul și interiorul, apoi pornește motorul și fă un test drive calm. Urmărește direcția, frânele, cutia, vibrațiile și zgomotele. Nu încerca să pui singur un diagnostic în parcare; notează ce observi și du mașina într-un service ales de tine dacă rămâne candidată.
+
+Negocierea are sens numai după ce înțelegi starea mașinii. Dacă inspecția confirmă consumabile sau reparații apropiate, poți discuta prețul cu argumente. Dacă vânzătorul refuză VIN-ul, actele sau verificarea rezonabilă, cea mai bună negociere este să alegi următorul anunț.
+
+Vezi toate [mașinile second-hand din Suceava](/masini-second-hand/suceava), salvează ce merită comparat și tratează fiecare vizionare ca pe o verificare, nu ca pe o obligație de a cumpăra.
+    `,
+    coverImage: "/blog/cum-cumperi-masina-second-hand-2026.webp",
+    author: { name: "AutoFans", role: "Echipa editorială AutoFans" },
+    category: "Ghid cumpărare",
+    tags: ["Suceava", "Mașină second-hand", "Cumpăr mașină", "Verificare auto"],
+    readTime: 8,
+    publishedAt: "2026-07-17T10:10:00Z",
+    updatedAt: "2026-07-17T10:10:00Z",
+    faqs: [
+      { question: "Cum aleg un anunț auto bun în Suceava?", answer: "Caută date clare despre versiune, kilometraj, istoric, lucrări, stare și localitate. Înainte de drum, cere VIN-ul și confirmă că este acceptată o verificare independentă." },
+      { question: "Este suficient să compar prețurile?", answer: "Nu. Compară și starea, istoricul, lucrările apropiate, dotările și costurile de după achiziție. Prețul mic poate ascunde cheltuieli imediate." },
+    ],
+  },
+  {
+    id: "local-7",
+    slug: "vand-masina-in-iasi-ghid-anunt-pret-acte",
+    title: "Vând mașina în Iași: ghid pentru preț corect, anunț bun și vizionări serioase",
+    excerpt: "Cum vinzi o mașină în Iași fără să pierzi timp cu negocieri fără sens: poziționare de preț, fotografii, descriere, vizionare și predare.",
+    content: `
+Să vinzi o mașină în Iași nu înseamnă să publici câteva fotografii și să reduci prețul la fiecare mesaj. Un anunț bun trebuie să răspundă din prima la întrebările care contează: ce mașină este, cum a fost întreținută, ce trebuie verificat și în ce condiții poate fi văzută. Așa ajungi la cumpărători care vin pregătiți, nu doar curioși.
+
+> **Pe scurt:** verifică piața pentru aceeași versiune, explică starea reală, publică fotografii recente și predă mașina doar după ce plata, contractul, cheile și actele sunt clare.
+
+## Prețul care atrage conversații serioase
+
+Începe prin a compara mașini apropiate ca model, an, motorizare, transmisie, kilometraj și stare în [Iași](/masini-second-hand/iasi) și în zonele apropiate. Nu folosi drept reper un anunț cu un preț mare dacă nu știi de ce este mai scump. Poate avea o echipare diferită, un istoric documentat sau poate pur și simplu să nu fi primit încă un cumpărător.
+
+Păstrează o marjă de negociere realistă, dar nu umfla prețul doar pentru a-l reduce mai târziu. Facturile de service, două chei, anvelopele bune sau o revizie recentă ajută mai ales când sunt prezentate ca dovezi, nu ca promisiuni. Dacă ai defecte cunoscute sau consumabile care urmează, descrie-le. Un cumpărător poate negocia o problemă explicată; o problemă descoperită la vizionare rupe încrederea.
+
+## Fotografii și descriere: primul filtru al anunțului
+
+Fotografiază mașina ziua, curată și fără filtre. Include exteriorul complet, interiorul, bordul pornit, portbagajul, jantele, anvelopele și dotările care justifică alegerea. Dacă există o zgârietură sau uzură vizibilă, arată-o. Nu trebuie să vinzi perfecțiune; trebuie să prezinți corect exemplarul pe care oamenii îl vor vedea în realitate.
+
+Titlul trebuie să spună modelul, motorul, cutia, anul și un diferențiator real. În text, pune kilometrajul declarat, istoricul pe care îl poți susține, lucrările relevante, dotările, defectele, numărul de chei și intervalul de vizionare. Publică prin [AutoFans](/create-listing) ca anunțul să fie ușor de citit și comparat pe telefon.
+
+## Vizionarea și test drive-ul fără surprize
+
+Confirmă înainte că persoana știe prețul, localitatea și punctele importante din descriere. Alege o întâlnire pe lumină și un loc sigur. Pentru test drive, verifică permisul, stai în mașină și stabiliți traseul. Este normal ca un cumpărător serios să întrebe despre VIN, facturi, istoricul lucrărilor și verificarea într-un service independent.
+
+Nu accepți presiune, linkuri de plată neclare sau capturi de ecran drept dovadă de transfer. La final, compară VIN-ul de pe mașină cu documentele, semnați contractul cu datele corecte și confirmă încasarea înainte să predai cheile sau actele originale.
+
+Înainte să alegi prețul final, compară [anunțurile auto din Iași](/masini-second-hand/iasi). Apoi publică o ofertă completă: este cea mai simplă cale de a reduce drumurile și negocierile fără rezultat.
+    `,
+    coverImage: "/blog/cum-vinzi-masina-rapid-sigur-2026.webp",
+    author: { name: "AutoFans", role: "Echipa editorială AutoFans" },
+    category: "Vânzare auto",
+    tags: ["Iași", "Vând mașina", "Anunț auto", "Negociere auto"],
+    readTime: 7,
+    publishedAt: "2026-07-17T11:00:00Z",
+    updatedAt: "2026-07-17T11:00:00Z",
+    faqs: [
+      { question: "Cum stabilesc prețul unei mașini de vânzare în Iași?", answer: "Compară doar mașini cu aceeași versiune, anul, motorizarea, cutia, rulajul și starea. Documentele și lucrările reale susțin prețul mai bine decât o marjă mare de negociere." },
+      { question: "Ce trebuie să pun într-un anunț auto?", answer: "Datele tehnice, kilometrajul declarat, istoricul disponibil, lucrările, dotările, defectele cunoscute, fotografii recente și condițiile de vizionare." },
+    ],
+  },
+  {
+    id: "local-8",
+    slug: "masini-second-hand-iasi-cum-alegi-anunturi-bune",
+    title: "Mașini second-hand în Iași: cum alegi un anunț bun înainte de vizionare",
+    excerpt: "Ghid practic pentru cumpărătorii din Iași: filtre, întrebări la telefon, comparația exemplarelor, test drive și inspecție independentă.",
+    content: `
+Când cauți mașini second-hand în Iași, cele mai bune alegeri se fac înainte de prima vizionare. Un preț bun nu este suficient dacă nu poți explica istoricul, starea și costurile de după cumpărare. Cu o listă scurtă de criterii și câteva întrebări exacte, elimini repede anunțurile care nu merită un drum.
+
+> **Pe scurt:** alege după utilizarea ta și bugetul total, filtrează anunțurile cu informații suficiente, cere VIN-ul înainte de drum și nu înlocui inspecția tehnică cu o impresie bună din poze.
+
+## Caută după utilizare, nu după o singură dotare
+
+Stabilește întâi cât conduci, unde mergi cel mai des și cât poți păstra pentru primele cheltuieli. Adaugă în calcul revizia de început, asigurarea, actele și consumabilele care pot apărea imediat. Apoi deschide [mașinile second-hand din Iași](/masini-second-hand/iasi) și filtrează după buget, an, kilometraj, combustibil și transmisie.
+
+Nu compara două mașini numai după marcă sau anul fabricației. Uită-te la motorizare, cutie, întreținere, lucrări recente și ce poți documenta. Pentru fiecare anunț salvat, notează ce este confirmat și ce trebuie întrebat. O listă scurtă și clară este mai utilă decât zeci de taburi deschise.
+
+## Întrebările de pus înainte de drum
+
+Cere VIN-ul, întreabă de când este mașina la proprietar, care sunt ultimele lucrări și ce defecte sunt cunoscute. Confirmă dacă există facturi, câte chei vin cu mașina și dacă este acceptată o verificare într-un service ales de cumpărător. Cere ca motorul să fie rece la întâlnire atunci când vrei să observi pornirea și comportamentul inițial.
+
+Dacă răspunsurile sunt vagi, povestea se schimbă sau apare presiune pentru avans, nu compensa cu graba. O mașină potrivită suportă câteva întrebări și o inspecție. Drumul până la vizionare este o verificare, nu o obligație de a cumpăra.
+
+## La vizionare: comparație, test drive, inspecție
+
+Vezi exteriorul în lumină naturală, apoi interiorul, bordul, actele și VIN-ul. La test drive, urmărește frânele, direcția, cutia, vibrațiile și zgomotele. Dacă mașina rămâne pe listă, du-o într-un service independent. Inspectorul îți poate spune ce este urgent, ce poate aștepta și ce ar trebui să schimbe prețul.
+
+Negociază pe baza concluziilor clare, nu doar pe baza bugetului tău. Iar dacă datele din anunț nu se potrivesc cu mașina, alegi următorul exemplar. În piața de mașini rulate, răbdarea costă mai puțin decât o reparație mare după cumpărare.
+
+[Compară anunțurile din Iași](/masini-second-hand/iasi) și salvează doar exemplarele pentru care ai date suficiente înainte de vizionare.
+    `,
+    coverImage: "/blog/cum-cumperi-masina-second-hand-2026.webp",
+    author: { name: "AutoFans", role: "Echipa editorială AutoFans" },
+    category: "Ghid cumpărare",
+    tags: ["Iași", "Cumpăr mașină", "Mașini rulate", "Verificare auto"],
+    readTime: 7,
+    publishedAt: "2026-07-17T11:10:00Z",
+    updatedAt: "2026-07-17T11:10:00Z",
+    faqs: [
+      { question: "Ce verific înainte să merg să văd o mașină în Iași?", answer: "Cere VIN-ul, informații despre proprietate, istoricul lucrărilor, defectele cunoscute, documentele disponibile și acceptul pentru o inspecție independentă." },
+      { question: "De ce am nevoie de inspecție dacă mașina merge bine la test drive?", answer: "Test drive-ul arată comportamentul de bază. Un service poate verifica zone, erori și consumabile care nu se observă în parcare sau într-o plimbare scurtă." },
+    ],
   }
 ];
