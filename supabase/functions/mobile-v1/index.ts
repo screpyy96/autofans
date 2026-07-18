@@ -136,7 +136,14 @@ Deno.serve(async (request) => {
 
   try {
     switch (body.operation) {
-      case "account": { const { data, error } = await supabase.from("profiles").select("id,email,display_name,phone,avatar_url,role,is_verified").eq("id", user.id).single(); return fail(error) || respond({ profile: data }); }
+      case "account": {
+        const { data: profile, error } = await supabase.from("profiles").select("id,email,display_name,phone,avatar_url,role,is_verified").eq("id", user.id).single();
+        if (error) return fail(error)!;
+        const { data: pendingRequest, error: requestError } = profile?.role === "seller" && !profile.is_verified
+          ? await supabase.from("verification_requests").select("id").eq("user_id", user.id).eq("kind", "seller").eq("status", "pending").maybeSingle()
+          : { data: null, error: null };
+        return fail(requestError) || respond({ profile, sellerVerificationPending: Boolean(pendingRequest) });
+      }
       case "update_profile": {
         const update = { display_name: typeof payload.displayName === "string" ? payload.displayName.slice(0, 120) : null, phone: typeof payload.phone === "string" ? payload.phone.slice(0, 40) : null, avatar_url: typeof payload.avatarUrl === "string" ? payload.avatarUrl.slice(0, 2_000) : null };
         const { data, error } = await supabase.from("profiles").update(update).eq("id", user.id).select("id,email,display_name,phone,avatar_url,role,is_verified").single(); return fail(error) || respond({ profile: data });
@@ -191,7 +198,17 @@ Deno.serve(async (request) => {
         const [profileResult, listingsResult, metricsResult] = await Promise.all([supabase.from("profiles").select("role,is_verified").eq("id", user.id).single(), supabase.from("listings").select("id,title,status,price,currency,updated_at").eq("owner_id", user.id).order("updated_at", { ascending: false }).limit(20), supabase.rpc("get_seller_listing_metrics")]);
         return fail(profileResult.error || listingsResult.error || metricsResult.error) || respond({ profile: profileResult.data, listings: listingsResult.data || [], metrics: metricsResult.data || [] });
       }
-      case "request_seller_verification": { const { data: profile } = await supabase.from("profiles").select("role,is_verified").eq("id", user.id).single(); if (profile?.role !== "seller" || profile.is_verified) return respond({ error: "Solicitarea nu este disponibilă." }, 400); const { error } = await supabase.from("verification_requests").insert({ user_id: user.id, kind: "seller" }); return fail(error) || respond({ ok: true }); }
+      case "request_seller_verification": {
+        const { data: profile, error: profileError } = await supabase.from("profiles").select("role,is_verified").eq("id", user.id).single();
+        if (profileError) return fail(profileError)!;
+        if (profile?.role !== "seller" || profile.is_verified) return respond({ error: "Solicitarea nu este disponibilă." }, 400);
+        const { data: existing, error: existingError } = await supabase.from("verification_requests").select("id").eq("user_id", user.id).eq("kind", "seller").eq("status", "pending").maybeSingle();
+        if (existingError) return fail(existingError)!;
+        if (existing) return respond({ ok: true, pending: true, message: "Ai deja o solicitare de verificare în analiză." });
+        const { error } = await supabase.from("verification_requests").insert({ user_id: user.id, kind: "seller" });
+        if (error?.code === "23505") return respond({ ok: true, pending: true, message: "Ai deja o solicitare de verificare în analiză." });
+        return fail(error) || respond({ ok: true, pending: true, message: "Solicitarea de verificare a fost trimisă." });
+      }
       case "set_listing_status": {
         const id = Number(payload.id), status = payload.status; if (!Number.isInteger(id) || id <= 0 || (status !== "draft" && status !== "published")) return respond({ error: "Status sau anunț invalid." }, 400);
         if (status === "published") {

@@ -34,6 +34,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -85,6 +86,9 @@ fun AccountRoute(
     // be shown as a photo, never as a technical URL field.
     var avatarUrl by remember { mutableStateOf("") }
     var isAvatarUploading by remember { mutableStateOf(false) }
+    var sellerVerificationPending by remember { mutableStateOf(false) }
+    var verificationDialogVisible by remember { mutableStateOf(false) }
+    var isVerificationSubmitting by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var notice by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
@@ -124,7 +128,10 @@ fun AccountRoute(
 
     LaunchedEffect(Unit) {
         runCatching { mobileApi.call("account") }
-            .onSuccess { response -> updateProfile(response["profile"]?.jsonObject) }
+            .onSuccess { response ->
+                updateProfile(response["profile"]?.jsonObject)
+                sellerVerificationPending = response["sellerVerificationPending"]?.jsonPrimitive?.content == "true"
+            }
             .onFailure { error = it.message ?: "Nu am putut încărca profilul." }
     }
 
@@ -136,7 +143,8 @@ fun AccountRoute(
     when {
         profile == null && error == null -> LoadingAccount()
         profile == null -> AccountError(error.orEmpty())
-        else -> LazyColumn(
+        else -> {
+            LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -281,20 +289,18 @@ fun AccountRoute(
                             add(AccountAction("Adaugă anunț", "Publică o mașină nouă", Icons.Default.AddCircleOutline, onNewListing))
                             add(AccountAction("Anunțurile mele", "Gestionează anunțurile publicate", Icons.Default.Storefront, onSellerListings))
                             add(AccountAction("Dashboard seller", "Performanța anunțurilor tale", Icons.Default.Dashboard, onSellerDashboard))
-                            if (!isVerified) {
+                            if (!isVerified && !sellerVerificationPending) {
                                 add(
                                     AccountAction("Solicită verificare", "Crește încrederea cumpărătorilor", Icons.Default.Verified) {
-                                        scope.launch {
-                                            error = null
-                                            runCatching { mobileApi.call("request_seller_verification") }
-                                                .onSuccess { notice = "Solicitarea de verificare a fost trimisă." }
-                                                .onFailure { error = it.message ?: "Nu am putut trimite solicitarea." }
-                                        }
+                                        verificationDialogVisible = true
                                     },
                                 )
                             }
                         },
                     )
+                }
+                if (!isVerified && sellerVerificationPending) {
+                    item { PendingVerificationCard() }
                 }
             }
 
@@ -308,6 +314,42 @@ fun AccountRoute(
                     Spacer(Modifier.width(10.dp))
                     Text("Deconectare")
                 }
+            }
+            }
+            if (verificationDialogVisible) {
+                AlertDialog(
+                    onDismissRequest = { if (!isVerificationSubmitting) verificationDialogVisible = false },
+                    title = { Text("Solicită verificarea contului") },
+                    text = {
+                        Text("Vom analiza profilul tău de vânzător. Vei vedea aici când solicitarea este aprobată sau dacă avem nevoie de informații suplimentare.")
+                    },
+                    confirmButton = {
+                        Button(
+                            enabled = !isVerificationSubmitting,
+                            onClick = {
+                                isVerificationSubmitting = true
+                                error = null
+                                scope.launch {
+                                    runCatching { mobileApi.call("request_seller_verification") }
+                                        .onSuccess { response ->
+                                            sellerVerificationPending = true
+                                            verificationDialogVisible = false
+                                            notice = response["message"]?.jsonPrimitive?.content
+                                                ?: "Solicitarea de verificare a fost trimisă."
+                                        }
+                                        .onFailure { error = it.message ?: "Nu am putut trimite solicitarea." }
+                                    isVerificationSubmitting = false
+                                }
+                            },
+                        ) { Text(if (isVerificationSubmitting) "Se trimite…" else "Trimite solicitarea") }
+                    },
+                    dismissButton = {
+                        TextButton(
+                            enabled = !isVerificationSubmitting,
+                            onClick = { verificationDialogVisible = false },
+                        ) { Text("Mai târziu") }
+                    },
+                )
             }
         }
     }
@@ -510,6 +552,31 @@ private fun SellerStartCard(onStart: () -> Unit) {
                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = .75f),
             )
             Button(onClick = onStart, modifier = Modifier.fillMaxWidth()) { Text("Activează cont de vânzător") }
+        }
+    }
+}
+
+@Composable
+private fun PendingVerificationCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(Icons.Default.Verified, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
+            Spacer(Modifier.width(12.dp))
+            Column {
+                Text("Verificare în analiză", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                Text(
+                    "Ai trimis deja solicitarea. Te anunțăm aici când este finalizată.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = .75f),
+                )
+            }
         }
     }
 }
