@@ -23,6 +23,7 @@ export default [
   lazyRoute("/dealeri", "routes/dealeri.tsx"),
   lazyRoute("/notifications", "routes/notifications.tsx"),
   lazyRoute("/messages", "routes/messages.tsx"),
+  lazyRoute("/messages/:conversationId", "routes/messages.$conversationId.tsx"),
   lazyRoute("/contact", "routes/contact.tsx"),
   lazyRoute("/help", "routes/help.tsx"),
   lazyRoute("/favorites", "routes/favorites.tsx"),

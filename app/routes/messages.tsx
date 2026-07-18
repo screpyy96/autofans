@@ -35,7 +35,7 @@ export function meta() {
   ];
 }
 
-export async function loader({ request }: LoaderFunctionArgs) {
+export async function loader({ request, params }: LoaderFunctionArgs) {
   const { supabase, headers } = getSupabaseServerClient(request);
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return redirect(`/login?next=${encodeURIComponent(new URL(request.url).pathname + new URL(request.url).search)}`, { headers });
@@ -61,8 +61,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
   });
   enriched.sort((a: any, b: any) => String(b.lastMessage?.created_at || b.created_at).localeCompare(String(a.lastMessage?.created_at || a.created_at)));
 
-  const requestedId = new URL(request.url).searchParams.get('conversation');
-  const activeConversation = enriched.find((conversation: any) => requestedId !== null && String(conversation.id) === requestedId) || enriched[0] || null;
+  // Keep old notification links working, while new threads use their own
+  // durable route: /messages/:conversationId.
+  const requestedId = params.conversationId || new URL(request.url).searchParams.get('conversation');
+  const activeConversation = requestedId
+    ? enriched.find((conversation: any) => String(conversation.id) === requestedId) || null
+    : null;
   const { data: messages } = activeConversation
     ? await supabase.from('messages').select('id, conversation_id, sender_id, body, created_at').eq('conversation_id', activeConversation.id).order('created_at', { ascending: true }).limit(200)
     : { data: [] };
@@ -261,7 +265,7 @@ export default function Messages() {
       <div className="grid min-h-[620px] overflow-hidden rounded-3xl border border-white/10 bg-secondary-900/80 shadow-2xl lg:grid-cols-[340px_1fr]">
         <aside className="border-b border-white/10 lg:border-b-0 lg:border-r">
           {conversations.length ? conversations.map((conversation: any) => (
-            <Link key={conversation.id} to={`/messages?conversation=${conversation.id}`} className={`block border-b border-white/5 p-4 transition hover:bg-white/5 ${activeId === conversation.id ? 'bg-accent-gold/10' : ''}`}>
+            <Link key={conversation.id} to={`/messages/${conversation.id}`} className={`block border-b border-white/5 p-4 transition hover:bg-white/5 ${activeId === conversation.id ? 'bg-accent-gold/10' : ''}`}>
               <p className="truncate font-semibold text-white">{conversation.counterpart?.display_name || conversation.counterpart?.email?.split('@')[0] || 'Utilizator AutoFans'}</p>
               <p className="mt-1 truncate text-xs text-accent-gold">{conversation.listings?.title || 'Anunț auto'}</p>
               <p className="mt-2 truncate text-sm text-gray-400">{conversation.lastMessage?.body || 'Conversație nouă'}</p>

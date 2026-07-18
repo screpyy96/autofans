@@ -556,7 +556,7 @@ export default function CarDetail({ params }: Route.ComponentProps) {
               // Full-document navigation can be intercepted by a stale PWA
               // shell and drop the query string. Keep the id in React Router.
               void recordContact(message.mode === 'viewing' ? 'viewing' : 'message');
-              navigate(`/messages?conversation=${encodeURIComponent(String(result.conversationId))}`);
+              navigate(`/messages/${encodeURIComponent(String(result.conversationId))}`);
             }}
             onWhatsAppContact={(message) => { void recordContact(message.mode === 'viewing' ? 'viewing' : 'whatsapp'); }}
           />
