@@ -3,7 +3,6 @@ import Foundation
 struct APIConfiguration {
     let supabaseURL: URL
     let anonKey: String
-    let appURL: URL
 
     static func load(bundle: Bundle = .main) throws -> APIConfiguration {
         func value(_ key: String) throws -> String {
@@ -14,12 +13,10 @@ struct APIConfiguration {
             return value
         }
         let url = try value("SUPABASE_URL")
-        let appURL = try value("APP_URL")
-        guard let supabaseURL = URL(string: url), supabaseURL.scheme == "https",
-              let websiteURL = URL(string: appURL) else {
+        guard let supabaseURL = URL(string: url), supabaseURL.scheme == "https" else {
             throw APIError.configuration("Configurația URL este invalidă.")
         }
-        return APIConfiguration(supabaseURL: supabaseURL, anonKey: try value("SUPABASE_ANON_KEY"), appURL: websiteURL)
+        return APIConfiguration(supabaseURL: supabaseURL, anonKey: try value("SUPABASE_ANON_KEY"))
     }
 }
 

@@ -1,6 +1,6 @@
 # AutoFans Android
 
-Client Android nativ AutoFans pentru cumpărători și vânzători. Catalogul public citește Supabase cu RLS, iar acțiunile autentificate trec prin `/api/mobile/v1` cu JWT-ul utilizatorului. Cheia service-role nu ajunge niciodată în APK.
+Client Android nativ AutoFans pentru cumpărători și vânzători. Catalogul public citește Supabase cu RLS, iar acțiunile autentificate trec direct prin Supabase Edge Function `mobile-v1`, cu JWT-ul utilizatorului. Cheia service-role nu ajunge niciodată în APK.
 
 Include autentificare Supabase cu email/parolă, creare cont, confirmare email, resetare parolă și sesiune criptată în Android Keystore. Include profil, favorite, căutări salvate și alerte, comparație, conversații, raportări și recenzii. Pentru vânzători include promovarea contului, cererea de verificare, dashboard și gestionarea manuală a anunțurilor/imaginilor.
 
@@ -21,14 +21,13 @@ cp local.properties.example local.properties
 ```properties
 SUPABASE_URL=https://projectul-vostru.supabase.co
 SUPABASE_ANON_KEY=cheia_anon_sau_publishable
-APP_URL=https://www.autofans.ro
 # Opțional: Web OAuth client ID din același proiect Google Cloud ca providerul Supabase.
 GOOGLE_WEB_CLIENT_ID=1234567890-example.apps.googleusercontent.com
 ```
 
 Aceste valori pot fi injectate și în CI prin `-PSUPABASE_URL=... -PSUPABASE_ANON_KEY=...` sau variabilele de mediu cu aceleași nume. `local.properties` este ignorat de Git.
 
-Dacă proiectul web are deja `.env.local` cu `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` și `APP_URL`, Gradle le reutilizează automat. Nu copiați cheia în alt fișier doar pentru Android.
+Dacă proiectul web are deja `.env.local` cu `VITE_SUPABASE_URL` și `VITE_SUPABASE_ANON_KEY`, Gradle le reutilizează automat. Operațiile mobile merg direct la Supabase Edge Functions; nu este necesar URL-ul site-ului. Nu copiați cheia în alt fișier doar pentru Android.
 
 ## Google Sign-In și linkuri email
 

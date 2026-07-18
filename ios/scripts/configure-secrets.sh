@@ -23,23 +23,18 @@ escape_xcconfig() {
 
 SUPABASE_URL=$(read_env VITE_SUPABASE_URL)
 SUPABASE_ANON_KEY=$(read_env VITE_SUPABASE_ANON_KEY)
-APP_URL=$(read_env APP_URL)
 
 if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
   echo "Missing required Supabase values in $ENV_FILE." >&2
   exit 1
 fi
 
-if [ -z "$APP_URL" ]; then
-  APP_URL="https://www.autofans.ro"
-fi
 
 umask 077
 {
   printf '%s\n' '// Generated locally by ios/scripts/configure-secrets.sh. Do not commit.'
   printf 'SUPABASE_URL = %s\n' "$(escape_xcconfig "$SUPABASE_URL")"
   printf 'SUPABASE_ANON_KEY = %s\n' "$SUPABASE_ANON_KEY"
-  printf 'APP_URL = %s\n' "$(escape_xcconfig "$APP_URL")"
 } > "$OUTPUT_FILE"
 
 echo "Configured $OUTPUT_FILE"

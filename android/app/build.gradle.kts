@@ -53,7 +53,6 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "SUPABASE_URL", "\"${configValue("SUPABASE_URL", "VITE_SUPABASE_URL", "REMIX_PUBLIC_SUPABASE_URL").forBuildConfig()}\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"${configValue("SUPABASE_ANON_KEY", "VITE_SUPABASE_ANON_KEY", "REMIX_PUBLIC_SUPABASE_ANON_KEY").forBuildConfig()}\"")
-        buildConfigField("String", "APP_URL", "\"${configValue("APP_URL").ifBlank { "https://www.autofans.ro" }.forBuildConfig()}\"")
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${googleWebClientId.forBuildConfig()}\"")
     }
 

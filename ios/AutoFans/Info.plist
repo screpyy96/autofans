@@ -10,7 +10,6 @@
   <key>LSApplicationQueriesSchemes</key><array><string>https</string></array>
   <key>SUPABASE_URL</key><string>$(SUPABASE_URL)</string>
   <key>SUPABASE_ANON_KEY</key><string>$(SUPABASE_ANON_KEY)</string>
-  <key>APP_URL</key><string>$(APP_URL)</string>
   <key>UILaunchScreen</key><dict/>
   <key>UISupportedInterfaceOrientations</key><array><string>UIInterfaceOrientationPortrait</string><string>UIInterfaceOrientationLandscapeLeft</string><string>UIInterfaceOrientationLandscapeRight</string></array>
   <key>UISupportedInterfaceOrientations~ipad</key><array><string>UIInterfaceOrientationPortrait</string><string>UIInterfaceOrientationPortraitUpsideDown</string><string>UIInterfaceOrientationLandscapeLeft</string><string>UIInterfaceOrientationLandscapeRight</string></array>

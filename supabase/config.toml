@@ -1,0 +1,4 @@
+project_id = "ujulaxusutjlkdrbxsbg"
+
+[functions.mobile-v1]
+verify_jwt = true

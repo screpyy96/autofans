@@ -9,7 +9,7 @@ actor MobileAPI {
 
     func call(_ operation: String, payload: [String: JSONValue] = [:]) async throws -> [String: JSONValue] {
         let session = try await auth.activeSession()
-        var request = URLRequest(url: config.appURL.appendingPath("api/mobile/v1")); request.httpMethod = "POST"; request.setValue("Bearer \(session.accessToken)", forHTTPHeaderField: "Authorization"); request.setValue("application/json", forHTTPHeaderField: "Content-Type"); request.httpBody = try encoder.encode(["operation": JSONValue.string(operation), "payload": JSONValue.object(payload)])
+        var request = URLRequest(url: config.supabaseURL.appendingPath("functions/v1/mobile-v1")); request.httpMethod = "POST"; request.setValue(config.anonKey, forHTTPHeaderField: "apikey"); request.setValue("Bearer \(session.accessToken)", forHTTPHeaderField: "Authorization"); request.setValue("application/json", forHTTPHeaderField: "Content-Type"); request.httpBody = try encoder.encode(["operation": JSONValue.string(operation), "payload": JSONValue.object(payload)])
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw APIError.invalidResponse }
         guard 200..<300 ~= http.statusCode else { throw APIError.server(status: http.statusCode, message: SupabaseRepository.message(data) ?? "Cererea a eșuat.") }

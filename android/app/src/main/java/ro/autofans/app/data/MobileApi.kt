@@ -20,7 +20,6 @@ import java.util.UUID
  * travel through the server façade so Android and a later Swift client share
  * input validation and error shapes. */
 class MobileApi(
-    private val appUrl: String,
     private val config: SupabaseConfig,
     private val auth: SupabaseAuthRepository,
     private val client: OkHttpClient = OkHttpClient(),
@@ -29,7 +28,8 @@ class MobileApi(
     suspend fun call(operation: String, payload: JsonObject = buildJsonObject {}): JsonObject = withContext(Dispatchers.IO) {
         val session = auth.activeSession()
         val body = buildJsonObject { put("operation", operation); put("payload", payload) }.toString()
-        val request = Request.Builder().url("${appUrl.trimEnd('/')}/api/mobile/v1")
+        val request = Request.Builder().url("${config.url.trimEnd('/')}/functions/v1/mobile-v1")
+            .header("apikey", config.anonKey)
             .header("Authorization", "Bearer ${session.access_token}")
             .post(body.toRequestBody(JSON)).build()
         client.newCall(request).execute().use { response ->

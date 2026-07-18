@@ -27,7 +27,7 @@ class MainActivity : ComponentActivity() {
             SupabaseConfig(BuildConfig.SUPABASE_URL, BuildConfig.SUPABASE_ANON_KEY),
             SecureSessionStore(applicationContext),
         )
-        val mobileApi = MobileApi(BuildConfig.APP_URL, SupabaseConfig(BuildConfig.SUPABASE_URL, BuildConfig.SUPABASE_ANON_KEY), authRepository)
+        val mobileApi = MobileApi(SupabaseConfig(BuildConfig.SUPABASE_URL, BuildConfig.SUPABASE_ANON_KEY), authRepository)
         setContent {
             AutoFansTheme { AutoFansApp(repository, authRepository, mobileApi) }
         }
