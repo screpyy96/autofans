@@ -9,8 +9,10 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -20,6 +22,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -115,6 +118,7 @@ fun AutoFansNavigation(repository: ListingRepository, authRepository: SupabaseAu
                     PremiumAppHeader(
                         title = headerTitle,
                         isAuthenticated = session != null,
+                        accountEmail = session?.user?.email,
                         onAccount = { navigateToMain(ACCOUNT_ROUTE) },
                         onNotifications = { navigateToProtected("collection/notifications") },
                     )
@@ -187,7 +191,10 @@ private fun AutoFansBottomNavigation(
     currentCollectionKind: String?,
     onDestinationSelected: (String) -> Unit,
 ) {
-    NavigationBar {
+    NavigationBar(
+        containerColor = MaterialTheme.colorScheme.surface,
+        tonalElevation = 0.dp,
+    ) {
         mainDestinations.forEach { destination ->
             val selected = when (destination.route) {
                 "collection/favorites" -> currentRoute == COLLECTION_ROUTE && currentCollectionKind == "favorites"
@@ -198,6 +205,14 @@ private fun AutoFansBottomNavigation(
                 onClick = { onDestinationSelected(destination.route) },
                 icon = destination.icon,
                 label = { androidx.compose.material3.Text(destination.label) },
+                alwaysShowLabel = true,
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    indicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                ),
             )
         }
     }
