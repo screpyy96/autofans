@@ -38,7 +38,10 @@ export function useSyncFavorites(userId: string | null | undefined) {
           if (addedRows.length) {
             const { error } = await supabase
               .from('favorites')
-              .upsert(addedRows, { onConflict: 'user_id,listing_id' });
+              // A favorite already saved from another tab is a successful
+              // outcome. Avoid a no-op UPDATE here: on mobile browsers it can
+              // otherwise turn into a 409 while the local state is correct.
+              .upsert(addedRows, { onConflict: 'user_id,listing_id', ignoreDuplicates: true });
             if (error) throw error;
           }
 

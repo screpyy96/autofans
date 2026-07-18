@@ -282,14 +282,20 @@ export default function CarDetail({ params }: Route.ComponentProps) {
     if (sessionStorage.getItem(viewedKey)) return;
     sessionStorage.setItem(viewedKey, '1');
 
-    void import('~/lib/supabase.client').then(({ getSupabaseBrowserClient }) => {
+    void import('~/lib/supabase.client').then(async ({ getSupabaseBrowserClient }) => {
       const supabase = getSupabaseBrowserClient();
-      return supabase.from('listing_views').upsert({
+      // The browser records this only once per tab/session. Using INSERT keeps
+      // this write compatible with the intentionally restrictive RLS policy:
+      // Postgres upserts also require read/update access to activity rows.
+      const { error } = await supabase.from('listing_views').insert({
         listing_id: Number(listingId),
         visitor_id: data.userId || null,
         session_id: getVisitorSessionId(),
         viewed_on: currentActivityDay(),
-      }, { onConflict: 'listing_id,session_id,viewed_on', ignoreDuplicates: true });
+      });
+      // A second tab can race with this tab. That is an expected duplicate,
+      // not an error a visitor or developer needs to act on.
+      if (error && error.code !== '23505') throw error;
     }).catch((error) => console.warn('Unable to record listing view:', error));
   }, [listingId, data.userId, data.listing?.owner_id]);
 
@@ -331,14 +337,16 @@ export default function CarDetail({ params }: Route.ComponentProps) {
     if (contactRecorded.current || !listingId) return;
     try {
       const { getSupabaseBrowserClient } = await import('~/lib/supabase.client');
-      const { error } = await getSupabaseBrowserClient().from('listing_contacts').upsert({
+      const { error } = await getSupabaseBrowserClient().from('listing_contacts').insert({
         listing_id: Number(listingId),
         visitor_id: data.userId || null,
         session_id: getVisitorSessionId(),
         contact_type: contactType,
         contacted_on: currentActivityDay(),
-      }, { onConflict: 'listing_id,session_id,contacted_on', ignoreDuplicates: true });
-      if (error) throw error;
+      });
+      // A duplicate contact event from another tab is deliberately ignored;
+      // one interest signal per listing, session and day is enough.
+      if (error && error.code !== '23505') throw error;
       contactRecorded.current = true;
     } catch (error) {
       console.warn('Unable to record listing contact:', error);
@@ -530,9 +538,25 @@ export default function CarDetail({ params }: Route.ComponentProps) {
             seller={car.seller}
             initialMode={contactMode}
             onSendMessage={async (message) => {
-              const response = await fetch('/messages', { method: 'POST', body: new URLSearchParams({ intent: 'start', listingId: car.id, body: message.message }) });
-              const result = await response.json().catch(() => ({}));
-              if (!response.ok || !result.conversationId) throw new Error(result.error || 'Mesajul nu a putut fi trimis.');
+              const response = await fetch('/messages', {
+                method: 'POST',
+                headers: { Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                // Do not follow a server-side redirect to /login. Following
+                // it turns the HTML login page into the misleading generic
+                // "Mesajul nu a putut fi trimis" error on mobile browsers.
+                redirect: 'manual',
+                body: new URLSearchParams({ intent: 'start', listingId: car.id, body: message.message }),
+              });
+              const result = await response.json().catch(() => null) as { error?: string; conversationId?: number } | null;
+              if (!response.ok || !result?.conversationId) {
+                const redirectedToLogin = response.type === 'opaqueredirect' || response.status >= 300 && response.status < 400;
+                const fallback = redirectedToLogin || response.status === 401
+                  ? 'Sesiunea a expirat. Autentifică-te din nou și retrimite mesajul.'
+                  : response.status === 404
+                    ? 'Anunțul sau serviciul de mesagerie nu este disponibil momentan. Reîncarcă pagina și încearcă din nou.'
+                    : 'Mesajul nu a putut fi trimis. Încearcă din nou.';
+                throw new Error(result?.error || fallback);
+              }
               await recordContact(message.mode === 'viewing' ? 'viewing' : 'message');
               window.location.href = `/messages?conversation=${result.conversationId}`;
             }}
