@@ -3,6 +3,7 @@ const TRANSMISSIONS = new Set(['manual', 'automatic', 'semi_automatic', 'cvt']);
 const CURRENCIES = new Set(['EUR', 'RON']);
 
 type ListingImage = { path: string; isMain: boolean };
+type ImageValidation = { data: ListingImage[] } | { error: string };
 
 export type ListingPublicationInput = Record<string, unknown>;
 
@@ -22,6 +23,22 @@ export type ValidatedListingPublication = {
   images: ListingImage[];
 };
 
+export type ValidatedListingDraft = {
+  title: string;
+  description: string;
+  price: number;
+  currency: string;
+  make: string;
+  model: string;
+  year: number | null;
+  mileage: number | null;
+  fuelType: string | null;
+  transmission: string | null;
+  city: string | null;
+  county: string | null;
+  images: ListingImage[];
+};
+
 function cleanText(value: unknown, maxLength: number) {
   return typeof value === 'string' ? value.trim().replace(/\s+/g, ' ').slice(0, maxLength) : '';
 }
@@ -29,6 +46,61 @@ function cleanText(value: unknown, maxLength: number) {
 function finiteNumber(value: unknown) {
   const number = typeof value === 'number' ? value : Number(value);
   return Number.isFinite(number) ? number : null;
+}
+
+function validateOwnedImages(input: ListingPublicationInput, ownerId: string, required: boolean): ImageValidation {
+  const rawImages = Array.isArray(input.images) ? input.images : [];
+  if (required && rawImages.length === 0) return { error: 'Adaugă cel puțin o imagine a mașinii.' };
+  if (rawImages.length > 15) return { error: 'Poți publica cel mult 15 imagini.' };
+  const seenPaths = new Set<string>();
+  const images: ListingImage[] = [];
+  for (const rawImage of rawImages) {
+    const path = cleanText((rawImage as { path?: unknown })?.path, 300);
+    if (!path || !path.startsWith(`${ownerId}/`) || seenPaths.has(path)) {
+      return { error: 'Una sau mai multe imagini nu îți aparțin sau nu sunt valide.' };
+    }
+    seenPaths.add(path);
+    images.push({ path, isMain: false });
+  }
+  if (images.length) images[0].isMain = true;
+  return { data: images };
+}
+
+/**
+ * Drafts retain the database invariants while intentionally allowing fields
+ * that are only mandatory at publication time. They must still own every
+ * uploaded image, so a client cannot attach another seller's media.
+ */
+export function validateListingDraft(
+  input: ListingPublicationInput,
+  ownerId: string,
+): { data: ValidatedListingDraft } | { error: string } {
+  const images = validateOwnedImages(input, ownerId, false);
+  if ('error' in images) return images;
+  const year = finiteNumber(input.year);
+  const mileage = finiteNumber(input.mileage);
+  const price = finiteNumber(input.price);
+  const currentYear = new Date().getFullYear();
+  const fuelType = cleanText(input.fuel_type, 30);
+  const transmission = cleanText(input.transmission, 30);
+  const currency = cleanText(input.currency || 'EUR', 3).toUpperCase();
+  return {
+    data: {
+      title: cleanText(input.title, 150) || 'Anunț în lucru',
+      description: typeof input.description === 'string' ? input.description.trim().slice(0, 5_000) : '',
+      price: price !== null && price >= 0 ? price : 0,
+      currency: CURRENCIES.has(currency) ? currency : 'EUR',
+      make: cleanText(input.make, 60) || 'Necunoscută',
+      model: cleanText(input.model, 80) || 'Nespecificat',
+      year: year !== null && Number.isInteger(year) && year >= 1950 && year <= currentYear + 1 ? year : null,
+      mileage: mileage !== null && Number.isInteger(mileage) && mileage >= 0 ? mileage : null,
+      fuelType: FUEL_TYPES.has(fuelType) ? fuelType : null,
+      transmission: TRANSMISSIONS.has(transmission) ? transmission : null,
+      city: cleanText(input.city, 100) || null,
+      county: cleanText(input.county, 100) || null,
+      images: images.data,
+    },
+  };
 }
 
 /**
@@ -70,23 +142,10 @@ export function validateListingForPublication(
   if (!CURRENCIES.has(currency)) return { error: 'Moneda selectată nu este disponibilă.' };
   if (city.length < 2 || county.length < 2) return { error: 'Orașul și județul sunt obligatorii.' };
 
-  const rawImages = Array.isArray(input.images) ? input.images : [];
-  if (rawImages.length === 0) return { error: 'Adaugă cel puțin o imagine a mașinii.' };
-  if (rawImages.length > 15) return { error: 'Poți publica cel mult 15 imagini.' };
-
-  const seenPaths = new Set<string>();
-  const images: ListingImage[] = [];
-  for (const rawImage of rawImages) {
-    const path = cleanText((rawImage as { path?: unknown })?.path, 300);
-    if (!path || !path.startsWith(`${ownerId}/`) || seenPaths.has(path)) {
-      return { error: 'Una sau mai multe imagini nu îți aparțin sau nu sunt valide.' };
-    }
-    seenPaths.add(path);
-    images.push({ path, isMain: false });
-  }
-  images[0].isMain = true;
+  const imageValidation = validateOwnedImages(input, ownerId, true);
+  if ('error' in imageValidation) return imageValidation;
 
   return {
-    data: { title, description, price, currency, make, model, year, mileage, fuelType, transmission, city, county, images },
+    data: { title, description, price, currency, make, model, year, mileage, fuelType, transmission, city, county, images: imageValidation.data },
   };
 }

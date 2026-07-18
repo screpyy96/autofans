@@ -35,6 +35,7 @@ export default [
   route("/api/indexnow/submit", "routes/api.indexnow.submit.ts"),
   route("/api/home", "routes/api.home.tsx"),
   route("/api/search", "routes/api.search.ts"),
+  route("/api/mobile/v1", "routes/api.mobile.v1.ts"),
   route("/og/car/:slug", "routes/og.car.$slug.ts"),
   lazyRoute("/compare", "routes/compare.tsx"),
   lazyRoute("/dashboard", "routes/dashboard.tsx"),

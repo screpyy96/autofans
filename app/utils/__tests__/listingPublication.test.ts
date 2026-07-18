@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { validateListingForPublication } from '../listingPublication';
+import { validateListingDraft, validateListingForPublication } from '../listingPublication';
 
 const ownerId = '11111111-1111-1111-1111-111111111111';
 const validListing = {
@@ -42,5 +42,15 @@ describe('validateListingForPublication', () => {
     }, ownerId);
 
     expect(result).toEqual({ error: 'Una sau mai multe imagini nu îți aparțin sau nu sunt valide.' });
+  });
+
+  it('allows an incomplete draft but keeps its fields safe for the database', () => {
+    const result = validateListingDraft({ title: '  Mașina mea  ', price: 'nu este un număr' }, ownerId);
+
+    expect('data' in result).toBe(true);
+    if ('data' in result) {
+      expect(result.data).toMatchObject({ title: 'Mașina mea', price: 0, make: 'Necunoscută', model: 'Nespecificat', images: [] });
+      expect(result.data.year).toBeNull();
+    }
   });
 });
