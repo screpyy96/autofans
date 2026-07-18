@@ -538,19 +538,14 @@ export default function CarDetail({ params }: Route.ComponentProps) {
             seller={car.seller}
             initialMode={contactMode}
             onSendMessage={async (message) => {
-              const response = await fetch('/messages', {
+              const response = await fetch('/api/messages/start', {
                 method: 'POST',
                 headers: { Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-                // Do not follow a server-side redirect to /login. Following
-                // it turns the HTML login page into the misleading generic
-                // "Mesajul nu a putut fi trimis" error on mobile browsers.
-                redirect: 'manual',
                 body: new URLSearchParams({ intent: 'start', listingId: car.id, body: message.message }),
               });
               const result = await response.json().catch(() => null) as { error?: string; conversationId?: number } | null;
               if (!response.ok || !result?.conversationId) {
-                const redirectedToLogin = response.type === 'opaqueredirect' || response.status >= 300 && response.status < 400;
-                const fallback = redirectedToLogin || response.status === 401
+                const fallback = response.status === 401
                   ? 'Sesiunea a expirat. Autentifică-te din nou și retrimite mesajul.'
                   : response.status === 404
                     ? 'Anunțul sau serviciul de mesagerie nu este disponibil momentan. Reîncarcă pagina și încearcă din nou.'
