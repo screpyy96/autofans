@@ -17,12 +17,16 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination
 import androidx.navigation.NavType
@@ -36,6 +40,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ro.autofans.app.data.ListingRepository
 import ro.autofans.app.data.SupabaseAuthRepository
 import ro.autofans.app.data.MobileApi
+import kotlinx.coroutines.launch
 
 private const val CATALOG_ROUTE = "catalog"
 private const val DETAIL_ROUTE = "listing/{slug}"
@@ -76,14 +81,35 @@ private val sellerMainDestinations = listOf(
 @Composable
 fun AutoFansNavigation(repository: ListingRepository, authRepository: SupabaseAuthRepository, mobileApi: MobileApi) {
     val navController = rememberNavController()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val session by authRepository.sessionState.collectAsStateWithLifecycle()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
+    val latestRoute by rememberUpdatedState(currentRoute)
     val currentCollectionKind = backStackEntry?.arguments?.getString("kind")
     var pendingProtectedRoute by remember { mutableStateOf<String?>(null) }
     var sellerAccount by remember { mutableStateOf(false) }
     val passwordRecovery = authRepository.passwordRecovery.collectAsStateWithLifecycle().value
     val mainDestinations = if (sellerAccount) sellerMainDestinations else buyerMainDestinations
+    DisposableEffect(session?.user?.id) {
+        var subscription: java.io.Closeable? = null
+        val job = session?.let { activeSession ->
+            scope.launch {
+                subscription = runCatching {
+                    mobileApi.subscribeToMessages(
+                        onEvent = { event ->
+                            if (event.senderId != null && event.senderId != activeSession.user.id && latestRoute != MESSAGES_ROUTE &&
+                                (android.os.Build.VERSION.SDK_INT < 33 || androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED)
+                            ) MessageNotification.show(context, "Mesaj nou", "Ai primit un mesaj nou în AutoFans.", event.conversationId.toInt())
+                        },
+                        onError = { },
+                    )
+                }.getOrNull()
+            }
+        }
+        onDispose { job?.cancel(); subscription?.close() }
+    }
     LaunchedEffect(session?.user?.id) {
         sellerAccount = session?.let {
             runCatching { mobileApi.call("account") }
