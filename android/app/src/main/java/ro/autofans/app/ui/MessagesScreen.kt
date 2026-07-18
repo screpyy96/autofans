@@ -75,7 +75,13 @@ import androidx.core.content.ContextCompat
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-fun MessagesRoute(api: MobileApi, onBack: () -> Unit, embedded: Boolean = false) {
+fun MessagesRoute(
+    api: MobileApi,
+    onBack: () -> Unit,
+    embedded: Boolean = false,
+    requestedConversationId: Long? = null,
+    onRequestedConversationOpened: (Long) -> Unit = {},
+) {
     var conversations by remember { mutableStateOf(emptyList<JsonObject>()) }
     var activeConversation by remember { mutableStateOf<JsonObject?>(null) }
     var messages by remember { mutableStateOf(emptyList<JsonObject>()) }
@@ -110,6 +116,16 @@ fun MessagesRoute(api: MobileApi, onBack: () -> Unit, embedded: Boolean = false)
         }
     }
     LaunchedEffect(Unit) { loadConversations() }
+    LaunchedEffect(requestedConversationId, conversations) {
+        val conversationId = requestedConversationId ?: return@LaunchedEffect
+        val conversation = conversations.firstOrNull {
+            it.string("id") == conversationId.toString()
+        } ?: return@LaunchedEffect
+        if (activeConversation?.string("id") != conversationId.toString()) {
+            openConversation(conversation)
+        }
+        onRequestedConversationOpened(conversationId)
+    }
     LaunchedEffect(Unit) {
         if (android.os.Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
@@ -129,7 +145,13 @@ fun MessagesRoute(api: MobileApi, onBack: () -> Unit, embedded: Boolean = false)
                                 val sender = conversation?.objectOrNull("counterpart")?.displayName() ?: "Mesaj nou"
                                 val preview = conversation?.objectOrNull("last_message")?.string("body") ?: "Ai primit un mesaj nou."
                                 if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED || android.os.Build.VERSION.SDK_INT < 33) {
-                                    MessageNotification.show(context, sender, preview, event.conversationId.toInt())
+                                    MessageNotification.show(
+                                        context = context,
+                                        title = sender,
+                                        body = preview,
+                                        notificationId = event.conversationId.toInt(),
+                                        conversationId = event.conversationId,
+                                    )
                                 }
                             }
                         }

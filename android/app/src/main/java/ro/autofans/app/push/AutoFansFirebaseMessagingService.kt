@@ -15,6 +15,12 @@ class AutoFansFirebaseMessagingService : FirebaseMessagingService() {
         val notificationId = data["notificationId"]?.toIntOrNull()
             ?: message.messageId?.hashCode()
             ?: System.currentTimeMillis().toInt()
-        MessageNotification.show(applicationContext, title, body, notificationId)
+        MessageNotification.show(
+            context = applicationContext,
+            title = title,
+            body = body,
+            notificationId = notificationId,
+            conversationId = data["conversationId"]?.toLongOrNull(),
+        )
     }
 }

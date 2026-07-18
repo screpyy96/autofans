@@ -19,6 +19,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,6 +42,7 @@ import ro.autofans.app.data.ListingRepository
 import ro.autofans.app.data.SupabaseAuthRepository
 import ro.autofans.app.data.MobileApi
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.StateFlow
 import com.google.firebase.messaging.FirebaseMessaging
 
 private const val CATALOG_ROUTE = "catalog"
@@ -80,11 +82,18 @@ private val sellerMainDestinations = listOf(
 )
 
 @Composable
-fun AutoFansNavigation(repository: ListingRepository, authRepository: SupabaseAuthRepository, mobileApi: MobileApi) {
+fun AutoFansNavigation(
+    repository: ListingRepository,
+    authRepository: SupabaseAuthRepository,
+    mobileApi: MobileApi,
+    pendingConversationId: StateFlow<Long?>,
+    onConversationOpened: (Long) -> Unit,
+) {
     val navController = rememberNavController()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val session by authRepository.sessionState.collectAsStateWithLifecycle()
+    val requestedConversationId by pendingConversationId.collectAsState()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
     val latestRoute by rememberUpdatedState(currentRoute)
@@ -102,7 +111,13 @@ fun AutoFansNavigation(repository: ListingRepository, authRepository: SupabaseAu
                         onEvent = { event ->
                             if (event.senderId != null && event.senderId != activeSession.user.id && latestRoute != MESSAGES_ROUTE &&
                                 (android.os.Build.VERSION.SDK_INT < 33 || androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED)
-                            ) MessageNotification.show(context, "Mesaj nou", "Ai primit un mesaj nou în AutoFans.", event.conversationId.toInt())
+                            ) MessageNotification.show(
+                                context = context,
+                                title = "Mesaj nou",
+                                body = "Ai primit un mesaj nou în AutoFans.",
+                                notificationId = event.conversationId.toInt(),
+                                conversationId = event.conversationId,
+                            )
                         },
                         onError = { },
                     )
@@ -128,6 +143,19 @@ fun AutoFansNavigation(repository: ListingRepository, authRepository: SupabaseAu
     }
     LaunchedEffect(passwordRecovery) {
         if (passwordRecovery) navController.navigate(LOGIN_ROUTE)
+    }
+    LaunchedEffect(requestedConversationId, session?.user?.id) {
+        if (requestedConversationId == null) return@LaunchedEffect
+        if (session == null) {
+            pendingProtectedRoute = MESSAGES_ROUTE
+            navController.navigate(LOGIN_ROUTE) { launchSingleTop = true }
+        } else {
+            navController.navigate(MESSAGES_ROUTE) {
+                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                launchSingleTop = true
+                restoreState = true
+            }
+        }
     }
     fun navigateToMain(route: String) {
         if (session == null && mainDestinations.firstOrNull { it.route == route }?.protected == true) {
@@ -245,7 +273,15 @@ fun AutoFansNavigation(repository: ListingRepository, authRepository: SupabaseAu
                 )
             }
             composable(SELLER_LISTINGS_ROUTE) { SellerListingsRoute(mobileApi, navController::popBackStack, onEdit = { id -> navController.navigate("$LISTING_EDITOR_BASE?listingId=$id") }) }
-            composable(MESSAGES_ROUTE) { MessagesRoute(mobileApi, navController::popBackStack, embedded = true) }
+            composable(MESSAGES_ROUTE) {
+                MessagesRoute(
+                    api = mobileApi,
+                    onBack = navController::popBackStack,
+                    embedded = true,
+                    requestedConversationId = requestedConversationId,
+                    onRequestedConversationOpened = onConversationOpened,
+                )
+            }
             composable(SELLER_DASHBOARD_ROUTE) { SellerDashboardRoute(mobileApi, navController::popBackStack) }
             composable(COLLECTION_ROUTE, arguments=listOf(navArgument("kind") { type=NavType.StringType })) { entry -> CollectionRoute(mobileApi, entry.arguments?.getString("kind").orEmpty(), navController::popBackStack, onCatalog = { navController.navigate(CATALOG_ROUTE) { popUpTo(CATALOG_ROUTE) } }, onListing = { slug -> navController.navigate("listing/$slug") }, embedded = true) }
             composable(SELLER_PROFILE_ROUTE, arguments=listOf(navArgument("sellerId") { type=NavType.StringType })) { entry -> SellerProfileRoute(mobileApi, entry.arguments?.getString("sellerId").orEmpty(), navController::popBackStack) }
