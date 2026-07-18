@@ -8,6 +8,7 @@ import androidx.compose.material.icons.automirrored.filled.CompareArrows
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -56,10 +57,18 @@ private data class MainDestination(
     val icon: @Composable () -> Unit,
 )
 
-private val mainDestinations = listOf(
+private val buyerMainDestinations = listOf(
     MainDestination(CATALOG_ROUTE, "Acasă", protected = false) { Icon(Icons.Default.Home, contentDescription = null) },
     MainDestination("collection/favorites", "Favorite", protected = true) { Icon(Icons.Default.FavoriteBorder, contentDescription = null) },
     MainDestination(COMPARE_ROUTE, "Compară", protected = false) { Icon(Icons.AutoMirrored.Filled.CompareArrows, contentDescription = null) },
+    MainDestination(MESSAGES_ROUTE, "Mesaje", protected = true) { Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null) },
+    MainDestination(ACCOUNT_ROUTE, "Cont", protected = true) { Icon(Icons.Default.Person, contentDescription = null) },
+)
+
+private val sellerMainDestinations = listOf(
+    MainDestination(CATALOG_ROUTE, "Acasă", protected = false) { Icon(Icons.Default.Home, contentDescription = null) },
+    MainDestination("collection/favorites", "Favorite", protected = true) { Icon(Icons.Default.FavoriteBorder, contentDescription = null) },
+    MainDestination(LISTING_EDITOR_BASE, "Vinde", protected = true) { Icon(Icons.Default.AddCircle, contentDescription = null) },
     MainDestination(MESSAGES_ROUTE, "Mesaje", protected = true) { Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null) },
     MainDestination(ACCOUNT_ROUTE, "Cont", protected = true) { Icon(Icons.Default.Person, contentDescription = null) },
 )
@@ -72,7 +81,18 @@ fun AutoFansNavigation(repository: ListingRepository, authRepository: SupabaseAu
     val currentRoute = backStackEntry?.destination?.route
     val currentCollectionKind = backStackEntry?.arguments?.getString("kind")
     var pendingProtectedRoute by remember { mutableStateOf<String?>(null) }
+    var sellerAccount by remember { mutableStateOf(false) }
     val passwordRecovery = authRepository.passwordRecovery.collectAsStateWithLifecycle().value
+    val mainDestinations = if (sellerAccount) sellerMainDestinations else buyerMainDestinations
+    LaunchedEffect(session?.user?.id) {
+        sellerAccount = session?.let {
+            runCatching { mobileApi.call("account") }
+                .getOrNull()
+                ?.get("profile")
+                ?.let { profile -> (profile as? kotlinx.serialization.json.JsonObject)?.get("role")?.toString()?.trim('"') == "seller" }
+                ?: false
+        } ?: false
+    }
     LaunchedEffect(passwordRecovery) {
         if (passwordRecovery) navController.navigate(LOGIN_ROUTE)
     }
@@ -129,6 +149,7 @@ fun AutoFansNavigation(repository: ListingRepository, authRepository: SupabaseAu
                     AutoFansBottomNavigation(
                         currentRoute = currentRoute,
                         currentCollectionKind = currentCollectionKind,
+                        destinations = mainDestinations,
                         onDestinationSelected = ::navigateToMain,
                     )
                 }
@@ -171,7 +192,7 @@ fun AutoFansNavigation(repository: ListingRepository, authRepository: SupabaseAu
                 })
             }
             composable(ACCOUNT_ROUTE) {
-                AccountRoute(mobileApi = mobileApi, authRepository = authRepository, onBack = navController::popBackStack, onNewListing = { navController.navigate(LISTING_EDITOR_BASE) }, onSellerListings = { navController.navigate(SELLER_LISTINGS_ROUTE) }, onMessages = { navController.navigate(MESSAGES_ROUTE) }, onSellerDashboard = { navController.navigate(SELLER_DASHBOARD_ROUTE) }, onCollection = { kind -> navController.navigate("collection/$kind") })
+                AccountRoute(mobileApi = mobileApi, authRepository = authRepository, onBack = navController::popBackStack, onNewListing = { navController.navigate(LISTING_EDITOR_BASE) }, onSellerListings = { navController.navigate(SELLER_LISTINGS_ROUTE) }, onMessages = { navController.navigate(MESSAGES_ROUTE) }, onSellerDashboard = { navController.navigate(SELLER_DASHBOARD_ROUTE) }, onCollection = { kind -> navController.navigate("collection/$kind") }, onSellerRoleChanged = { sellerAccount = it })
             }
             composable(LISTING_EDITOR_ROUTE, arguments=listOf(navArgument("listingId") { type=NavType.LongType; defaultValue=0L })) { entry -> ListingEditorRoute(mobileApi, navController::popBackStack, entry.arguments?.getLong("listingId")?.takeIf { it > 0 }) }
             composable(SELLER_LISTINGS_ROUTE) { SellerListingsRoute(mobileApi, navController::popBackStack, onEdit = { id -> navController.navigate("$LISTING_EDITOR_BASE?listingId=$id") }) }
@@ -189,13 +210,14 @@ fun AutoFansNavigation(repository: ListingRepository, authRepository: SupabaseAu
 private fun AutoFansBottomNavigation(
     currentRoute: String?,
     currentCollectionKind: String?,
+    destinations: List<MainDestination>,
     onDestinationSelected: (String) -> Unit,
 ) {
     NavigationBar(
         containerColor = MaterialTheme.colorScheme.surface,
         tonalElevation = 0.dp,
     ) {
-        mainDestinations.forEach { destination ->
+        destinations.forEach { destination ->
             val selected = when (destination.route) {
                 "collection/favorites" -> currentRoute == COLLECTION_ROUTE && currentCollectionKind == "favorites"
                 else -> currentRoute == destination.route

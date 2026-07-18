@@ -78,6 +78,7 @@ fun AccountRoute(
     onMessages: () -> Unit,
     onSellerDashboard: () -> Unit,
     onCollection: (String) -> Unit,
+    onSellerRoleChanged: (Boolean) -> Unit,
 ) {
     var profile by remember { mutableStateOf<JsonObject?>(null) }
     var displayName by remember { mutableStateOf("") }
@@ -99,6 +100,7 @@ fun AccountRoute(
         displayName = data?.get("display_name")?.jsonPrimitive?.content.orEmpty()
         phone = data?.get("phone")?.jsonPrimitive?.content.orEmpty()
         avatarUrl = data?.get("avatar_url")?.jsonPrimitive?.content.orEmpty()
+        onSellerRoleChanged(data?.get("role")?.jsonPrimitive?.content == "seller")
     }
 
     val avatarPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
