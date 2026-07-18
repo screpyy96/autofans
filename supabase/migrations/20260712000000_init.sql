@@ -50,9 +50,18 @@ returns trigger
 language plpgsql security definer set search_path = public
 as $$
 begin
-  insert into public.profiles (id, email, role)
-  values (new.id, new.email, 'buyer')
-  on conflict (id) do nothing;
+  insert into public.profiles (id, email, display_name, avatar_url, role)
+  values (
+    new.id,
+    new.email,
+    coalesce(new.raw_user_meta_data ->> 'full_name', new.raw_user_meta_data ->> 'name'),
+    coalesce(new.raw_user_meta_data ->> 'avatar_url', new.raw_user_meta_data ->> 'picture'),
+    'buyer'
+  )
+  on conflict (id) do update
+  set email = coalesce(public.profiles.email, excluded.email),
+      display_name = coalesce(nullif(public.profiles.display_name, ''), excluded.display_name),
+      avatar_url = coalesce(nullif(public.profiles.avatar_url, ''), excluded.avatar_url);
   return new;
 end;
 $$;

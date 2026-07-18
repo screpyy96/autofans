@@ -1,6 +1,14 @@
 .DS_Store
 /node_modules/
 
+# Android local build and signing configuration
+/android/.gradle/
+/android/**/build/
+/android/local.properties
+/android/keystore.properties
+/android/*.jks
+/android/*.keystore
+
 # React Router
 /.react-router/
 /build/
@@ -10,3 +18,4 @@
 
 # Source renders retained locally; the optimized WebP variants are served by the app.
 /public/blog/*.png
+ios/Config/Secrets.xcconfig

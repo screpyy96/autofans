@@ -12,9 +12,9 @@ describe('Button', () => {
 
   it.each([
     ['primary', 'bg-gold-gradient'],
-    ['secondary', 'bg-secondary-800/50'],
-    ['outline', 'border-accent-gold/30'],
-    ['ghost', 'hover:bg-accent-gold/10'],
+    ['secondary', 'bg-white/[0.06]'],
+    ['outline', 'border-white/18'],
+    ['ghost', 'hover:bg-white/[0.06]'],
     ['danger', 'bg-red-600'],
   ] as const)('renders the %s variant', (variant, expectedClass) => {
     render(<Button variant={variant}>Button</Button>);

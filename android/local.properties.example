@@ -1,0 +1,13 @@
+# Copy this file to local.properties. Do not commit the copied file.
+# sdk.dir=/absolute/path/to/Android/sdk
+SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_OR_PUBLISHABLE_KEY
+APP_URL=https://www.autofans.ro
+# Public OAuth identifier, optional when the provider default is already used.
+# GOOGLE_WEB_CLIENT_ID=1234567890-example.apps.googleusercontent.com
+
+# Required only for an AAB that will be uploaded to Play Console. Prefer CI secrets.
+# RELEASE_STORE_FILE=../secrets/autofans-release.keystore
+# RELEASE_STORE_PASSWORD=...
+# RELEASE_KEY_ALIAS=autofans
+# RELEASE_KEY_PASSWORD=...
