@@ -61,8 +61,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
   });
   enriched.sort((a: any, b: any) => String(b.lastMessage?.created_at || b.created_at).localeCompare(String(a.lastMessage?.created_at || a.created_at)));
 
-  const requestedId = Number(new URL(request.url).searchParams.get('conversation'));
-  const activeConversation = enriched.find((conversation: any) => conversation.id === requestedId) || enriched[0] || null;
+  const requestedId = new URL(request.url).searchParams.get('conversation');
+  const activeConversation = enriched.find((conversation: any) => requestedId !== null && String(conversation.id) === requestedId) || enriched[0] || null;
   const { data: messages } = activeConversation
     ? await supabase.from('messages').select('id, conversation_id, sender_id, body, created_at').eq('conversation_id', activeConversation.id).order('created_at', { ascending: true }).limit(200)
     : { data: [] };
