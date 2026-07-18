@@ -41,6 +41,7 @@ import ro.autofans.app.data.ListingRepository
 import ro.autofans.app.data.SupabaseAuthRepository
 import ro.autofans.app.data.MobileApi
 import kotlinx.coroutines.launch
+import com.google.firebase.messaging.FirebaseMessaging
 
 private const val CATALOG_ROUTE = "catalog"
 private const val DETAIL_ROUTE = "listing/{slug}"
@@ -109,6 +110,12 @@ fun AutoFansNavigation(repository: ListingRepository, authRepository: SupabaseAu
             }
         }
         onDispose { job?.cancel(); subscription?.close() }
+    }
+    LaunchedEffect(session?.user?.id) {
+        if (session == null) return@LaunchedEffect
+        FirebaseMessaging.getInstance().token.addOnSuccessListener { token ->
+            scope.launch { runCatching { mobileApi.registerPushToken(token) } }
+        }
     }
     LaunchedEffect(session?.user?.id) {
         sellerAccount = session?.let {

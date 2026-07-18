@@ -59,6 +59,17 @@ class MobileApi(
         }
     }
 
+    /** Registers the current physical device for server-side FCM delivery.
+     * The FCM token is never a credential and is always tied to the active
+     * authenticated AutoFans user by the Edge Function. */
+    suspend fun registerPushToken(token: String) {
+        if (token.length < 30) return
+        call("register_push_token", buildJsonObject {
+            put("token", token)
+            put("platform", "android")
+        })
+    }
+
     suspend fun uploadListingImage(context: Context, uri: Uri): String = withContext(Dispatchers.IO) {
         val session = auth.activeSession()
         val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: error("Nu am putut citi imaginea.")

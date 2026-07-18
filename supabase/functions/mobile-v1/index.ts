@@ -167,6 +167,15 @@ Deno.serve(async (request) => {
       }
       case "notifications": { const { data, error } = await supabase.from("alert_notifications").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(100); return fail(error) || respond({ notifications: data || [] }); }
       case "read_notification": { const { error } = await supabase.from("alert_notifications").update({ read_at: new Date().toISOString() }).eq("id", Number(payload.id)).eq("user_id", user.id); return fail(error) || respond({ ok: true }); }
+      case "register_push_token": {
+        const token = cleanText(payload.token, 4_096), platform = cleanText(payload.platform, 10);
+        if (token.length < 30 || !["android", "ios"].includes(platform)) return respond({ error: "Dispozitiv invalid." }, 400);
+        const { error } = await supabase.from("push_devices").upsert(
+          { user_id: user.id, fcm_token: token, platform, updated_at: new Date().toISOString() },
+          { onConflict: "user_id,fcm_token" },
+        );
+        return fail(error) || respond({ ok: true });
+      }
       case "promote_seller": { const { error } = await supabase.rpc("promote_to_seller"); return fail(error) || respond({ ok: true }); }
       case "conversations": {
         const { data, error } = await supabase.from("conversations").select("id,listing_id,buyer_id,seller_id,created_at,updated_at").or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`).order("updated_at", { ascending: false });
