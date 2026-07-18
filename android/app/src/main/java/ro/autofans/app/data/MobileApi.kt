@@ -36,7 +36,7 @@ class MobileApi(
             .addQueryParameter("apikey", config.anonKey)
             .addQueryParameter("vsn", "1.0.0")
             .build()
-        val (listener, makeSubscription) = realtimeMessageListener(json, onEvent, onError)
+        val (listener, makeSubscription) = realtimeMessageListener(json, session.access_token, onEvent, onError)
         val socket = client.newWebSocket(
             Request.Builder().url(websocketUrl).header("apikey", config.anonKey).header("Authorization", "Bearer ${session.access_token}").build(),
             listener,

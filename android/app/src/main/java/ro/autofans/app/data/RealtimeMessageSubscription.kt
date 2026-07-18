@@ -24,13 +24,14 @@ internal class RealtimeMessageSubscription(
 
 internal fun realtimeMessageListener(
     json: Json,
+    token: String,
     onEvent: (RealtimeMessageEvent) -> Unit,
     onError: (Throwable) -> Unit,
 ): Pair<WebSocketListener, (WebSocket) -> RealtimeMessageSubscription> {
     val reference = AtomicLong(1)
     val listener = object : WebSocketListener() {
         override fun onOpen(webSocket: WebSocket, response: okhttp3.Response) {
-            val join = """{"topic":"realtime:public:messages","event":"phx_join","payload":{"config":{"broadcast":{"self":false},"presence":{"key":""},"postgres_changes":[{"event":"INSERT","schema":"public","table":"messages"}]}},"ref":"${reference.getAndIncrement()}"}"""
+            val join = """{"topic":"realtime:public:messages","event":"phx_join","payload":{"config":{"broadcast":{"self":false},"presence":{"key":""},"postgres_changes":[{"event":"INSERT","schema":"public","table":"messages"}]},"access_token":"$token"},"ref":"${reference.getAndIncrement()}"}"""
             webSocket.send(join)
         }
 
