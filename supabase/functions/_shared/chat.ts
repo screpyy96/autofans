@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { notifyMessageRecipient } from "./fcm.ts";
 
 export type ChatPayload = Record<string, unknown>;
 
@@ -59,6 +60,7 @@ export async function handleChatOperation(context: ChatContext): Promise<Respons
         conversation = created.data || (await supabase.from("conversations").select("id").eq("listing_id", listingId).eq("buyer_id", user.id).eq("seller_id", listing.owner_id).single()).data;
       }
       const { data: savedMessage, error } = await supabase.from("messages").insert({ conversation_id: conversation!.id, sender_id: user.id, body: message }).select("id,conversation_id,sender_id,body,created_at").single();
+      if (!error) await notifyMessageRecipient({ conversationId: conversation!.id, senderId: user.id, body: message }).catch((pushError) => console.warn("FCM delivery failed", pushError));
       return fail(error) || respond({ conversationId: conversation!.id, clientMessageId, message: savedMessage });
     }
     case "send_message": {
@@ -66,6 +68,7 @@ export async function handleChatOperation(context: ChatContext): Promise<Respons
       const clientMessageId = typeof payload.clientMessageId === "string" ? payload.clientMessageId.slice(0, 96) : "";
       if (!Number.isInteger(id) || !message) return respond({ error: "Invalid message" }, 400);
       const { data: savedMessage, error } = await supabase.from("messages").insert({ conversation_id: id, sender_id: user.id, body: message }).select("id,conversation_id,sender_id,body,created_at").single();
+      if (!error) await notifyMessageRecipient({ conversationId: id, senderId: user.id, body: message }).catch((pushError) => console.warn("FCM delivery failed", pushError));
       return fail(error) || respond({ ok: true, clientMessageId, message: savedMessage });
     }
     default:
