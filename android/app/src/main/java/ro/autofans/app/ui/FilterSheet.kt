@@ -49,6 +49,8 @@ fun FilterSheet(
     var maxMileage by remember(initial) { mutableStateOf(initial.maxMileage?.toString().orEmpty()) }
     var fuels by remember(initial) { mutableStateOf(initial.fuelTypes.toSet()) }
     var transmissions by remember(initial) { mutableStateOf(initial.transmissions.toSet()) }
+    var proximityEnabled by remember(initial) { mutableStateOf(initial.latitude != null && initial.longitude != null && initial.radiusKm != null) }
+    var radiusKm by remember(initial) { mutableStateOf(initial.radiusKm ?: 25) }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
@@ -56,6 +58,15 @@ fun FilterSheet(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text("Filtre", style = MaterialTheme.typography.headlineSmall)
+            if (initial.latitude != null && initial.longitude != null) {
+                Text("Caută în apropiere", style = MaterialTheme.typography.titleSmall)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(selected = proximityEnabled, onClick = { proximityEnabled = !proximityEnabled }, label = { Text(if (proximityEnabled) "Locația ta activă" else "Dezactivată") })
+                    if (proximityEnabled) listOf(10, 25, 50, 100).forEach { radius ->
+                        FilterChip(selected = radiusKm == radius, onClick = { radiusKm = radius }, label = { Text("$radius km") })
+                    }
+                }
+            }
             FilterInput("Marcă", make) { make = it }
             FilterInput("Model", model) { model = it }
             FilterInput("Oraș", city) { city = it }
@@ -77,6 +88,9 @@ fun FilterSheet(
                             minYear = minYear.toIntOrNull(), maxYear = maxYear.toIntOrNull(),
                             minMileage = minMileage.toIntOrNull(), maxMileage = maxMileage.toIntOrNull(),
                             fuelTypes = fuels.toList(), transmissions = transmissions.toList(),
+                            latitude = initial.latitude.takeIf { proximityEnabled },
+                            longitude = initial.longitude.takeIf { proximityEnabled },
+                            radiusKm = radiusKm.takeIf { proximityEnabled },
                         ),
                     )
                 }) { Text("Aplică") }

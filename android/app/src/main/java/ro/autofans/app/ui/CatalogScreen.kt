@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -22,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
@@ -83,9 +83,31 @@ fun CatalogRoute(
     onListingSelected: (String) -> Unit,
     onAccount: () -> Unit,
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val viewModel: CatalogViewModel = viewModel(factory = CatalogViewModelFactory(repository))
     val state by viewModel.state.collectAsStateWithLifecycle()
     val savedQuery by SavedSearchStore.query.collectAsStateWithLifecycle()
+    var isLocating by remember { mutableStateOf(false) }
+    var locationMessage by remember { mutableStateOf<String?>(null) }
+    fun applyNearbyLocation(location: android.location.Location) {
+        isLocating = false
+        locationMessage = null
+        viewModel.applyFilters(state.filters.copy(latitude = location.latitude, longitude = location.longitude, radiusKm = 25))
+    }
+    fun requestNearbyLocation() {
+        isLocating = true
+        requestLastKnownLocation(
+            context = context,
+            onLocation = ::applyNearbyLocation,
+            onError = { message -> isLocating = false; locationMessage = message },
+        )
+    }
+    val locationPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions(),
+    ) { permissions ->
+        if (permissions[android.Manifest.permission.ACCESS_COARSE_LOCATION] == true || permissions[android.Manifest.permission.ACCESS_FINE_LOCATION] == true) requestNearbyLocation()
+        else { isLocating = false; locationMessage = "Activează locația pentru a căuta mașini din apropiere." }
+    }
     LaunchedEffect(savedQuery) {
         savedQuery?.let { query ->
             val (text, filters) = ListingSearchFilters.fromSavedSearchQuery(query)
@@ -114,7 +136,31 @@ fun CatalogRoute(
                 },
             )
         },
+        onUseNearby = {
+            locationMessage = null
+            val granted = androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.ACCESS_COARSE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED ||
+                androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            if (granted) requestNearbyLocation()
+            else locationPermissionLauncher.launch(arrayOf(android.Manifest.permission.ACCESS_COARSE_LOCATION, android.Manifest.permission.ACCESS_FINE_LOCATION))
+        },
+        isLocating = isLocating,
+        locationMessage = locationMessage,
     )
+}
+
+@Suppress("MissingPermission", "DEPRECATION")
+private fun requestLastKnownLocation(context: android.content.Context, onLocation: (android.location.Location) -> Unit, onError: (String) -> Unit) {
+    val manager = context.getSystemService(android.content.Context.LOCATION_SERVICE) as? android.location.LocationManager
+        ?: return onError("Locația nu este disponibilă pe acest dispozitiv.")
+    val providers = listOf(android.location.LocationManager.GPS_PROVIDER, android.location.LocationManager.NETWORK_PROVIDER)
+        .filter { runCatching { manager.isProviderEnabled(it) }.getOrDefault(false) }
+    if (providers.isEmpty()) return onError("Activează serviciile de locație și încearcă din nou.")
+    providers.mapNotNull { provider -> runCatching { manager.getLastKnownLocation(provider) }.getOrNull() }
+        .maxByOrNull { it.time }
+        ?.let(onLocation)
+        ?: manager.requestSingleUpdate(providers.first(), object : android.location.LocationListener {
+            override fun onLocationChanged(location: android.location.Location) = onLocation(location)
+        }, android.os.Looper.getMainLooper())
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -132,6 +178,9 @@ fun CatalogScreen(
     onAccount: () -> Unit,
     isAuthenticated: Boolean = false,
     onSaveSearch: (suspend (String) -> Unit)? = null,
+    onUseNearby: () -> Unit = {},
+    isLocating: Boolean = false,
+    locationMessage: String? = null,
 ) {
     var filtersOpen by remember { mutableStateOf(false) }
     var sortOpen by remember { mutableStateOf(false) }
@@ -151,6 +200,9 @@ fun CatalogScreen(
                 onOpenFilters = { filtersOpen = true },
                 onOpenSort = { sortOpen = true },
                 onResetFilters = onFiltersReset,
+                onUseNearby = onUseNearby,
+                isLocating = isLocating,
+                locationMessage = locationMessage,
             )
             DropdownMenu(expanded = sortOpen, onDismissRequest = { sortOpen = false }) {
                 ListingSort.entries.forEach { sort ->
@@ -225,6 +277,9 @@ private fun CatalogSearchPanel(
     onOpenFilters: () -> Unit,
     onOpenSort: () -> Unit,
     onResetFilters: () -> Unit,
+    onUseNearby: () -> Unit,
+    isLocating: Boolean,
+    locationMessage: String?,
 ) {
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 20.dp)) {
         Text("Găsește mașina potrivită", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold)
@@ -262,12 +317,24 @@ private fun CatalogSearchPanel(
                 )
             }
         }
-        Spacer(Modifier.height(14.dp))
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            item { AssistChip(onClick = onOpenFilters, label = { Text("SUV-uri") }) }
-            item { AssistChip(onClick = onOpenFilters, label = { Text("Automată") }) }
-            item { AssistChip(onClick = onOpenFilters, label = { Text("Sub 15.000 €") }) }
-            item { AssistChip(onClick = onOpenFilters, label = { Text("Diesel") }) }
+        Spacer(Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            FilledTonalButton(onClick = onUseNearby, enabled = !isLocating, shape = RoundedCornerShape(14.dp)) {
+                if (isLocating) CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                else Icon(Icons.Default.MyLocation, contentDescription = null, modifier = Modifier.size(17.dp))
+                Spacer(Modifier.width(7.dp))
+                Text(if (isLocating) "Îți găsim zona…" else "În apropiere")
+            }
+            if (state.filters.radiusKm != null) {
+                AssistChip(onClick = onOpenFilters, label = { Text("${state.filters.radiusKm} km") })
+            }
+            if (state.filters.city != null && state.filters.radiusKm == null) {
+                AssistChip(onClick = onOpenFilters, label = { Text(state.filters.city) })
+            }
+        }
+        locationMessage?.let { message ->
+            Spacer(Modifier.height(8.dp))
+            Text(message, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
         }
         Spacer(Modifier.height(14.dp))
         Row(

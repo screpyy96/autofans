@@ -134,6 +134,9 @@ data class ListingSearchFilters(
     val fuelTypes: List<String> = emptyList(),
     val transmissions: List<String> = emptyList(),
     val city: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    val radiusKm: Int? = null,
 ) {
     fun toRpcPayload(query: String, sort: ListingSort): JsonObject = buildJsonObject {
         put("p_query", query.trim().takeIf(String::isNotBlank)?.let(::JsonPrimitive) ?: JsonNull)
@@ -149,9 +152,9 @@ data class ListingSearchFilters(
         putArrayOrNull("p_transmissions", transmissions)
         put("p_city", city?.trim()?.takeIf(String::isNotBlank)?.let(::JsonPrimitive) ?: JsonNull)
         put("p_county", JsonNull)
-        put("p_latitude", JsonNull)
-        put("p_longitude", JsonNull)
-        put("p_radius_km", JsonNull)
+        put("p_latitude", latitude?.let(::JsonPrimitive) ?: JsonNull)
+        put("p_longitude", longitude?.let(::JsonPrimitive) ?: JsonNull)
+        put("p_radius_km", radiusKm?.let(::JsonPrimitive) ?: JsonNull)
         put("p_service_history", JsonNull)
         put("p_max_owners", JsonNull)
         put("p_sort", sort.rpcValue)
