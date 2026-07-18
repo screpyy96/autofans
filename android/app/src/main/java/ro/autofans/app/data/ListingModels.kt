@@ -46,6 +46,8 @@ data class ListingDto(
     val doors: Int? = null,
     val seats: Int? = null,
     val features: List<String> = emptyList(),
+    val latitude: Double? = null,
+    val longitude: Double? = null,
 )
 
 data class ListingImage(val path: String, val isMain: Boolean, val url: String? = null)
@@ -74,6 +76,8 @@ data class Listing(
     val doors: Int?,
     val seats: Int?,
     val features: List<String>,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
 ) {
     val mainImage: ListingImage? get() = images.firstOrNull { it.isMain } ?: images.firstOrNull()
     val locationLabel: String get() = listOfNotNull(city, county).joinToString(", ")
@@ -105,6 +109,8 @@ fun ListingDto.toListing(signedUrls: Map<String, String> = emptyMap()): Listing 
     doors = doors,
     seats = seats,
     features = features,
+    latitude = latitude,
+    longitude = longitude,
 )
 
 enum class ListingSort(val rpcValue: String, val label: String) {

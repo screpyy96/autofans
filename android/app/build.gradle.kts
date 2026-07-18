@@ -37,6 +37,9 @@ val releaseKeyPassword = configValue("RELEASE_KEY_PASSWORD")
 // override it through local.properties or .env.local without changing code.
 val googleWebClientId = configValue("GOOGLE_WEB_CLIENT_ID", "VITE_GOOGLE_WEB_CLIENT_ID")
     .ifBlank { "839811357724-s3fujn7btag6rbvtf9td3s5ars9c7qta.apps.googleusercontent.com" }
+// Mapbox public tokens are deliberately shipped in mobile apps. This value is
+// only used to render the map; privileged Mapbox operations remain server-side.
+val mapboxPublicToken = configValue("MAPBOX_PUBLIC_TOKEN", "MAPBOX_TOKEN", "VITE_MAPBOX_TOKEN")
 val hasReleaseSigning = listOf(releaseStoreFile, releaseStorePassword, releaseKeyAlias, releaseKeyPassword).all(String::isNotBlank)
 
 android {
@@ -53,6 +56,8 @@ android {
         buildConfigField("String", "SUPABASE_URL", "\"${configValue("SUPABASE_URL", "VITE_SUPABASE_URL", "REMIX_PUBLIC_SUPABASE_URL").forBuildConfig()}\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"${configValue("SUPABASE_ANON_KEY", "VITE_SUPABASE_ANON_KEY", "REMIX_PUBLIC_SUPABASE_ANON_KEY").forBuildConfig()}\"")
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${googleWebClientId.forBuildConfig()}\"")
+        buildConfigField("String", "MAPBOX_PUBLIC_TOKEN", "\"${mapboxPublicToken.forBuildConfig()}\"")
+        resValue("string", "mapbox_access_token", mapboxPublicToken)
     }
 
     buildTypes {
@@ -81,6 +86,7 @@ android {
 
     buildFeatures {
         buildConfig = true
+        resValues = true
     }
 
     compileOptions {
@@ -114,6 +120,8 @@ dependencies {
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
+    implementation(libs.mapbox.maps)
+    implementation(libs.mapbox.compose)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

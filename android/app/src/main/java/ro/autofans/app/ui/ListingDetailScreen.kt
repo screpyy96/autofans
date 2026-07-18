@@ -60,6 +60,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
+import com.mapbox.geojson.Point
+import com.mapbox.maps.extension.compose.MapboxMap
+import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
+import com.mapbox.maps.extension.compose.annotation.generated.CircleAnnotation
+import ro.autofans.app.BuildConfig
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -140,6 +145,9 @@ private fun PremiumListingDetail(listing: Listing, modifier: Modifier, onBack: (
                 item { InlineMessage(message, Modifier.padding(horizontal = 20.dp), isError = !message.startsWith("Raportul")) }
             }
             item { PremiumSpecsCard(listing, Modifier.padding(horizontal = 20.dp)) }
+            if (listing.latitude != null && listing.longitude != null && BuildConfig.MAPBOX_PUBLIC_TOKEN.isNotBlank()) {
+                item { ListingLocationMap(listing, Modifier.padding(horizontal = 20.dp)) }
+            }
             listing.ownerId?.let { sellerId -> item { SellerCard(onClick = { onSeller(sellerId) }, modifier = Modifier.padding(horizontal = 20.dp)) } }
             if (listing.description.isNotBlank()) item { DescriptionCard(listing.description, Modifier.padding(horizontal = 20.dp)) }
             if (listing.features.isNotEmpty()) item { FeaturesCard(listing.features, Modifier.padding(horizontal = 20.dp)) }
@@ -210,6 +218,69 @@ private fun ListingOverview(listing: Listing, modifier: Modifier) {
                 QuickFact("Km", listing.mileage?.let(::formatMileage) ?: "—")
                 QuickFact("Cutie", listing.transmission?.label() ?: "—")
             }
+        }
+    }
+}
+
+@Composable
+@Suppress("COMPOSE_APPLIER_CALL_MISMATCH")
+private fun ListingLocationMap(listing: Listing, modifier: Modifier = Modifier) {
+    val latitude = listing.latitude ?: return
+    val longitude = listing.longitude ?: return
+    val point = remember(latitude, longitude) { Point.fromLngLat(longitude, latitude) }
+    val mapPinColor = MaterialTheme.colorScheme.primary
+    val viewportState = rememberMapViewportState {
+        setCameraOptions {
+            center(point)
+            zoom(11.8)
+        }
+    }
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, top = 18.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.size(38.dp)) {
+                    Icon(Icons.Default.LocationOn, null, modifier = Modifier.padding(9.dp), tint = MaterialTheme.colorScheme.primary)
+                }
+                Spacer(Modifier.width(10.dp))
+                Column {
+                    Text("Zona anunțului", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold)
+                    Text(listing.locationLabel, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            Box(modifier = Modifier.padding(horizontal = 12.dp).fillMaxWidth().height(205.dp).clip(RoundedCornerShape(18.dp))) {
+                MapboxMap(
+                    modifier = Modifier.fillMaxSize(),
+                    mapViewportState = viewportState,
+                ) {
+                    CircleAnnotation(point = point) {
+                        circleRadius = 10.0
+                        circleColor = mapPinColor
+                        circleStrokeWidth = 3.0
+                        circleStrokeColor = Color.White
+                    }
+                }
+                Surface(
+                    modifier = Modifier.align(Alignment.BottomStart).padding(10.dp),
+                    shape = RoundedCornerShape(50),
+                    color = MaterialTheme.colorScheme.secondary.copy(alpha = .92f),
+                ) {
+                    Text("Locație aproximativă", modifier = Modifier.padding(horizontal = 11.dp, vertical = 6.dp), color = MaterialTheme.colorScheme.onSecondary, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                }
+            }
+            Text(
+                "Pentru siguranță, pinul arată zona orașului, nu o adresă exactă.",
+                modifier = Modifier.padding(start = 18.dp, end = 18.dp, bottom = 18.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

@@ -145,7 +145,7 @@ class SupabaseListingRepository(
 
     companion object {
         private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
-        private const val LISTING_COLUMNS = "id,owner_id,slug,title,description,price,currency,make,model,year,mileage,fuel_type,transmission,body_type,city,county,images,created_at,power,engine_size,doors,seats,features"
+        private const val LISTING_COLUMNS = "id,owner_id,slug,title,description,price,currency,make,model,year,mileage,fuel_type,transmission,body_type,city,county,latitude,longitude,images,created_at,power,engine_size,doors,seats,features"
     }
 }
 
