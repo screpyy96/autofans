@@ -47,7 +47,8 @@ class MobileApi(
     suspend fun call(operation: String, payload: JsonObject = buildJsonObject {}): JsonObject = withContext(Dispatchers.IO) {
         val session = auth.activeSession()
         val body = buildJsonObject { put("operation", operation); put("payload", payload) }.toString()
-        val request = Request.Builder().url("${config.url.trimEnd('/')}/functions/v1/mobile-v1")
+        val functionName = if (operation in CHAT_OPERATIONS) "chat-v1" else "mobile-v1"
+        val request = Request.Builder().url("${config.url.trimEnd('/')}/functions/v1/$functionName")
             .header("apikey", config.anonKey)
             .header("Authorization", "Bearer ${session.access_token}")
             .post(body.toRequestBody(JSON)).build()
@@ -112,6 +113,7 @@ class MobileApi(
     }
 
     private companion object {
+        val CHAT_OPERATIONS = setOf("conversations", "messages", "start_conversation", "send_message")
         val JSON = "application/json; charset=utf-8".toMediaType()
         val PROFILE_AVATAR_MIME_TYPES = setOf("image/jpeg", "image/png", "image/webp")
         const val PROFILE_AVATAR_MAX_BYTES = 5 * 1024 * 1024
