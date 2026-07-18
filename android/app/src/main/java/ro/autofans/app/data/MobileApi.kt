@@ -55,7 +55,37 @@ class MobileApi(
         path
     }
 
-    private companion object { val JSON = "application/json; charset=utf-8".toMediaType() }
+    /** Uploads an avatar to its dedicated public bucket. The app only receives
+     * a public URL after Storage has accepted an authenticated upload. */
+    suspend fun uploadProfileAvatar(context: Context, uri: Uri): String = withContext(Dispatchers.IO) {
+        val session = auth.activeSession()
+        val contentType = context.contentResolver.getType(uri) ?: "image/jpeg"
+        require(contentType in PROFILE_AVATAR_MIME_TYPES) { "Alege o imagine JPEG, PNG sau WebP." }
+        val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+            ?: error("Nu am putut citi fotografia.")
+        require(bytes.size <= PROFILE_AVATAR_MAX_BYTES) { "Fotografia de profil poate avea cel mult 5 MB." }
+        val extension = when (contentType) {
+            "image/png" -> "png"
+            "image/webp" -> "webp"
+            else -> "jpg"
+        }
+        val path = "${session.user.id}/avatar-${UUID.randomUUID()}.$extension"
+        val request = Request.Builder().url("${config.url.trimEnd('/')}/storage/v1/object/profile-avatars/$path")
+            .header("apikey", config.anonKey)
+            .header("Authorization", "Bearer ${session.access_token}")
+            .header("Content-Type", contentType)
+            .post(bytes.toRequestBody()).build()
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) throw SupabaseException(response.code, response.body?.string().orEmpty())
+        }
+        "${config.url.trimEnd('/')}/storage/v1/object/public/profile-avatars/$path"
+    }
+
+    private companion object {
+        val JSON = "application/json; charset=utf-8".toMediaType()
+        val PROFILE_AVATAR_MIME_TYPES = setOf("image/jpeg", "image/png", "image/webp")
+        const val PROFILE_AVATAR_MAX_BYTES = 5 * 1024 * 1024
+    }
 
     private fun mobileApiError(status: Int, contentType: String?, body: String): String {
         val isHtml = contentType?.contains("text/html", ignoreCase = true) == true || body.trimStart().startsWith("<!DOCTYPE", ignoreCase = true)

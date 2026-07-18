@@ -1,5 +1,7 @@
 package ro.autofans.app.ui
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,6 +40,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -50,6 +53,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -80,15 +84,42 @@ fun AccountRoute(
     // Keep the Google avatar when updating the rest of the profile. It should
     // be shown as a photo, never as a technical URL field.
     var avatarUrl by remember { mutableStateOf("") }
+    var isAvatarUploading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var notice by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     fun updateProfile(data: JsonObject?) {
         profile = data
         displayName = data?.get("display_name")?.jsonPrimitive?.content.orEmpty()
         phone = data?.get("phone")?.jsonPrimitive?.content.orEmpty()
         avatarUrl = data?.get("avatar_url")?.jsonPrimitive?.content.orEmpty()
+    }
+
+    val avatarPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        scope.launch {
+            isAvatarUploading = true
+            error = null
+            runCatching {
+                val uploadedAvatarUrl = mobileApi.uploadProfileAvatar(context, uri)
+                mobileApi.call(
+                    "update_profile",
+                    buildJsonObject {
+                        put("displayName", displayName.trim())
+                        put("phone", phone.trim())
+                        put("avatarUrl", uploadedAvatarUrl)
+                    },
+                )
+            }.onSuccess {
+                updateProfile(it["profile"]?.jsonObject)
+                notice = "Fotografia de profil a fost actualizată."
+            }.onFailure {
+                error = it.message ?: "Nu am putut încărca fotografia."
+            }
+            isAvatarUploading = false
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -117,6 +148,8 @@ fun AccountRoute(
                     avatarUrl = avatarUrl,
                     isSeller = isSeller,
                     isVerified = isVerified,
+                    isAvatarUploading = isAvatarUploading,
+                    onChangePhoto = { avatarPicker.launch("image/*") },
                 )
             }
 
@@ -295,7 +328,15 @@ private fun AccountError(message: String) {
 }
 
 @Composable
-private fun ProfileHero(name: String, email: String, avatarUrl: String, isSeller: Boolean, isVerified: Boolean) {
+private fun ProfileHero(
+    name: String,
+    email: String,
+    avatarUrl: String,
+    isSeller: Boolean,
+    isVerified: Boolean,
+    isAvatarUploading: Boolean,
+    onChangePhoto: () -> Unit,
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(22.dp),
@@ -305,7 +346,24 @@ private fun ProfileHero(name: String, email: String, avatarUrl: String, isSeller
             modifier = Modifier.padding(20.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Avatar(name = name, avatarUrl = avatarUrl)
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Avatar(name = name, avatarUrl = avatarUrl)
+                TextButton(onClick = onChangePhoto, enabled = !isAvatarUploading) {
+                    if (isAvatarUploading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(14.dp),
+                            color = MaterialTheme.colorScheme.onSecondary,
+                            strokeWidth = 1.5.dp,
+                        )
+                    } else {
+                        Text(
+                            "Schimbă",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSecondary,
+                        )
+                    }
+                }
+            }
             Spacer(Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
