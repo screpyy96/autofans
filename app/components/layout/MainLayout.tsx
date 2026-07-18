@@ -128,8 +128,8 @@ export function MainLayout({ children }: MainLayoutProps) {
   const unreadCount = notificationsLoaded
     ? notifications.filter((notification) => !notification.isRead).length
     : initialUnreadNotificationCount;
-  const loadNotifications = useCallback(() => {
-    if (!authUser || notificationsLoaded || notificationsLoading) return;
+  const loadNotifications = useCallback((force = false) => {
+    if (!authUser || (!force && (notificationsLoaded || notificationsLoading))) return;
     setNotificationsLoading(true);
     void import('~/lib/supabase.client')
       .then(async ({ getSupabaseBrowserClient }) => {
@@ -158,6 +158,25 @@ export function MainLayout({ children }: MainLayoutProps) {
       .catch((error) => console.warn('Could not load alerts:', error))
       .finally(() => setNotificationsLoading(false));
   }, [authUser, notificationsLoaded, notificationsLoading]);
+
+  useEffect(() => {
+    if (!authUser) return;
+    let active = true;
+    let channel: { unsubscribe: () => unknown } | null = null;
+    void import('~/lib/supabase.client').then(({ getSupabaseBrowserClient }) => {
+      if (!active) return;
+      const supabase = getSupabaseBrowserClient();
+      channel = supabase.channel(`autofans-alerts-${authUser.id}`)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'alert_notifications', filter: `user_id=eq.${authUser.id}` }, () => {
+          loadNotifications(true);
+        })
+        .subscribe();
+    }).catch((error) => console.warn('Could not subscribe to alerts:', error));
+    return () => {
+      active = false;
+      if (channel) void channel.unsubscribe();
+    };
+  }, [authUser?.id, loadNotifications]);
   const persistNotificationUpdate = (id: string, readAt: string) => {
     void import('~/lib/supabase.client')
       .then(({ getSupabaseBrowserClient }) => getSupabaseBrowserClient().from('alert_notifications').update({ read_at: readAt }).eq('id', Number(id)))

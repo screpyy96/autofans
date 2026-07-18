@@ -38,6 +38,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,6 +47,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -65,6 +67,11 @@ import ro.autofans.app.data.MobileApi
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
@@ -78,6 +85,8 @@ fun MessagesRoute(api: MobileApi, onBack: () -> Unit, embedded: Boolean = false)
     var sending by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val viewerId = api.currentUserId()
+    val context = LocalContext.current
+    val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
     fun loadConversations() = scope.launch {
         loading = true
@@ -101,6 +110,36 @@ fun MessagesRoute(api: MobileApi, onBack: () -> Unit, embedded: Boolean = false)
         }
     }
     LaunchedEffect(Unit) { loadConversations() }
+    LaunchedEffect(Unit) {
+        if (android.os.Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+    DisposableEffect(Unit) {
+        var subscription: java.io.Closeable? = null
+        val job = scope.launch {
+            subscription = runCatching {
+                api.subscribeToMessages(
+                    onEvent = { event ->
+                        scope.launch {
+                            loadConversations()
+                            if (activeConversation?.string("id") == event.conversationId.toString()) activeConversation?.let(::openConversation)
+                            if (event.senderId != null && event.senderId != viewerId) {
+                                val conversation = conversations.firstOrNull { it.string("id") == event.conversationId.toString() }
+                                val sender = conversation?.objectOrNull("counterpart")?.displayName() ?: "Mesaj nou"
+                                val preview = conversation?.objectOrNull("last_message")?.string("body") ?: "Ai primit un mesaj nou."
+                                if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED || android.os.Build.VERSION.SDK_INT < 33) {
+                                    MessageNotification.show(context, sender, preview, event.conversationId.toInt())
+                                }
+                            }
+                        }
+                    },
+                    onError = { },
+                )
+            }.getOrNull()
+        }
+        onDispose { job.cancel(); subscription?.close() }
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,

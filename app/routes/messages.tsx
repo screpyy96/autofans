@@ -156,6 +156,17 @@ export default function Messages() {
     return () => { void supabase.removeChannel(channel); };
   }, [activeId, revalidator]);
 
+  useEffect(() => {
+    const supabase = getSupabaseBrowserClient();
+    const channel = supabase.channel(`messages-inbox-${userId}`)
+      // RLS on messages limits this to conversations where the signed-in user
+      // is a participant. It keeps the inbox fresh even when another tab or
+      // the Android app starts a new conversation.
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => revalidator.revalidate())
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [revalidator, userId]);
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
       <div className="mb-7 flex items-center gap-3"><span className="rounded-2xl bg-accent-gold/15 p-3 text-accent-gold"><MessageCircle className="h-6 w-6" /></span><div><h1 className="text-3xl font-bold text-white">Mesaje</h1><p className="text-sm text-gray-400">Discută în siguranță direct cu vânzătorii și cumpărătorii.</p></div></div>

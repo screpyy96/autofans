@@ -13,6 +13,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import java.io.IOException
 import java.util.UUID
 
@@ -26,6 +27,22 @@ class MobileApi(
     private val json: Json = Json { ignoreUnknownKeys = true },
 ) {
     fun currentUserId(): String? = auth.session?.user?.id
+
+    suspend fun subscribeToMessages(onEvent: (RealtimeMessageEvent) -> Unit, onError: (Throwable) -> Unit): java.io.Closeable = withContext(Dispatchers.IO) {
+        val session = auth.activeSession()
+        val websocketUrl = config.url.toHttpUrl().newBuilder()
+            .scheme(if (config.url.startsWith("https://")) "wss" else "ws")
+            .addPathSegments("realtime/v1/websocket")
+            .addQueryParameter("apikey", config.anonKey)
+            .addQueryParameter("vsn", "1.0.0")
+            .build()
+        val (listener, makeSubscription) = realtimeMessageListener(json, onEvent, onError)
+        val socket = client.newWebSocket(
+            Request.Builder().url(websocketUrl).header("apikey", config.anonKey).header("Authorization", "Bearer ${session.access_token}").build(),
+            listener,
+        )
+        makeSubscription(socket)
+    }
 
     suspend fun call(operation: String, payload: JsonObject = buildJsonObject {}): JsonObject = withContext(Dispatchers.IO) {
         val session = auth.activeSession()
