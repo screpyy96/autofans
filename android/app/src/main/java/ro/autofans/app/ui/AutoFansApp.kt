@@ -194,7 +194,23 @@ fun AutoFansNavigation(repository: ListingRepository, authRepository: SupabaseAu
             composable(ACCOUNT_ROUTE) {
                 AccountRoute(mobileApi = mobileApi, authRepository = authRepository, onBack = navController::popBackStack, onNewListing = { navController.navigate(LISTING_EDITOR_BASE) }, onSellerListings = { navController.navigate(SELLER_LISTINGS_ROUTE) }, onMessages = { navController.navigate(MESSAGES_ROUTE) }, onSellerDashboard = { navController.navigate(SELLER_DASHBOARD_ROUTE) }, onCollection = { kind -> navController.navigate("collection/$kind") }, onSellerRoleChanged = { sellerAccount = it })
             }
-            composable(LISTING_EDITOR_ROUTE, arguments=listOf(navArgument("listingId") { type=NavType.LongType; defaultValue=0L })) { entry -> ListingEditorRoute(mobileApi, navController::popBackStack, entry.arguments?.getLong("listingId")?.takeIf { it > 0 }) }
+            composable(LISTING_EDITOR_ROUTE, arguments=listOf(navArgument("listingId") { type=NavType.LongType; defaultValue=0L })) { entry ->
+                ListingEditorRoute(
+                    api = mobileApi,
+                    onDone = navController::popBackStack,
+                    editingId = entry.arguments?.getLong("listingId")?.takeIf { it > 0 },
+                    onViewListing = { slug ->
+                        navController.navigate("listing/$slug") {
+                            popUpTo(CATALOG_ROUTE) { saveState = true }
+                        }
+                    },
+                    onSellerListings = {
+                        navController.navigate(SELLER_LISTINGS_ROUTE) {
+                            popUpTo(CATALOG_ROUTE) { saveState = true }
+                        }
+                    },
+                )
+            }
             composable(SELLER_LISTINGS_ROUTE) { SellerListingsRoute(mobileApi, navController::popBackStack, onEdit = { id -> navController.navigate("$LISTING_EDITOR_BASE?listingId=$id") }) }
             composable(MESSAGES_ROUTE) { MessagesRoute(mobileApi, navController::popBackStack, embedded = true) }
             composable(SELLER_DASHBOARD_ROUTE) { SellerDashboardRoute(mobileApi, navController::popBackStack) }

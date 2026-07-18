@@ -66,7 +66,13 @@ private val editorSteps = listOf("Detalii", "Specificații", "Fotografii", "Publ
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ListingEditorRoute(api: MobileApi, onDone: () -> Unit, editingId: Long? = null) {
+fun ListingEditorRoute(
+    api: MobileApi,
+    onDone: () -> Unit,
+    editingId: Long? = null,
+    onViewListing: (String) -> Unit,
+    onSellerListings: () -> Unit,
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var step by remember { mutableStateOf(0) }
@@ -93,6 +99,7 @@ fun ListingEditorRoute(api: MobileApi, onDone: () -> Unit, editingId: Long? = nu
     var images by remember { mutableStateOf<List<String>>(emptyList()) }
     var status by remember { mutableStateOf<String?>(null) }
     var saving by remember { mutableStateOf(false) }
+    var publishedSlug by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(editingId) {
         if (editingId != null) {
@@ -156,7 +163,15 @@ fun ListingEditorRoute(api: MobileApi, onDone: () -> Unit, editingId: Long? = nu
                 putJsonArray("images") { images.forEach { path -> add(buildJsonObject { put("path", path) }) } }
             }
             runCatching { api.call("save_listing", payload) }
-                .onSuccess { onDone() }
+                .onSuccess { response ->
+                    val slug = response["listing"]?.jsonObject?.get("slug")?.jsonPrimitive?.content
+                    if (targetStatus == "published" && !slug.isNullOrBlank()) {
+                        publishedSlug = slug
+                        saving = false
+                    } else {
+                        onDone()
+                    }
+                }
                 .onFailure { status = it.message ?: "Nu am putut salva anunțul."; saving = false }
         }
     }
@@ -174,6 +189,14 @@ fun ListingEditorRoute(api: MobileApi, onDone: () -> Unit, editingId: Long? = nu
             else -> null
         }
         if (issue != null) status = issue else { status = null; step += 1 }
+    }
+
+    publishedSlug?.let { slug ->
+        PublicationSuccessScreen(
+            onViewListing = { onViewListing(slug) },
+            onSellerListings = onSellerListings,
+        )
+        return
     }
 
     Scaffold(
@@ -326,5 +349,47 @@ private fun Field(value: String, onValueChange: (String) -> Unit, label: String,
 private fun EditorMessage(message: String) {
     Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.errorContainer, modifier = Modifier.fillMaxWidth()) {
         Text(message, modifier = Modifier.padding(12.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onErrorContainer)
+    }
+}
+
+@Composable
+private fun PublicationSuccessScreen(onViewListing: () -> Unit, onSellerListings: () -> Unit) {
+    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .55f)) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(24.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Surface(
+                modifier = Modifier.size(88.dp),
+                shape = RoundedCornerShape(30.dp),
+                color = MaterialTheme.colorScheme.primaryContainer,
+            ) {
+                Icon(
+                    Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    modifier = Modifier.padding(22.dp),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+            Spacer(Modifier.height(22.dp))
+            Text("Anunț publicat!", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold)
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "Mașina ta este acum vizibilă pentru cumpărători. Poți verifica exact cum arată sau reveni la anunțurile tale.",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(28.dp))
+            Button(onClick = onViewListing, modifier = Modifier.fillMaxWidth().height(54.dp), shape = RoundedCornerShape(16.dp)) {
+                Text("Vezi anunțul")
+                Spacer(Modifier.width(8.dp))
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
+            }
+            Spacer(Modifier.height(10.dp))
+            OutlinedButton(onClick = onSellerListings, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(16.dp)) {
+                Text("Anunțurile mele")
+            }
+        }
     }
 }
