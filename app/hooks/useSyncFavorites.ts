@@ -35,11 +35,35 @@ export function useSyncFavorites(userId: string | null | undefined) {
             .map((id) => Number(id))
             .filter((id) => Number.isInteger(id));
 
+          let persistedIds = nextIds;
+
           if (addedRows.length) {
             const { error } = await supabase
               .from('favorites')
-              .upsert(addedRows, { onConflict: 'user_id,listing_id' });
-            if (error) throw error;
+              // A favorite already saved from another tab is a successful
+              // outcome. Avoid a no-op UPDATE here: on mobile browsers it can
+              // otherwise turn into a 409 while the local state is correct.
+              .upsert(addedRows, { onConflict: 'user_id,listing_id', ignoreDuplicates: true });
+
+            if (error?.code === '23503') {
+              // The persisted browser store can retain an ID after its
+              // listing was deleted. Retry one at a time so the valid
+              // favorites still sync, and remove only the orphaned ID.
+              const orphanedIds: string[] = [];
+              for (const row of addedRows) {
+                const { error: rowError } = await supabase
+                  .from('favorites')
+                  .upsert(row, { onConflict: 'user_id,listing_id', ignoreDuplicates: true });
+                if (rowError?.code === '23503') orphanedIds.push(String(row.listing_id));
+                else if (rowError) throw rowError;
+              }
+              if (orphanedIds.length) {
+                persistedIds = nextIds.filter((id) => !orphanedIds.includes(id));
+                useAppStore.setState({ favorites: persistedIds });
+              }
+            } else if (error) {
+              throw error;
+            }
           }
 
           if (removedListingIds.length) {
@@ -51,7 +75,7 @@ export function useSyncFavorites(userId: string | null | undefined) {
             if (error) throw error;
           }
 
-          lastSyncedIdsRef.current = nextIds;
+          lastSyncedIdsRef.current = persistedIds;
         };
 
         syncChanges = persistChanges;
