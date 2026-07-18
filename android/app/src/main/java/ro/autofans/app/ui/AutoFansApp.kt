@@ -134,7 +134,7 @@ fun AutoFansNavigation(repository: ListingRepository, authRepository: SupabaseAu
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             topBar = {
-                if (showBottomNavigation) {
+                if (showBottomNavigation && currentRoute != MESSAGES_ROUTE) {
                     PremiumAppHeader(
                         title = headerTitle,
                         isAuthenticated = session != null,

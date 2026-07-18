@@ -25,6 +25,8 @@ class MobileApi(
     private val client: OkHttpClient = OkHttpClient(),
     private val json: Json = Json { ignoreUnknownKeys = true },
 ) {
+    fun currentUserId(): String? = auth.session?.user?.id
+
     suspend fun call(operation: String, payload: JsonObject = buildJsonObject {}): JsonObject = withContext(Dispatchers.IO) {
         val session = auth.activeSession()
         val body = buildJsonObject { put("operation", operation); put("payload", payload) }.toString()

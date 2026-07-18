@@ -168,7 +168,30 @@ Deno.serve(async (request) => {
       case "notifications": { const { data, error } = await supabase.from("alert_notifications").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(100); return fail(error) || respond({ notifications: data || [] }); }
       case "read_notification": { const { error } = await supabase.from("alert_notifications").update({ read_at: new Date().toISOString() }).eq("id", Number(payload.id)).eq("user_id", user.id); return fail(error) || respond({ ok: true }); }
       case "promote_seller": { const { error } = await supabase.rpc("promote_to_seller"); return fail(error) || respond({ ok: true }); }
-      case "conversations": { const { data, error } = await supabase.from("conversations").select("id,listing_id,buyer_id,seller_id,created_at,updated_at").or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`).order("updated_at", { ascending: false }); return fail(error) || respond({ conversations: data || [] }); }
+      case "conversations": {
+        const { data, error } = await supabase.from("conversations").select("id,listing_id,buyer_id,seller_id,created_at,updated_at").or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`).order("updated_at", { ascending: false });
+        if (error) return fail(error)!;
+        const conversations = data || [];
+        const listingIds = [...new Set(conversations.map((conversation) => conversation.listing_id))];
+        const counterpartIds = [...new Set(conversations.map((conversation) => conversation.buyer_id === user.id ? conversation.seller_id : conversation.buyer_id))];
+        const conversationIds = conversations.map((conversation) => conversation.id);
+        const [listingsResult, profilesResult, messagesResult] = await Promise.all([
+          listingIds.length ? supabase.from("listings").select("id,slug,title,make,model,year,images").in("id", listingIds) : Promise.resolve({ data: [], error: null }),
+          counterpartIds.length ? supabase.from("profiles").select("id,display_name,email,avatar_url").in("id", counterpartIds) : Promise.resolve({ data: [], error: null }),
+          conversationIds.length ? supabase.from("messages").select("conversation_id,body,created_at,sender_id").in("conversation_id", conversationIds).order("created_at", { ascending: false }).limit(200) : Promise.resolve({ data: [], error: null }),
+        ]);
+        if (listingsResult.error || profilesResult.error || messagesResult.error) return fail(listingsResult.error || profilesResult.error || messagesResult.error)!;
+        const listingById = new Map((listingsResult.data || []).map((listing) => [listing.id, listing]));
+        const profileById = new Map((profilesResult.data || []).map((profile) => [profile.id, profile]));
+        const lastMessageByConversation = new Map<number, unknown>();
+        for (const message of messagesResult.data || []) if (!lastMessageByConversation.has(message.conversation_id)) lastMessageByConversation.set(message.conversation_id, message);
+        return respond({ conversations: conversations.map((conversation) => ({
+          ...conversation,
+          listing: listingById.get(conversation.listing_id) || null,
+          counterpart: profileById.get(conversation.buyer_id === user.id ? conversation.seller_id : conversation.buyer_id) || null,
+          last_message: lastMessageByConversation.get(conversation.id) || null,
+        })) });
+      }
       case "messages": { const { data, error } = await supabase.from("messages").select("id,conversation_id,sender_id,body,created_at,read_at").eq("conversation_id", Number(payload.conversationId)).order("created_at", { ascending: true }).limit(200); return fail(error) || respond({ messages: data || [] }); }
       case "start_conversation": {
         const listingId = Number(payload.listingId), message = typeof payload.message === "string" ? payload.message.trim().slice(0, 2_000) : ""; if (!Number.isInteger(listingId) || !message) return respond({ error: "Invalid conversation" }, 400);
