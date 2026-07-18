@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { MessageCircle, Send } from 'lucide-react';
 import { getSupabaseServerClient } from '~/lib/supabase.server';
 import { getSupabaseBrowserClient } from '~/lib/supabase.client';
+import { invokeChat } from '~/lib/chat.server';
 import { Button } from '~/components/ui/Button';
 
 type ChatMessage = {
@@ -121,32 +122,17 @@ export async function action({ request }: ActionFunctionArgs) {
   if (intent === 'send') {
     const conversationId = Number(form.get('conversationId'));
     if (!Number.isInteger(conversationId)) return actionError('Conversație invalidă.', 400);
-    // RLS remains the final database boundary, but the route must also refuse
-    // a forged conversation id before attempting an insert.
-    const { data: conversation, error: conversationError } = await supabase
-      .from('conversations')
-      .select('id')
-      .eq('id', conversationId)
-      .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
-      .maybeSingle();
-    if (conversationError || !conversation) {
-      return actionError('Nu ai acces la această conversație.', 403);
+    try {
+      const result = await invokeChat<MessageActionData>(supabase, 'send_message', {
+        conversationId,
+        message: body,
+        clientMessageId,
+      });
+      if (!result.ok || !result.message) throw new Error('Mesajul nu a putut fi trimis.');
+      return Response.json(result, { headers });
+    } catch (error) {
+      return actionError(error instanceof Error ? error.message : 'Mesajul nu a putut fi trimis.', 400);
     }
-    const { data: message, error } = await supabase
-      .from('messages')
-      .insert({ conversation_id: conversationId, sender_id: user.id, body })
-      .select('id,conversation_id,sender_id,body,created_at')
-      .single();
-    if (error) return actionError(error.message, 400);
-    // Keep the inbox sorted even before/without the database trigger used in
-    // production. This is intentionally best-effort: the sent message is the
-    // primary action and must not be reported as failed because of a touch.
-    const { error: touchError } = await supabase
-      .from('conversations')
-      .update({ updated_at: new Date().toISOString() })
-      .eq('id', conversationId);
-    if (touchError) console.warn('Could not update conversation activity:', touchError);
-    return Response.json({ ok: true, clientMessageId, message }, { headers });
   }
   return Response.json({ error: 'Acțiune invalidă.' }, { status: 400, headers });
 }

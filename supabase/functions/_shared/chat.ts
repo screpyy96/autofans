@@ -48,6 +48,7 @@ export async function handleChatOperation(context: ChatContext): Promise<Respons
     }
     case "start_conversation": {
       const listingId = Number(payload.listingId), message = typeof payload.message === "string" ? payload.message.trim().slice(0, 2_000) : "";
+      const clientMessageId = typeof payload.clientMessageId === "string" ? payload.clientMessageId.slice(0, 96) : "";
       if (!Number.isInteger(listingId) || !message) return respond({ error: "Invalid conversation" }, 400);
       const { data: listing } = await supabase.from("listings").select("id,owner_id").eq("id", listingId).eq("status", "published").maybeSingle();
       if (!listing || listing.owner_id === user.id) return respond({ error: "Listing unavailable" }, 400);
@@ -57,14 +58,15 @@ export async function handleChatOperation(context: ChatContext): Promise<Respons
         if (created.error && created.error.code !== "23505") return fail(created.error)!;
         conversation = created.data || (await supabase.from("conversations").select("id").eq("listing_id", listingId).eq("buyer_id", user.id).eq("seller_id", listing.owner_id).single()).data;
       }
-      const { error } = await supabase.from("messages").insert({ conversation_id: conversation!.id, sender_id: user.id, body: message });
-      return fail(error) || respond({ conversationId: conversation!.id });
+      const { data: savedMessage, error } = await supabase.from("messages").insert({ conversation_id: conversation!.id, sender_id: user.id, body: message }).select("id,conversation_id,sender_id,body,created_at").single();
+      return fail(error) || respond({ conversationId: conversation!.id, clientMessageId, message: savedMessage });
     }
     case "send_message": {
       const id = Number(payload.conversationId), message = typeof payload.message === "string" ? payload.message.trim().slice(0, 2_000) : "";
+      const clientMessageId = typeof payload.clientMessageId === "string" ? payload.clientMessageId.slice(0, 96) : "";
       if (!Number.isInteger(id) || !message) return respond({ error: "Invalid message" }, 400);
-      const { error } = await supabase.from("messages").insert({ conversation_id: id, sender_id: user.id, body: message });
-      return fail(error) || respond({ ok: true });
+      const { data: savedMessage, error } = await supabase.from("messages").insert({ conversation_id: id, sender_id: user.id, body: message }).select("id,conversation_id,sender_id,body,created_at").single();
+      return fail(error) || respond({ ok: true, clientMessageId, message: savedMessage });
     }
     default:
       return null;
