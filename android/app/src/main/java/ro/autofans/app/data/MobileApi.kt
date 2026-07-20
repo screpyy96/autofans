@@ -13,6 +13,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import java.io.IOException
 import java.util.UUID
 
@@ -25,10 +26,29 @@ class MobileApi(
     private val client: OkHttpClient = OkHttpClient(),
     private val json: Json = Json { ignoreUnknownKeys = true },
 ) {
+    fun currentUserId(): String? = auth.session?.user?.id
+
+    suspend fun subscribeToMessages(onEvent: (RealtimeMessageEvent) -> Unit, onError: (Throwable) -> Unit): java.io.Closeable = withContext(Dispatchers.IO) {
+        val session = auth.activeSession()
+        val websocketUrl = config.url.toHttpUrl().newBuilder()
+            .scheme(if (config.url.startsWith("https://")) "wss" else "ws")
+            .addPathSegments("realtime/v1/websocket")
+            .addQueryParameter("apikey", config.anonKey)
+            .addQueryParameter("vsn", "1.0.0")
+            .build()
+        val (listener, makeSubscription) = realtimeMessageListener(json, session.access_token, onEvent, onError)
+        val socket = client.newWebSocket(
+            Request.Builder().url(websocketUrl).header("apikey", config.anonKey).header("Authorization", "Bearer ${session.access_token}").build(),
+            listener,
+        )
+        makeSubscription(socket)
+    }
+
     suspend fun call(operation: String, payload: JsonObject = buildJsonObject {}): JsonObject = withContext(Dispatchers.IO) {
         val session = auth.activeSession()
         val body = buildJsonObject { put("operation", operation); put("payload", payload) }.toString()
-        val request = Request.Builder().url("${config.url.trimEnd('/')}/functions/v1/mobile-v1")
+        val functionName = if (operation in CHAT_OPERATIONS) "chat-v1" else "mobile-v1"
+        val request = Request.Builder().url("${config.url.trimEnd('/')}/functions/v1/$functionName")
             .header("apikey", config.anonKey)
             .header("Authorization", "Bearer ${session.access_token}")
             .post(body.toRequestBody(JSON)).build()
@@ -38,6 +58,17 @@ class MobileApi(
             return@withContext runCatching { json.parseToJsonElement(text) as? JsonObject }.getOrNull()
                 ?: throw IOException("Serverul AutoFans a trimis un răspuns invalid. Încearcă din nou mai târziu.")
         }
+    }
+
+    /** Registers the current physical device for server-side FCM delivery.
+     * The FCM token is never a credential and is always tied to the active
+     * authenticated AutoFans user by the Edge Function. */
+    suspend fun registerPushToken(token: String) {
+        if (token.length < 30) return
+        call("register_push_token", buildJsonObject {
+            put("token", token)
+            put("platform", "android")
+        })
     }
 
     suspend fun uploadListingImage(context: Context, uri: Uri): String = withContext(Dispatchers.IO) {
@@ -82,6 +113,7 @@ class MobileApi(
     }
 
     private companion object {
+        val CHAT_OPERATIONS = setOf("conversations", "messages", "start_conversation", "send_message", "mark_conversation_read")
         val JSON = "application/json; charset=utf-8".toMediaType()
         val PROFILE_AVATAR_MIME_TYPES = setOf("image/jpeg", "image/png", "image/webp")
         const val PROFILE_AVATAR_MAX_BYTES = 5 * 1024 * 1024

@@ -73,12 +73,12 @@ struct PremiumHeader: View {
     }
 }
 
-enum AppTab: Hashable { case home, search, favorites, messages, account
-    var title: String { switch self { case .home: "Acasă"; case .search: "Caută"; case .favorites: "Favorite"; case .messages: "Mesaje"; case .account: "Cont" } }
-    var icon: String { switch self { case .home: "house"; case .search: "magnifyingglass"; case .favorites: "heart"; case .messages: "message"; case .account: "person" } }
+enum AppTab: Hashable { case home, favorites, sell, messages, account
+    var title: String { switch self { case .home: "Acasă"; case .favorites: "Favorite"; case .sell: "Vinde"; case .messages: "Mesaje"; case .account: "Cont" } }
+    var icon: String { switch self { case .home: "house"; case .favorites: "heart"; case .sell: "plus.circle"; case .messages: "message"; case .account: "person" } }
 }
 
 struct PremiumTabBar: View {
     @Binding var selection: AppTab
-    var body: some View { HStack(spacing: 2) { ForEach([AppTab.home, .search, .favorites, .messages, .account], id: \.self) { tab in Button { selection = tab } label: { VStack(spacing: 4) { Image(systemName: selection == tab ? "\(tab.icon).fill" : tab.icon).font(.system(size: 17, weight: .semibold)); Text(tab.title).font(.caption2.weight(.semibold)) }.foregroundStyle(selection == tab ? AFTheme.gold : AFTheme.muted).frame(maxWidth: .infinity).padding(.vertical, 9).contentShape(Rectangle()) }.accessibilityAddTraits(selection == tab ? .isSelected : []) } }.padding(.horizontal, 10).padding(.top, 7).padding(.bottom, 3).background(.ultraThinMaterial).overlay(alignment: .top) { Divider().opacity(0.5) } }
+    var body: some View { HStack(spacing: 2) { ForEach([AppTab.home, .favorites, .sell, .messages, .account], id: \.self) { tab in Button { selection = tab } label: { VStack(spacing: 4) { Image(systemName: selection == tab ? "\(tab.icon).fill" : tab.icon).font(.system(size: tab == .sell ? 20 : 17, weight: .semibold)); Text(tab.title).font(.caption2.weight(.semibold)) }.foregroundStyle(selection == tab ? AFTheme.gold : AFTheme.muted).frame(maxWidth: .infinity).padding(.vertical, 9).contentShape(Rectangle()) }.accessibilityAddTraits(selection == tab ? .isSelected : []) } }.padding(.horizontal, 10).padding(.top, 7).padding(.bottom, 3).background(.ultraThinMaterial).overlay(alignment: .top) { Divider().opacity(0.5) } }
 }

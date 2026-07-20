@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { handleChatOperation } from "../_shared/chat.ts";
 
 type Payload = Record<string, unknown>;
 type RequestBody = { operation?: string; payload?: Payload };
@@ -135,6 +136,10 @@ Deno.serve(async (request) => {
   const fail = (error: { message: string } | null | undefined) => error ? respond({ error: error.message }, 400) : null;
 
   try {
+    // Existing Android builds retain this endpoint. New builds route chat
+    // directly to chat-v1, but the handler stays shared rather than copied.
+    const chatResponse = await handleChatOperation({ operation: body.operation, payload, user, supabase, respond, fail });
+    if (chatResponse) return chatResponse;
     switch (body.operation) {
       case "account": {
         const { data: profile, error } = await supabase.from("profiles").select("id,email,display_name,phone,avatar_url,role,is_verified").eq("id", user.id).single();
@@ -167,17 +172,16 @@ Deno.serve(async (request) => {
       }
       case "notifications": { const { data, error } = await supabase.from("alert_notifications").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(100); return fail(error) || respond({ notifications: data || [] }); }
       case "read_notification": { const { error } = await supabase.from("alert_notifications").update({ read_at: new Date().toISOString() }).eq("id", Number(payload.id)).eq("user_id", user.id); return fail(error) || respond({ ok: true }); }
-      case "promote_seller": { const { error } = await supabase.rpc("promote_to_seller"); return fail(error) || respond({ ok: true }); }
-      case "conversations": { const { data, error } = await supabase.from("conversations").select("id,listing_id,buyer_id,seller_id,created_at,updated_at").or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`).order("updated_at", { ascending: false }); return fail(error) || respond({ conversations: data || [] }); }
-      case "messages": { const { data, error } = await supabase.from("messages").select("id,conversation_id,sender_id,body,created_at,read_at").eq("conversation_id", Number(payload.conversationId)).order("created_at", { ascending: true }).limit(200); return fail(error) || respond({ messages: data || [] }); }
-      case "start_conversation": {
-        const listingId = Number(payload.listingId), message = typeof payload.message === "string" ? payload.message.trim().slice(0, 2_000) : ""; if (!Number.isInteger(listingId) || !message) return respond({ error: "Invalid conversation" }, 400);
-        const { data: listing } = await supabase.from("listings").select("id,owner_id").eq("id", listingId).eq("status", "published").maybeSingle(); if (!listing || listing.owner_id === user.id) return respond({ error: "Listing unavailable" }, 400);
-        let { data: conversation } = await supabase.from("conversations").select("id").eq("listing_id", listingId).eq("buyer_id", user.id).eq("seller_id", listing.owner_id).maybeSingle();
-        if (!conversation) { const created = await supabase.from("conversations").insert({ listing_id: listingId, buyer_id: user.id, seller_id: listing.owner_id }).select("id").single(); if (created.error && created.error.code !== "23505") return fail(created.error)!; conversation = created.data || (await supabase.from("conversations").select("id").eq("listing_id", listingId).eq("buyer_id", user.id).eq("seller_id", listing.owner_id).single()).data; }
-        const { error } = await supabase.from("messages").insert({ conversation_id: conversation!.id, sender_id: user.id, body: message }); return fail(error) || respond({ conversationId: conversation!.id });
+      case "register_push_token": {
+        const token = cleanText(payload.token, 4_096), platform = cleanText(payload.platform, 10);
+        if (token.length < 30 || !["android", "ios"].includes(platform)) return respond({ error: "Dispozitiv invalid." }, 400);
+        const { error } = await supabase.from("push_devices").upsert(
+          { user_id: user.id, fcm_token: token, platform, updated_at: new Date().toISOString() },
+          { onConflict: "user_id,fcm_token" },
+        );
+        return fail(error) || respond({ ok: true });
       }
-      case "send_message": { const id = Number(payload.conversationId), message = typeof payload.message === "string" ? payload.message.trim().slice(0, 2_000) : ""; if (!Number.isInteger(id) || !message) return respond({ error: "Invalid message" }, 400); const { error } = await supabase.from("messages").insert({ conversation_id: id, sender_id: user.id, body: message }); return fail(error) || respond({ ok: true }); }
+      case "promote_seller": { const { error } = await supabase.rpc("promote_to_seller"); return fail(error) || respond({ ok: true }); }
       case "report_listing": {
         const listingId = Number(payload.listingId), reason = typeof payload.reason === "string" ? payload.reason : "other", details = typeof payload.details === "string" ? payload.details.slice(0, 1_000) : ""; if (!Number.isInteger(listingId) || !["fraud", "incorrect_details", "duplicate", "offensive_content", "other"].includes(reason)) return respond({ error: "Invalid report" }, 400);
         const { error } = await supabase.from("listing_reports").insert({ listing_id: listingId, reporter_id: user.id, reason, details }); return fail(error) || respond({ ok: true });

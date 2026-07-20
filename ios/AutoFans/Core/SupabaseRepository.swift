@@ -44,10 +44,24 @@ actor SupabaseRepository {
             let (data, _) = try await execute(request)
             let urls = try decoder.decode([Signed].self, from: data).reduce(into: [String: URL]()) { result, item in
                 guard let path = item.path ?? item.name, let signed = item.signedURL else { return }
-                result[path] = URL(string: signed) ?? config.supabaseURL.appendingPath("storage/v1\(signed)")
+                guard let signedURL = storageSignedURL(from: signed) else { return }
+                result[path] = signedURL
             }
             listings.indices.forEach { index in listings[index].images.indices.forEach { imageIndex in listings[index].images[imageIndex].url = urls[listings[index].images[imageIndex].path] } }
         } catch { /* A card remains usable when Storage signing is temporarily unavailable. */ }
+    }
+
+    /// Storage may return either an absolute signed URL or a path such as
+    /// `/object/sign/<bucket>/<file>?token=...`. `URL(string:)` accepts the
+    /// latter as a relative URL, but URLSession cannot download it without a host.
+    private func storageSignedURL(from value: String) -> URL? {
+        if let absoluteURL = URL(string: value), absoluteURL.scheme != nil, absoluteURL.host != nil {
+            return absoluteURL
+        }
+
+        let path = value.hasPrefix("/") ? value : "/\(value)"
+        let baseURL = config.supabaseURL.absoluteString.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        return URL(string: "\(baseURL)/storage/v1\(path)")
     }
 
     private func request(url: URL, method: String, authenticated: Bool) throws -> URLRequest {
@@ -60,5 +74,18 @@ actor SupabaseRepository {
         guard 200..<300 ~= http.statusCode else { throw APIError.server(status: http.statusCode, message: Self.message(data) ?? "Cererea a eșuat.") }
         return (data, http)
     }
-    static func message(_ data: Data) -> String? { ((try? JSONDecoder().decode([String: String].self, from: data))?["error"]) }
+    static func message(_ data: Data) -> String? {
+        guard let response = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines).nonEmpty
+        }
+
+        for key in ["msg", "message", "error_description", "error"] {
+            if let message = response[key] as? String, !message.isEmpty { return message }
+        }
+        return nil
+    }
+}
+
+private extension String {
+    var nonEmpty: String? { isEmpty ? nil : self }
 }

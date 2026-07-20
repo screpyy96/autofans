@@ -21,6 +21,114 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    id: "9",
+    slug: "masini-second-hand-de-vanzare-cum-cumperi-sau-vinzi-2026",
+    title: "Mașini second-hand de vânzare: cum cumperi bine sau vinzi mai repede în 2026",
+    excerpt: "Ghid practic pentru anunțuri auto second-hand: cum găsești o mașină potrivită, ce verifici înainte de plată și cum publici un anunț care atrage cumpărători serioși.",
+    content: `
+Căutarea „**mașini second-hand de vânzare**” poate însemna două lucruri: vrei să găsești o mașină rulată potrivită sau ai o mașină de vândut și vrei să ajungi la cumpărători serioși. În ambele situații, anunțul bun este punctul de plecare. Pentru cumpărător, el trebuie să conțină suficiente date ca să merite o vizionare. Pentru vânzător, trebuie să răspundă onest la întrebările importante înainte să înceapă negocierea.
+
+> **Pe scurt:** cumpără o mașină după ce poți verifica starea, istoricul și actele ei. Vinde o mașină cu preț comparabil, fotografii reale și o descriere completă. Graba și informațiile neclare costă de obicei mai mult decât o verificare făcută corect.
+
+## Unde începi când cauți mașini second-hand
+
+Înainte să deschizi zeci de anunțuri, stabilește trei limite: bugetul total, utilizarea mașinii și distanța pe care o poți parcurge pentru o vizionare. Bugetul total nu este doar prețul afișat. Lasă bani pentru verificarea înainte de cumpărare, asigurare, acte, revizie, anvelope sau reparații apărute după predare.
+
+[Caută mașini second-hand pe AutoFans](/search) după marcă, model, buget, an, transmisie sau localitate. Salvează pentru comparație doar anunțurile care spun clar ce se vinde: anul, motorizarea, kilometrajul declarat, prețul, zona și starea generală.
+
+Nu alege doar după o fotografie bună, o echipare lungă sau cel mai mic preț. Compară aceeași generație, același motor, cutie de viteze, rulaj apropiat și nivel de întreținere. O mașină care pare mai scumpă poate fi alegerea mai bună dacă are acte, revizii și consumabile documentate.
+
+## Cum recunoști un anunț auto care merită un telefon
+
+Un anunț de mașină second-hand nu trebuie să promită perfecțiunea. Trebuie să fie ușor de verificat. Caută informații concrete, nu doar formulări de tipul „impecabilă”, „fără investiții” sau „ofertă urgentă”.
+
+Înainte să programezi vizionarea, întreabă:
+
+- care este seria VIN și poate fi comparată cu actele la întâlnire;
+- ce revizii sau lucrări importante au fost făcute și dacă există facturi;
+- ce defecte, daune sau consumabile sunt cunoscute;
+- dacă motorul poate fi văzut la rece și dacă este acceptat test drive-ul;
+- dacă vânzătorul acceptă o verificare într-un service independent;
+- ce documente, chei și accesorii intră în preț.
+
+Pozele puține, descrierea vagă, prețul mult sub piață sau presiunea pentru avans nu dovedesc singure o problemă. Sunt însă motive să ceri mai multe informații înainte să faci un drum. Dacă răspunsurile se schimbă sau datele din anunț nu pot fi confirmate, mergi la următorul exemplar.
+
+## Checklist înainte să cumperi o mașină rulată
+
+La vizionare, vezi mașina ziua și cere ca motorul să nu fie pornit înainte să ajungi. Compară seria VIN de pe mașină cu documentele, urmărește pornirea la rece, testează dotările pentru care plătești și fă un test drive normal, fără grabă.
+
+| Verificare | Ce urmărești |
+| --- | --- |
+| Caroserie și anvelope | Diferențe de nuanță, spații neuniforme, uzură neobișnuită sau deteriorări vizibile |
+| Interior și dotări | Uzură care nu se potrivește cu povestea mașinii, martori în bord și funcții care nu merg |
+| Motor și transmisie | Pornire la rece, zgomote, fum persistent, vibrații sau schimbări de viteze nefirești |
+| Acte și istoric | VIN identic, numele vânzătorului, documente de service și informații coerente |
+| Service independent | O evaluare a caroseriei, direcției, frânelor, suspensiei, diagnozei și scurgerilor |
+
+Nu trebuie să fii mecanic ca să observi neconcordanțele. Rolul tău este să decizi dacă mașina merită inspecția profesionistă. Pentru pașii detaliați, citește [ghidul de cumpărare a unei mașini second-hand](/blog/cum-cumperi-o-masina-second-hand-fara-tepe-2026) și [checklist-ul pentru vizionare](/blog/ce-verifici-la-vizionarea-unei-masini-second-hand-checklist).
+
+## VIN, acte și plata: ce nu lași pentru după
+
+VIN-ul trebuie să fie același pe mașină, în Cartea de Identitate a Vehiculului și în certificatul de înmatriculare. Cere să vezi documentele originale înainte de avans sau plata finală. Un raport de istoric și facturile de service ajută, dar nu înlocuiesc inspecția fizică.
+
+Nu plăti integral doar fiindcă vânzătorul spune că există alți cumpărători. Semnarea contractului, confirmarea plății și predarea mașinii, cheilor și documentelor trebuie să facă parte din același moment clar. Verifică toate detaliile înainte de semnătură: identitatea părților, VIN-ul, prețul, data și documentele predate. Vezi și [lista actelor necesare la cumpărare și vânzare](/blog/acte-necesare-cumparare-vanzare-masina-2026).
+
+## Cum vinzi o mașină second-hand fără să pierzi timp
+
+Dacă vrei să pui o **mașină de vânzare**, începe cu un preț realist. Compară anunțuri pentru mașini apropiate ca model, motor, an, rulaj, transmisie, echipare și stare. Nu calcula prețul doar după cât ai investit în ea: întreținerea bună susține încrederea, dar cumpărătorul compară oferta curentă din piață.
+
+Pregătește mașina pentru fotografii și pentru prima vizionare. Curăță interiorul, spală exteriorul, verifică becurile și scoate obiectele personale. Nu ascunde zgârieturi, elemente revopsite, erori în bord sau consumabile ajunse la limită. Un defect prezentat corect poate fi negociat; unul descoperit la fața locului oprește de multe ori tranzacția.
+
+În descrierea anunțului, include:
+
+1. marca, modelul, anul, motorizarea, combustibilul și transmisia;
+2. kilometrajul declarat, proveniența și istoricul disponibil;
+3. lucrările recente și documentele care le susțin;
+4. dotările importante care există efectiv pe mașină;
+5. defectele și lucrările care pot fi necesare;
+6. localitatea, condițiile pentru vizionare și disponibilitatea pentru verificare în service.
+
+Fotografiile ar trebui să arate exteriorul din toate unghiurile, interiorul, bordul, kilometrajul, portbagajul, roțile și dotările relevante. Adaugă și imperfecțiunile vizibile. Așa filtrezi oamenii care nu sunt hotărâți și dai cumpărătorilor serioși un motiv să te contacteze.
+
+Pentru un model de anunț și negociere, consultă [ghidul pentru vânzarea unei mașini](/blog/cum-vinzi-o-masina-rapid-si-in-siguranta-2026). Dacă ai deja cont de vânzător, poți [publica un anunț auto pe AutoFans](/create-listing).
+
+## Cumpăr sau vând: regulile care protejează ambele părți
+
+O tranzacție bună nu cere încredere oarbă. Cumpărătorul are dreptul să verifice mașina și actele. Vânzătorul are dreptul să ceară o discuție serioasă, să stabilească regulile test drive-ului și să confirme plata înainte de predare.
+
+Evitați linkurile sau „curierii” care cer date bancare, coduri de autentificare ori taxe neclare. Nu trimite copii integrale ale documentelor personale necunoscuților și nu preda cheia, CIV-ul sau certificatul înainte ca plata și contractul să fie în regulă. Păstrați pentru fiecare parte o copie a contractului și dovada plății.
+
+## Întrebări frecvente despre mașini second-hand de vânzare
+
+### Cum găsesc o mașină second-hand bună?
+
+Folosește filtrele, compară exemplare cu specificații apropiate, cere VIN-ul și istoricul înainte de drum, apoi fă test drive și inspecție independentă înainte de plată.
+
+### Ce trebuie să conțină un anunț de vânzare auto?
+
+Date tehnice corecte, kilometrajul declarat, istoric disponibil, lucrări recente, dotări, defecte cunoscute, poze reale, preț și localitate. Informațiile clare aduc discuții mai utile decât superlativele.
+
+### Este sigur să cumpăr o mașină fără verificare în service?
+
+Nu este recomandat, mai ales când valoarea mașinii sau costul unor reparații pot fi mari. Inspecția nu oferă o garanție absolută, dar reduce riscul de a cumpăra fără să înțelegi starea reală.
+
+[Vezi anunțurile auto disponibile](/search) sau [începe publicarea mașinii tale](/create-listing) când ai pregătit informațiile și fotografiile necesare.
+    `,
+    coverImage: "/hero_background.jpg",
+    author: { name: "AutoFans", role: "Echipa editorială AutoFans" },
+    category: "Cumpărare și vânzare",
+    tags: ["Mașini second-hand de vânzare", "Anunțuri auto", "Cumpăr mașină", "Vând mașina", "Cumpărare auto", "Vânzare auto"],
+    readTime: 11,
+    publishedAt: "2026-07-19T09:00:00Z",
+    updatedAt: "2026-07-19T09:00:00Z",
+    faqs: [
+      { question: "Cum găsesc mașini second-hand de vânzare potrivite?", answer: "Pornește de la bugetul total și nevoile tale, filtrează anunțurile după date concrete, apoi verifică VIN-ul, actele, test drive-ul și o inspecție independentă." },
+      { question: "Ce trebuie să pun într-un anunț de vânzare auto?", answer: "Include modelul, anul, motorul, transmisia, kilometrajul declarat, istoricul disponibil, lucrările, dotările, defectele cunoscute, prețul, localitatea și fotografii reale." },
+      { question: "Când este sigur să plătesc o mașină second-hand?", answer: "După ce ai comparat VIN-ul și actele, ai înțeles contractul și plata poate fi confirmată în același flux cu predarea mașinii, cheilor și documentelor promise." },
+    ],
+    isFeatured: true,
+  },
+  {
     id: "7",
     slug: "cum-vinzi-o-masina-rapid-si-in-siguranta-2026",
     title: "Cum vinzi o mașină rapid și în siguranță în 2026: preț, anunț, acte și negociere",

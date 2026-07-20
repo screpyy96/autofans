@@ -1,6 +1,6 @@
 import { lazy, Suspense, useRef, useState, useEffect, type FormEvent } from 'react';
 import type { Route } from "./+types/car.$slug";
-import { type LoaderFunctionArgs, useLoaderData } from "react-router";
+import { type LoaderFunctionArgs, useLoaderData, useNavigate } from "react-router";
 import { getSupabaseServerClient, hasSupabaseAuthCookie } from "~/lib/supabase.server";
 import { CarDetails } from '~/components/car/CarDetails';
 import type { ContactMode } from '~/components/ui/ContactModal';
@@ -33,6 +33,12 @@ function getVisitorSessionId() {
 
 function currentActivityDay() {
   return new Date().toISOString().slice(0, 10);
+}
+
+export function headers() {
+  return {
+    "Cache-Control": "public, max-age=60, s-maxage=3600, stale-while-revalidate=86400",
+  };
 }
 
 export function meta({ data }: Route.MetaArgs) {
@@ -116,7 +122,7 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
                 .neq('id', listing.id)
                 .gte('year', Number(listing.year) - 3)
                 .lte('year', Number(listing.year) + 3)
-                .limit(60)
+                .limit(25)
             : Promise.resolve({ data: [] }),
           listing.make && listing.model && listing.year
             ? supabase
@@ -174,6 +180,7 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
 
 export default function CarDetail({ params }: Route.ComponentProps) {
   const data = useLoaderData() as any;
+  const navigate = useNavigate();
   const [showContactModal, setShowContactModal] = useState(false);
   const [contactMode, setContactMode] = useState<ContactMode>('message');
   const [feedbackMessage, setFeedbackMessage] = useState('');
@@ -552,8 +559,10 @@ export default function CarDetail({ params }: Route.ComponentProps) {
                     : 'Mesajul nu a putut fi trimis. Încearcă din nou.';
                 throw new Error(result?.error || fallback);
               }
-              await recordContact(message.mode === 'viewing' ? 'viewing' : 'message');
-              window.location.href = `/messages?conversation=${result.conversationId}`;
+              // Full-document navigation can be intercepted by a stale PWA
+              // shell and drop the query string. Keep the id in React Router.
+              void recordContact(message.mode === 'viewing' ? 'viewing' : 'message');
+              navigate(`/messages/${encodeURIComponent(String(result.conversationId))}`);
             }}
             onWhatsAppContact={(message) => { void recordContact(message.mode === 'viewing' ? 'viewing' : 'whatsapp'); }}
           />

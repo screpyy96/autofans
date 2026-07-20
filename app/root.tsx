@@ -18,6 +18,8 @@ import { GoogleAnalytics } from "~/components/analytics/GoogleAnalytics";
 import "./app.css";
 import { getSupabaseServerClient, hasSupabaseAuthCookie } from "~/lib/supabase.server";
 
+import { NavigationProgressBar } from "~/components/ui/NavigationProgressBar";
+
 const PwaUpdatePrompt = lazy(() =>
   import('~/components/performance/PwaUpdatePrompt').then(({ PwaUpdatePrompt: PwaUpdatePromptComponent }) => ({ default: PwaUpdatePromptComponent })),
 );
@@ -120,6 +122,7 @@ export default function App() {
   
   return (
     <>
+      <NavigationProgressBar />
       <GoogleAnalytics />
       <Suspense fallback={null}><PwaUpdatePrompt /></Suspense>
       <MainLayout>

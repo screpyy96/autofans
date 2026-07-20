@@ -1,4 +1,4 @@
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import type { Route } from "./+types/home";
 import type { LinksFunction } from 'react-router';
 import { Search, Shield, GitCompare, Heart, MessageCircle, SlidersHorizontal, Plus, CircleCheck, MapPin } from 'lucide-react';
@@ -42,8 +42,9 @@ export const links: LinksFunction = () => [
 ];
 
 function HomeContent() {
+  const navigate = useNavigate();
   const handleSearch = (query: string) => {
-    window.location.href = `/search?q=${encodeURIComponent(query)}`;
+    navigate(`/search?q=${encodeURIComponent(query)}`);
   };
   const buyerFeatures = [
     {
@@ -127,7 +128,7 @@ function HomeContent() {
                 <p className="text-gray-400 mb-6 flex-1">
                   Compară ofertele după preț, an, kilometraj și locație, apoi alege mașina care ți se potrivește.
                 </p>
-                <Link to="/search" className="inline-block text-center text-accent-gold border border-accent-gold hover:bg-accent-gold/10 font-bold py-2.5 px-6 rounded-xl transition-colors">
+                <Link to="/search" prefetch="intent" className="inline-block text-center text-accent-gold border border-accent-gold hover:bg-accent-gold/10 font-bold py-2.5 px-6 rounded-xl transition-colors">
                   Caută mașini
                 </Link>
               </div>
@@ -144,7 +145,7 @@ function HomeContent() {
                 <p className="text-gray-400 mb-6 flex-1">
                   Adaugă un anunț în doar câteva minute și alege cea mai bună variantă de a vinde rapid și sigur pe platforma noastră.
                 </p>
-                <Link to="/create-listing" className="inline-block text-center text-accent-gold border border-accent-gold hover:bg-accent-gold/10 font-bold py-2.5 px-6 rounded-xl transition-colors">
+                <Link to="/create-listing" prefetch="intent" className="inline-block text-center text-accent-gold border border-accent-gold hover:bg-accent-gold/10 font-bold py-2.5 px-6 rounded-xl transition-colors">
                   Vinde mașina
                 </Link>
               </div>
@@ -161,7 +162,7 @@ function HomeContent() {
                 <p className="text-gray-400 mb-6 flex-1">
                   Vezi mașinile salvate, urmărește progresul anunțurilor tale și reia exact de unde ai rămas pe orice dispozitiv.
                 </p>
-                <Link to="/login" className="inline-block text-center text-accent-gold border border-accent-gold hover:bg-accent-gold/10 font-bold py-2.5 px-6 rounded-xl transition-colors">
+                <Link to="/login" prefetch="intent" className="inline-block text-center text-accent-gold border border-accent-gold hover:bg-accent-gold/10 font-bold py-2.5 px-6 rounded-xl transition-colors">
                   Autentificare
                 </Link>
               </div>
@@ -181,7 +182,7 @@ function HomeContent() {
             <p className="mt-4 max-w-2xl text-lg leading-relaxed text-gray-300">
               Creează un anunț cu detaliile care contează: fotografii, specificații, preț și locație. Astfel, cumpărătorii pot înțelege clar ce oferi înainte să te contacteze.
             </p>
-            <Link to="/create-listing" className="mt-8 inline-flex items-center justify-center rounded-xl bg-gold-gradient px-7 py-4 text-lg font-bold text-secondary-900 transition hover:brightness-110">
+            <Link to="/create-listing" prefetch="intent" className="mt-8 inline-flex items-center justify-center rounded-xl bg-gold-gradient px-7 py-4 text-lg font-bold text-secondary-900 transition hover:brightness-110">
               <Plus className="mr-2 h-5 w-5" /> Listează-ți mașina
             </Link>
           </div>
@@ -216,7 +217,7 @@ function HomeContent() {
                 </div>
                 <h3 className="mb-3 text-lg font-bold text-white">{feature.title}</h3>
                 <p className="flex-1 text-sm leading-relaxed text-gray-400">{feature.description}</p>
-                <Link to={feature.href} className="mt-6 text-sm font-bold text-accent-gold transition-colors hover:text-white">
+                <Link to={feature.href} prefetch="intent" className="mt-6 text-sm font-bold text-accent-gold transition-colors hover:text-white">
                   {feature.action} →
                 </Link>
               </Card>
@@ -233,7 +234,7 @@ function HomeContent() {
               <h2 className="mt-3 text-2xl font-bold sm:text-3xl">Mașini second-hand în Moldova</h2>
               <p className="mt-3 text-gray-400">Vezi anunțuri din Suceava, Iași, Botoșani, Neamț, Bacău, Vaslui, Vrancea și Galați — organizate pe județ și oraș.</p>
             </div>
-            <Link to="/masini-second-hand/moldova" className="inline-flex shrink-0 items-center justify-center rounded-xl border border-accent-gold/40 px-5 py-3 text-sm font-bold text-accent-gold transition-colors hover:bg-accent-gold/10">Explorează Moldova</Link>
+            <Link to="/masini-second-hand/moldova" prefetch="intent" className="inline-flex shrink-0 items-center justify-center rounded-xl border border-accent-gold/40 px-5 py-3 text-sm font-bold text-accent-gold transition-colors hover:bg-accent-gold/10">Explorează Moldova</Link>
           </div>
         </div>
       </section>
@@ -251,6 +252,7 @@ function HomeContent() {
           <div className="flex flex-col sm:flex-row gap-6 justify-center">
             <Link 
               to="/search" 
+              prefetch="intent"
               className="inline-flex items-center justify-center bg-secondary-900 text-white hover:bg-secondary-800 hover:shadow-lg transition-all duration-300 px-8 py-4 rounded-xl font-bold text-lg"
             >
               <Search className="h-5 w-5 mr-2" />
@@ -258,6 +260,7 @@ function HomeContent() {
             </Link>
             <Link 
               to="/create-listing" 
+              prefetch="intent"
               className="inline-flex items-center justify-center text-secondary-900 border-2 border-secondary-900 hover:bg-secondary-900/10 transition-all duration-300 px-8 py-4 rounded-xl font-bold text-lg"
             >
               <Plus className="h-5 w-5 mr-2" />

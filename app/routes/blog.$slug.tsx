@@ -5,6 +5,12 @@ import { blogPosts } from "~/data/blogPosts.server";
 import { ArrowLeft, Calendar, Clock, Share2, ShieldCheck } from "lucide-react";
 import { renderBlogMarkdown } from '~/utils/blogMarkdown.server';
 
+export function headers() {
+  return {
+    "Cache-Control": "public, max-age=300, s-maxage=86400, stale-while-revalidate=604800",
+  };
+}
+
 export function meta({ data }: Route.MetaArgs) {
   const post = data?.post;
   if (!post) return [{ title: "Articol inexistent - AutoFans Blog" }];

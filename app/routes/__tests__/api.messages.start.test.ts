@@ -11,7 +11,6 @@ vi.mock('~/lib/supabase.server', () => ({
 import { action } from '../api.messages.start';
 
 const buyerId = '11111111-1111-1111-1111-111111111111';
-const sellerId = '22222222-2222-2222-2222-222222222222';
 
 function request() {
   return new Request('https://autofans.ro/api/messages/start', {
@@ -41,18 +40,11 @@ describe('start listing conversation API', () => {
   });
 
   it('returns conversation JSON after storing the first message', async () => {
-    const listingQuery = { eq: vi.fn(), maybeSingle: vi.fn().mockResolvedValue({ data: { id: 42, owner_id: sellerId } }) };
-    listingQuery.eq.mockReturnValue(listingQuery);
-    const conversationQuery = { eq: vi.fn(), maybeSingle: vi.fn().mockResolvedValue({ data: { id: 7 } }) };
-    conversationQuery.eq.mockReturnValue(conversationQuery);
-    const insert = vi.fn().mockResolvedValue({ error: null });
+    const invoke = vi.fn().mockResolvedValue({ data: { conversationId: 7 }, error: null });
     const supabase = {
       auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: buyerId } } }) },
-      from: vi.fn((table: string) => {
-        if (table === 'listings') return { select: vi.fn().mockReturnValue(listingQuery) };
-        if (table === 'conversations') return { select: vi.fn().mockReturnValue(conversationQuery) };
-        return { insert };
-      }),
+      functions: { invoke },
+      from: vi.fn(),
     };
     serverMock.getSupabaseServerClient.mockReturnValue({ supabase, headers: new Headers() });
 
@@ -60,6 +52,8 @@ describe('start listing conversation API', () => {
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ ok: true, conversationId: 7 });
-    expect(insert).toHaveBeenCalledWith({ conversation_id: 7, sender_id: buyerId, body: 'Bună, mai este disponibilă mașina?' });
+    expect(invoke).toHaveBeenCalledWith('chat-v1', {
+      body: { operation: 'start_conversation', payload: { listingId: 42, message: 'Bună, mai este disponibilă mașina?' } },
+    });
   });
 });

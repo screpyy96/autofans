@@ -36,6 +36,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import ro.autofans.app.R
 import ro.autofans.app.data.ListingRepository
@@ -49,6 +50,9 @@ fun AutoFansApp(
     repository: ListingRepository,
     authRepository: SupabaseAuthRepository,
     mobileApi: MobileApi,
+    pendingConversationId: StateFlow<Long?>,
+    accountRefreshVersion: StateFlow<Int>,
+    onConversationOpened: (Long) -> Unit,
 ) {
     val context = LocalContext.current
     val preferences = remember(context) {
@@ -64,7 +68,14 @@ fun AutoFansApp(
             onboardingComplete = true
         })
     } else {
-        AutoFansNavigation(repository, authRepository, mobileApi)
+        AutoFansNavigation(
+            repository = repository,
+            authRepository = authRepository,
+            mobileApi = mobileApi,
+            pendingConversationId = pendingConversationId,
+            accountRefreshVersion = accountRefreshVersion,
+            onConversationOpened = onConversationOpened,
+        )
     }
 }
 

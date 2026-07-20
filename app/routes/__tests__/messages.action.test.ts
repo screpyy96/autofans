@@ -34,61 +34,47 @@ describe('messages action', () => {
     vi.clearAllMocks();
   });
 
-  it('rejects a forged conversation id before inserting a message', async () => {
-    const membershipQuery = {
-      eq: vi.fn(),
-      or: vi.fn(),
-      maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-    };
-    membershipQuery.eq.mockReturnValue(membershipQuery);
-    membershipQuery.or.mockReturnValue(membershipQuery);
-    const insert = vi.fn();
+  it('surfaces chat-v1 authorization errors without a direct database write', async () => {
+    const invoke = vi.fn().mockResolvedValue({ data: null, error: { message: 'Nu ai acces la această conversație.' } });
     const supabase = {
       auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: userId } } }) },
-      from: vi.fn().mockImplementation((table: string) => table === 'conversations'
-        ? { select: vi.fn().mockReturnValue(membershipQuery) }
-        : { insert }),
+      functions: { invoke },
+      from: vi.fn(),
     };
     mockAuthenticatedServer(supabase);
 
     const response = await action({ request: sendRequest() } as any) as Response;
 
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({ error: 'Nu ai acces la această conversație.' });
-    expect(membershipQuery.or).toHaveBeenCalledWith(`buyer_id.eq.${userId},seller_id.eq.${userId}`);
-    expect(insert).not.toHaveBeenCalled();
+    expect(invoke).toHaveBeenCalledWith('chat-v1', expect.objectContaining({ body: expect.objectContaining({ operation: 'send_message' }) }));
   });
 
-  it('sends a message only after membership validation and updates inbox activity', async () => {
-    const membershipQuery = {
-      eq: vi.fn(),
-      or: vi.fn(),
-      maybeSingle: vi.fn().mockResolvedValue({ data: { id: 42 }, error: null }),
+  it('sends browser messages through chat-v1', async () => {
+    const message = {
+      id: 77,
+      conversation_id: 42,
+      sender_id: userId,
+      body: 'Bună, mai este disponibilă mașina?',
+      created_at: '2026-07-18T19:00:00.000Z',
     };
-    membershipQuery.eq.mockReturnValue(membershipQuery);
-    membershipQuery.or.mockReturnValue(membershipQuery);
-    const insert = vi.fn().mockResolvedValue({ error: null });
-    const updateEq = vi.fn().mockResolvedValue({ error: null });
-    const update = vi.fn().mockReturnValue({ eq: updateEq });
+    const invoke = vi.fn().mockResolvedValue({ data: { ok: true, clientMessageId: '', message }, error: null });
     const supabase = {
       auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: userId } } }) },
-      from: vi.fn().mockImplementation((table: string) => {
-        if (table === 'conversations') return { select: vi.fn().mockReturnValue(membershipQuery), update };
-        return { insert };
-      }),
+      functions: { invoke },
+      from: vi.fn(),
     };
     mockAuthenticatedServer(supabase);
 
     const response = await action({ request: sendRequest() } as any) as Response;
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ ok: true });
-    expect(insert).toHaveBeenCalledWith({
-      conversation_id: 42,
-      sender_id: userId,
-      body: 'Bună, mai este disponibilă mașina?',
+    await expect(response.json()).resolves.toEqual({ ok: true, clientMessageId: '', message });
+    expect(invoke).toHaveBeenCalledWith('chat-v1', {
+      body: {
+        operation: 'send_message',
+        payload: { conversationId: 42, message: 'Bună, mai este disponibilă mașina?', clientMessageId: '' },
+      },
     });
-    expect(update).toHaveBeenCalledWith(expect.objectContaining({ updated_at: expect.any(String) }));
-    expect(updateEq).toHaveBeenCalledWith('id', 42);
   });
 });

@@ -11,18 +11,26 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination
 import androidx.navigation.NavType
@@ -36,6 +44,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ro.autofans.app.data.ListingRepository
 import ro.autofans.app.data.SupabaseAuthRepository
 import ro.autofans.app.data.MobileApi
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import com.google.firebase.messaging.FirebaseMessaging
 
 private const val CATALOG_ROUTE = "catalog"
 private const val DETAIL_ROUTE = "listing/{slug}"
@@ -74,16 +89,77 @@ private val sellerMainDestinations = listOf(
 )
 
 @Composable
-fun AutoFansNavigation(repository: ListingRepository, authRepository: SupabaseAuthRepository, mobileApi: MobileApi) {
+fun AutoFansNavigation(
+    repository: ListingRepository,
+    authRepository: SupabaseAuthRepository,
+    mobileApi: MobileApi,
+    pendingConversationId: StateFlow<Long?>,
+    accountRefreshVersion: StateFlow<Int>,
+    onConversationOpened: (Long) -> Unit,
+) {
     val navController = rememberNavController()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val session by authRepository.sessionState.collectAsStateWithLifecycle()
+    val requestedConversationId by pendingConversationId.collectAsState()
+    val requestedAccountRefreshVersion by accountRefreshVersion.collectAsState()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
+    val latestRoute by rememberUpdatedState(currentRoute)
     val currentCollectionKind = backStackEntry?.arguments?.getString("kind")
     var pendingProtectedRoute by remember { mutableStateOf<String?>(null) }
     var sellerAccount by remember { mutableStateOf(false) }
+    var unreadMessageCount by remember { mutableIntStateOf(0) }
     val passwordRecovery = authRepository.passwordRecovery.collectAsStateWithLifecycle().value
     val mainDestinations = if (sellerAccount) sellerMainDestinations else buyerMainDestinations
+    fun refreshUnreadMessageCount() {
+        if (session == null) {
+            unreadMessageCount = 0
+            return
+        }
+        scope.launch {
+            runCatching {
+                mobileApi.call("conversations")["conversations"]
+                    ?.jsonArray
+                    ?.sumOf { conversation -> conversation.jsonObject["unread_count"]?.jsonPrimitive?.intOrNull ?: 0 }
+                    ?: 0
+            }.onSuccess { unreadMessageCount = it }
+        }
+    }
+    DisposableEffect(session?.user?.id) {
+        var subscription: java.io.Closeable? = null
+        val job = session?.let { activeSession ->
+            scope.launch {
+                subscription = runCatching {
+                    mobileApi.subscribeToMessages(
+                        onEvent = { event ->
+                            refreshUnreadMessageCount()
+                            if (event.senderId != null && event.senderId != activeSession.user.id && latestRoute != MESSAGES_ROUTE &&
+                                (android.os.Build.VERSION.SDK_INT < 33 || androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED)
+                            ) MessageNotification.show(
+                                context = context,
+                                title = "Mesaj nou",
+                                body = event.message["body"]?.jsonPrimitive?.content ?: "Ai primit un mesaj nou în AutoFans.",
+                                notificationId = event.conversationId.toInt(),
+                                conversationId = event.conversationId,
+                            )
+                        },
+                        onError = { },
+                    )
+                }.getOrNull()
+            }
+        }
+        onDispose { job?.cancel(); subscription?.close() }
+    }
+    LaunchedEffect(session?.user?.id) {
+        refreshUnreadMessageCount()
+    }
+    LaunchedEffect(session?.user?.id) {
+        if (session == null) return@LaunchedEffect
+        FirebaseMessaging.getInstance().token.addOnSuccessListener { token ->
+            scope.launch { runCatching { mobileApi.registerPushToken(token) } }
+        }
+    }
     LaunchedEffect(session?.user?.id) {
         sellerAccount = session?.let {
             runCatching { mobileApi.call("account") }
@@ -95,6 +171,32 @@ fun AutoFansNavigation(repository: ListingRepository, authRepository: SupabaseAu
     }
     LaunchedEffect(passwordRecovery) {
         if (passwordRecovery) navController.navigate(LOGIN_ROUTE)
+    }
+    LaunchedEffect(requestedConversationId, session?.user?.id) {
+        if (requestedConversationId == null) return@LaunchedEffect
+        if (session == null) {
+            pendingProtectedRoute = MESSAGES_ROUTE
+            navController.navigate(LOGIN_ROUTE) { launchSingleTop = true }
+        } else {
+            navController.navigate(MESSAGES_ROUTE) {
+                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                launchSingleTop = true
+                restoreState = true
+            }
+        }
+    }
+    LaunchedEffect(requestedAccountRefreshVersion, session?.user?.id) {
+        if (requestedAccountRefreshVersion == 0) return@LaunchedEffect
+        if (session == null) {
+            pendingProtectedRoute = ACCOUNT_ROUTE
+            navController.navigate(LOGIN_ROUTE) { launchSingleTop = true }
+        } else {
+            navController.navigate(ACCOUNT_ROUTE) {
+                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                launchSingleTop = true
+                restoreState = true
+            }
+        }
     }
     fun navigateToMain(route: String) {
         if (session == null && mainDestinations.firstOrNull { it.route == route }?.protected == true) {
@@ -134,7 +236,7 @@ fun AutoFansNavigation(repository: ListingRepository, authRepository: SupabaseAu
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             topBar = {
-                if (showBottomNavigation) {
+                if (showBottomNavigation && currentRoute != MESSAGES_ROUTE) {
                     PremiumAppHeader(
                         title = headerTitle,
                         isAuthenticated = session != null,
@@ -150,6 +252,7 @@ fun AutoFansNavigation(repository: ListingRepository, authRepository: SupabaseAu
                         currentRoute = currentRoute,
                         currentCollectionKind = currentCollectionKind,
                         destinations = mainDestinations,
+                        unreadMessageCount = unreadMessageCount,
                         onDestinationSelected = ::navigateToMain,
                     )
                 }
@@ -192,7 +295,7 @@ fun AutoFansNavigation(repository: ListingRepository, authRepository: SupabaseAu
                 })
             }
             composable(ACCOUNT_ROUTE) {
-                AccountRoute(mobileApi = mobileApi, authRepository = authRepository, onBack = navController::popBackStack, onNewListing = { navController.navigate(LISTING_EDITOR_BASE) }, onSellerListings = { navController.navigate(SELLER_LISTINGS_ROUTE) }, onMessages = { navController.navigate(MESSAGES_ROUTE) }, onSellerDashboard = { navController.navigate(SELLER_DASHBOARD_ROUTE) }, onCollection = { kind -> navController.navigate("collection/$kind") }, onSellerRoleChanged = { sellerAccount = it })
+                AccountRoute(mobileApi = mobileApi, authRepository = authRepository, refreshVersion = requestedAccountRefreshVersion, onBack = navController::popBackStack, onNewListing = { navController.navigate(LISTING_EDITOR_BASE) }, onSellerListings = { navController.navigate(SELLER_LISTINGS_ROUTE) }, onMessages = { navController.navigate(MESSAGES_ROUTE) }, onSellerDashboard = { navController.navigate(SELLER_DASHBOARD_ROUTE) }, onCollection = { kind -> navController.navigate("collection/$kind") }, onSellerRoleChanged = { sellerAccount = it })
             }
             composable(LISTING_EDITOR_ROUTE, arguments=listOf(navArgument("listingId") { type=NavType.LongType; defaultValue=0L })) { entry ->
                 ListingEditorRoute(
@@ -212,7 +315,16 @@ fun AutoFansNavigation(repository: ListingRepository, authRepository: SupabaseAu
                 )
             }
             composable(SELLER_LISTINGS_ROUTE) { SellerListingsRoute(mobileApi, navController::popBackStack, onEdit = { id -> navController.navigate("$LISTING_EDITOR_BASE?listingId=$id") }) }
-            composable(MESSAGES_ROUTE) { MessagesRoute(mobileApi, navController::popBackStack, embedded = true) }
+            composable(MESSAGES_ROUTE) {
+                MessagesRoute(
+                    api = mobileApi,
+                    onBack = navController::popBackStack,
+                    embedded = true,
+                    requestedConversationId = requestedConversationId,
+                    onRequestedConversationOpened = onConversationOpened,
+                    onUnreadMessagesChanged = ::refreshUnreadMessageCount,
+                )
+            }
             composable(SELLER_DASHBOARD_ROUTE) { SellerDashboardRoute(mobileApi, navController::popBackStack) }
             composable(COLLECTION_ROUTE, arguments=listOf(navArgument("kind") { type=NavType.StringType })) { entry -> CollectionRoute(mobileApi, entry.arguments?.getString("kind").orEmpty(), navController::popBackStack, onCatalog = { navController.navigate(CATALOG_ROUTE) { popUpTo(CATALOG_ROUTE) } }, onListing = { slug -> navController.navigate("listing/$slug") }, embedded = true) }
             composable(SELLER_PROFILE_ROUTE, arguments=listOf(navArgument("sellerId") { type=NavType.StringType })) { entry -> SellerProfileRoute(mobileApi, entry.arguments?.getString("sellerId").orEmpty(), navController::popBackStack) }
@@ -227,6 +339,7 @@ private fun AutoFansBottomNavigation(
     currentRoute: String?,
     currentCollectionKind: String?,
     destinations: List<MainDestination>,
+    unreadMessageCount: Int,
     onDestinationSelected: (String) -> Unit,
 ) {
     NavigationBar(
@@ -241,7 +354,19 @@ private fun AutoFansBottomNavigation(
             NavigationBarItem(
                 selected = selected,
                 onClick = { onDestinationSelected(destination.route) },
-                icon = destination.icon,
+                icon = {
+                    if (destination.route == MESSAGES_ROUTE && unreadMessageCount > 0) {
+                        BadgedBox(
+                            badge = {
+                                Badge(containerColor = MaterialTheme.colorScheme.error) {
+                                    androidx.compose.material3.Text(if (unreadMessageCount > 9) "9+" else unreadMessageCount.toString())
+                                }
+                            },
+                        ) { destination.icon() }
+                    } else {
+                        destination.icon()
+                    }
+                },
                 label = { androidx.compose.material3.Text(destination.label) },
                 alwaysShowLabel = true,
                 colors = NavigationBarItemDefaults.colors(

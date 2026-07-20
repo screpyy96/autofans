@@ -1,4 +1,4 @@
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { useEffect, useState } from 'react';
 import type { Route } from "./+types/favorites";
 import type { Car } from '~/types';
@@ -74,8 +74,10 @@ export default function Favorites() {
     }
   };
 
+  const navigate = useNavigate();
+
   const handleView = (carId: string) => {
-    window.location.href = `/car/${carId}`;
+    navigate(`/car/${carId}`);
   };
 
   const clearAllFavorites = () => {

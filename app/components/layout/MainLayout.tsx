@@ -128,8 +128,8 @@ export function MainLayout({ children }: MainLayoutProps) {
   const unreadCount = notificationsLoaded
     ? notifications.filter((notification) => !notification.isRead).length
     : initialUnreadNotificationCount;
-  const loadNotifications = useCallback(() => {
-    if (!authUser || notificationsLoaded || notificationsLoading) return;
+  const loadNotifications = useCallback((force = false) => {
+    if (!authUser || (!force && (notificationsLoaded || notificationsLoading))) return;
     setNotificationsLoading(true);
     void import('~/lib/supabase.client')
       .then(async ({ getSupabaseBrowserClient }) => {
@@ -158,6 +158,25 @@ export function MainLayout({ children }: MainLayoutProps) {
       .catch((error) => console.warn('Could not load alerts:', error))
       .finally(() => setNotificationsLoading(false));
   }, [authUser, notificationsLoaded, notificationsLoading]);
+
+  useEffect(() => {
+    if (!authUser) return;
+    let active = true;
+    let channel: { unsubscribe: () => unknown } | null = null;
+    void import('~/lib/supabase.client').then(({ getSupabaseBrowserClient }) => {
+      if (!active) return;
+      const supabase = getSupabaseBrowserClient();
+      channel = supabase.channel(`autofans-alerts-${authUser.id}`)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'alert_notifications', filter: `user_id=eq.${authUser.id}` }, () => {
+          loadNotifications(true);
+        })
+        .subscribe();
+    }).catch((error) => console.warn('Could not subscribe to alerts:', error));
+    return () => {
+      active = false;
+      if (channel) void channel.unsubscribe();
+    };
+  }, [authUser?.id, loadNotifications]);
   const persistNotificationUpdate = (id: string, readAt: string) => {
     void import('~/lib/supabase.client')
       .then(({ getSupabaseBrowserClient }) => getSupabaseBrowserClient().from('alert_notifications').update({ read_at: readAt }).eq('id', Number(id)))
@@ -237,6 +256,7 @@ export function MainLayout({ children }: MainLayoutProps) {
             {/* Logo */}
             <Link
               to="/"
+              prefetch="intent"
               className="group flex items-center rounded-lg bg-white px-2 py-1 shadow-[0_6px_18px_rgba(0,0,0,0.22)]"
             >
               <picture>
@@ -262,6 +282,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                 <div key={item.name} className="transition-transform duration-200 hover:scale-105 active:scale-95">
                   <Link
                     to={item.href}
+                    prefetch="intent"
                     className={cn(
                       'relative flex items-center gap-2 px-1 pt-2 pb-2 text-sm font-semibold transition-colors group border-b-2 border-transparent',
                       'focus:outline-none focus:ring-0',
@@ -365,21 +386,21 @@ export function MainLayout({ children }: MainLayoutProps) {
                       className="absolute right-0 mt-2 w-48 bg-secondary-900/90 border border-white/20 rounded-2xl shadow-2xl backdrop-blur-xl overflow-hidden z-50"
                     >
                       {profile?.role === 'seller' && (
-                        <Link to="/dashboard" className="block px-3 py-2 text-sm text-gray-200 hover:bg-white/5" role="menuitem">
+                        <Link to="/dashboard" prefetch="intent" className="block px-3 py-2 text-sm text-gray-200 hover:bg-white/5" role="menuitem">
                           Dashboard
                         </Link>
                       )}
-                      <Link to="/profile" className="block px-3 py-2 text-sm text-gray-200 hover:bg-white/5" role="menuitem">
+                      <Link to="/profile" prefetch="intent" className="block px-3 py-2 text-sm text-gray-200 hover:bg-white/5" role="menuitem">
                         Profil
                       </Link>
-                      <Link to="/favorites" className="block px-3 py-2 text-sm text-gray-200 hover:bg-white/5" role="menuitem">
+                      <Link to="/favorites" prefetch="intent" className="block px-3 py-2 text-sm text-gray-200 hover:bg-white/5" role="menuitem">
                         Favorite
                       </Link>
-                      <Link to="/reports" className="block px-3 py-2 text-sm text-gray-200 hover:bg-white/5" role="menuitem">
+                      <Link to="/reports" prefetch="intent" className="block px-3 py-2 text-sm text-gray-200 hover:bg-white/5" role="menuitem">
                         Rapoartele mele
                       </Link>
                       <div className="my-1 h-px bg-white/10" />
-                      <Link to="/logout" className="block px-3 py-2 text-sm text-gray-200 hover:bg-white/5" role="menuitem">
+                      <Link to="/logout" prefetch="intent" className="block px-3 py-2 text-sm text-gray-200 hover:bg-white/5" role="menuitem">
                         Ieșire
                       </Link>
                     </div>
@@ -388,6 +409,7 @@ export function MainLayout({ children }: MainLayoutProps) {
               ) : (
                 <Link
                   to={`/login?next=${nextParam}`}
+                  prefetch="intent"
                   className="hidden sm:inline-flex items-center justify-center rounded-xl bg-gold-gradient px-3 py-1.5 text-sm font-medium text-secondary-900 transition-transform hover:scale-[1.02] hover:shadow-glow focus:outline-none focus:ring-2 focus:ring-accent-gold focus:ring-offset-2 focus:ring-offset-secondary-800"
                 >
                   Autentificare
@@ -414,6 +436,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           {/* Acasă */}
           <Link
             to="/"
+            prefetch="intent"
             className={cn(
               "flex flex-col items-center gap-1 text-[10px] font-medium transition-all duration-300",
               location.pathname === '/' ? "text-accent-gold" : "text-gray-400 hover:text-white"
@@ -426,6 +449,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           {/* Căutare */}
           <Link
             to="/search"
+            prefetch="intent"
             className={cn(
               "flex flex-col items-center gap-1 text-[10px] font-medium transition-all duration-300",
               location.pathname.startsWith('/search') ? "text-accent-gold" : "text-gray-400 hover:text-white"
@@ -438,6 +462,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           {/* Adaugă anunț — prominent central action */}
           <Link
             to="/create-listing"
+            prefetch="intent"
             className={cn(
               "-mt-7 flex flex-col items-center gap-1 text-[10px] font-semibold transition-transform duration-200 hover:scale-105",
               location.pathname.startsWith('/create-listing') ? "text-white" : "text-accent-gold"
@@ -453,6 +478,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           {/* Dealeri — direct, because this is a core conversion route on mobile. */}
           <Link
             to="/dealeri"
+            prefetch="intent"
             className={cn(
               "flex flex-col items-center gap-1 text-[10px] font-medium transition-all duration-300",
               location.pathname.startsWith('/dealeri') ? "text-accent-gold" : "text-gray-400 hover:text-white"
@@ -575,6 +601,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                   {profile?.role === 'seller' && (
                     <Link
                       to="/dashboard"
+                      prefetch="intent"
                       onClick={() => closeBottomDrawer(false)}
                       className={cn(
                         "flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-all border border-transparent",
@@ -593,6 +620,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                     <>
                       <Link
                         to="/profile"
+                        prefetch="intent"
                         onClick={() => closeBottomDrawer(false)}
                         className={cn(
                           "flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-all border border-transparent",
@@ -606,6 +634,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                       </Link>
                       <Link
                         to="/reports"
+                        prefetch="intent"
                         onClick={() => closeBottomDrawer(false)}
                         className={cn(
                           "flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-all border border-transparent",
@@ -623,6 +652,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                   {/* Vinde anunt quick link */}
                   <Link
                     to="/create-listing"
+                    prefetch="intent"
                     onClick={() => closeBottomDrawer(false)}
                     className={cn(
                       "flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-all border border-transparent",
@@ -637,6 +667,7 @@ export function MainLayout({ children }: MainLayoutProps) {
 
                   <Link
                     to="/dealeri"
+                    prefetch="intent"
                     onClick={() => closeBottomDrawer(false)}
                     className={cn(
                       "flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-all border border-transparent",
@@ -651,6 +682,7 @@ export function MainLayout({ children }: MainLayoutProps) {
 
                   <Link
                     to="/blog"
+                    prefetch="intent"
                     onClick={() => closeBottomDrawer(false)}
                     className={cn(
                       "flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-all border border-transparent",
@@ -665,6 +697,7 @@ export function MainLayout({ children }: MainLayoutProps) {
 
                   <Link
                     to="/favorites"
+                    prefetch="intent"
                     onClick={() => closeBottomDrawer(false)}
                     className={cn(
                       "flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-all border border-transparent",
@@ -680,6 +713,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                   {authUser && (
                     <Link
                       to="/messages"
+                      prefetch="intent"
                       onClick={() => closeBottomDrawer(false)}
                       className={cn(
                         "flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-all border border-transparent",
@@ -695,6 +729,7 @@ export function MainLayout({ children }: MainLayoutProps) {
 
                   <Link
                     to="/help"
+                    prefetch="intent"
                     onClick={() => closeBottomDrawer(false)}
                     className={cn(
                       "flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-all border border-transparent",
@@ -709,6 +744,7 @@ export function MainLayout({ children }: MainLayoutProps) {
 
                   <Link
                     to="/contact"
+                    prefetch="intent"
                     onClick={() => closeBottomDrawer(false)}
                     className={cn(
                       "flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium transition-all border border-transparent",

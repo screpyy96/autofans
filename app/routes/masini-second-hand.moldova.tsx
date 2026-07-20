@@ -11,6 +11,12 @@ import { mapListingToCar } from '~/utils/listingMapper';
 
 const LISTING_FIELDS = 'id, slug, owner_id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, images, status, created_at, city, county, latitude, longitude, features, owners, service_history';
 
+export function headers() {
+  return {
+    "Cache-Control": "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400",
+  };
+}
+
 export function meta({ data }: any) {
   const title = 'Mașini second-hand în Moldova | Suceava, Iași, Bacău și alte județe | AutoFans';
   const description = 'Caută mașini second-hand în Moldova: Suceava, Iași, Botoșani, Neamț, Bacău, Vaslui, Vrancea și Galați. Compară anunțuri auto locale pe AutoFans.';

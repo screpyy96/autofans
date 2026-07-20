@@ -13,6 +13,8 @@ coroutines = "1.10.2"
 credentials = "1.7.0-alpha02"
 googleId = "1.1.1"
 mapbox = "11.25.1"
+firebaseBom = "34.15.0"
+googleServices = "4.5.0"
 junit = "4.13.2"
 androidxJunit = "1.2.1"
 espresso = "3.6.1"
@@ -43,6 +45,8 @@ androidx-credentials-play-services-auth = { module = "androidx.credentials:crede
 googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleId" }
 mapbox-maps = { module = "com.mapbox.maps:android", version.ref = "mapbox" }
 mapbox-compose = { module = "com.mapbox.extension:maps-compose", version.ref = "mapbox" }
+firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
+firebase-messaging = { module = "com.google.firebase:firebase-messaging" }
 junit = { module = "junit:junit", version.ref = "junit" }
 androidx-junit = { module = "androidx.test.ext:junit", version.ref = "androidxJunit" }
 androidx-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "espresso" }
@@ -51,3 +55,4 @@ androidx-espresso-core = { module = "androidx.test.espresso:espresso-core", vers
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }

@@ -2,3 +2,9 @@ project_id = "ujulaxusutjlkdrbxsbg"
 
 [functions.mobile-v1]
 verify_jwt = true
+
+[functions.chat-v1]
+verify_jwt = true
+
+[functions.notification-v1]
+verify_jwt = false

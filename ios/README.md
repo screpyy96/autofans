@@ -13,7 +13,7 @@ Client iOS nativ, construit cu SwiftUI și `URLSession`. Nu include SDK-uri ter�
 ## Integrare Supabase / Apple
 
 - Adaugă `autofans://auth/callback` la **Redirect URLs** în Supabase Auth.
-- Pentru Google OAuth, configurează aplicația iOS (`ro.autofans.app`) în Google Cloud și provider-ul în Supabase.
+- Pentru Google OAuth, configurează aplicația iOS (`ro.autofans.app`) în Google Cloud și provider-ul în Supabase. Clientul iOS este configurat nativ prin GoogleSignIn; aplicația trimite ID token-ul către Supabase, nu deschide site-ul AutoFans.
 - Universal Link-urile pentru `https://www.autofans.ro/car/{slug}` sunt declarate. Pentru dispozitive reale, activează asocierea domeniului și publică `apple-app-site-association` pentru `ro.autofans.app`.
 - Tokenurile sunt păstrate exclusiv în Keychain; aplicația reînnoiește tokenul înainte de apelurile autentificate.
 
