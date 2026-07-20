@@ -109,9 +109,10 @@ struct LoginView: View {
 
     private var divider: some View { HStack(spacing: 10) { Rectangle().fill(AFTheme.line).frame(height: 1); Text("sau").font(.caption).foregroundStyle(AFTheme.muted); Rectangle().fill(AFTheme.line).frame(height: 1) } }
     private var googleButton: some View {
-        Button { UIApplication.shared.open(auth.googleURL) } label: {
+        Button { submitGoogle() } label: {
             HStack(spacing: 10) { Image(systemName: "g.circle.fill").font(.title3); Text("Continuă cu Google").font(.headline.weight(.bold)) }.foregroundStyle(AFTheme.ink).frame(maxWidth: .infinity).padding(.vertical, 14).background(AFTheme.paper).clipShape(Capsule()).overlay(Capsule().stroke(AFTheme.ink.opacity(0.16)))
         }
+        .disabled(loading)
     }
     @ViewBuilder private var switcher: some View {
         if reset { Button("Înapoi la autentificare") { withAnimation { reset = false; clearMessages() } }.font(.subheadline.weight(.bold)).foregroundStyle(AFTheme.ink).padding(.top, 2) }
@@ -128,6 +129,16 @@ struct LoginView: View {
     private var primaryActionTitle: String { reset ? "Trimite linkul de resetare" : (register ? "Creează cont" : "Autentificare") }
     private func clearMessages() { error = ""; notice = "" }
     private func submit() { if reset { execute { try await auth.sendPasswordReset(email: email); notice = "Ți-am trimis un email cu linkul de resetare." } } else if register { execute { let hasSession = try await auth.signUp(email: email, password: password); notice = hasSession ? "Cont creat cu succes." : "Cont creat. Verifică emailul pentru confirmare."; if hasSession { done() } } } else { execute { try await auth.signIn(email: email, password: password); done() } } }
+    private func submitGoogle() {
+        guard let scene = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first(where: { $0.activationState == .foregroundActive }),
+              let presenter = scene.keyWindow?.rootViewController else {
+            error = "Nu am putut deschide autentificarea Google."
+            return
+        }
+        execute { try await auth.signInWithGoogle(presenting: presenter); done() }
+    }
     private func execute(_ action: @escaping () async throws -> Void) { loading = true; error = ""; Task { do { try await action() } catch { self.error = error.localizedDescription }; loading = false } }
 }
 

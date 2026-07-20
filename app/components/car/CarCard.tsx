@@ -79,6 +79,7 @@ export function CarCard({
           Interactive overlays stay above this full-card link. */}
       <Link
         to={`/car/${encodeURIComponent(car.slug || car.id)}`}
+        prefetch="intent"
         aria-label={`Vezi anunțul: ${car.title}`}
         onClick={() => {
           onClick?.(car.id);

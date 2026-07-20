@@ -113,7 +113,7 @@ class MobileApi(
     }
 
     private companion object {
-        val CHAT_OPERATIONS = setOf("conversations", "messages", "start_conversation", "send_message")
+        val CHAT_OPERATIONS = setOf("conversations", "messages", "start_conversation", "send_message", "mark_conversation_read")
         val JSON = "application/json; charset=utf-8".toMediaType()
         val PROFILE_AVATAR_MIME_TYPES = setOf("image/jpeg", "image/png", "image/webp")
         const val PROFILE_AVATAR_MAX_BYTES = 5 * 1024 * 1024

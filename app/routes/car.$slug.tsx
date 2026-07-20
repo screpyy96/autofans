@@ -35,6 +35,12 @@ function currentActivityDay() {
   return new Date().toISOString().slice(0, 10);
 }
 
+export function headers() {
+  return {
+    "Cache-Control": "public, max-age=60, s-maxage=3600, stale-while-revalidate=86400",
+  };
+}
+
 export function meta({ data }: Route.MetaArgs) {
   const listing = data?.listing as any;
   if (!listing) return [{ title: "Anunț invalid - AutoFans" }];
@@ -116,7 +122,7 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
                 .neq('id', listing.id)
                 .gte('year', Number(listing.year) - 3)
                 .lte('year', Number(listing.year) + 3)
-                .limit(60)
+                .limit(25)
             : Promise.resolve({ data: [] }),
           listing.make && listing.model && listing.year
             ? supabase

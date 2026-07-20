@@ -1,8 +1,14 @@
 import { Link, useLoaderData, useSearchParams } from "react-router";
 import type { Route } from "./+types/blog";
 import { getBlogPostSummaries } from "~/data/blogPosts.server";
-import { Calendar, Clock, ChevronRight } from "lucide-react";
+import { Calendar, Clock, ChevronRight, Search, PlusCircle } from "lucide-react";
 import { Card } from "~/components/ui/Card";
+
+export function headers() {
+  return {
+    "Cache-Control": "public, max-age=300, s-maxage=86400, stale-while-revalidate=604800",
+  };
+}
 
 export function meta({ }: Route.MetaArgs) {
   const title = "Ghiduri pentru mașini second-hand, verificări și costuri | AutoFans";
@@ -69,8 +75,21 @@ export default function BlogIndex() {
         {/* Header */}
         <div className="mb-12 text-center md:text-left">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">AutoFans <span className="text-accent-gold">Blog</span></h1>
-          <p className="text-xl text-gray-400 max-w-2xl">Descoperă cele mai noi trenduri, review-uri sincere și sfaturi esențiale din lumea auto.</p>
+          <p className="text-xl text-gray-400 max-w-3xl">Ghiduri pentru mașini second-hand: cum găsești anunțuri bune, ce verifici înainte de cumpărare și cum vinzi corect o mașină rulată.</p>
         </div>
+
+        <section aria-label="Cumpără sau vinde o mașină second-hand" className="mb-10 grid gap-4 md:grid-cols-2">
+          <Link to="/search" className="group rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition-colors hover:border-accent-gold/50 hover:bg-accent-gold/[0.06]">
+            <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-accent-gold/15 text-accent-gold"><Search className="h-5 w-5" /></span>
+            <h2 className="text-lg font-bold text-white group-hover:text-accent-gold">Caută mașini second-hand</h2>
+            <p className="mt-1 text-sm text-gray-400">Compară anunțuri după marcă, model, preț, an și locație.</p>
+          </Link>
+          <Link to="/create-listing" className="group rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition-colors hover:border-accent-gold/50 hover:bg-accent-gold/[0.06]">
+            <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-accent-gold/15 text-accent-gold"><PlusCircle className="h-5 w-5" /></span>
+            <h2 className="text-lg font-bold text-white group-hover:text-accent-gold">Vinde-ți mașina</h2>
+            <p className="mt-1 text-sm text-gray-400">Publică un anunț complet pentru a ajunge la cumpărători serioși.</p>
+          </Link>
+        </section>
 
         <nav aria-label="Filtrează articolele după categorie" className="mb-10 flex flex-wrap gap-2">
           <Link to="/blog" aria-current={!activeTag && !activeCategory ? 'page' : undefined} className={`rounded-full border px-3 py-2 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-gold ${!activeTag && !activeCategory ? 'border-accent-gold bg-accent-gold/15 text-accent-gold' : 'border-white/10 bg-white/[0.03] text-gray-300 hover:border-white/30 hover:text-white'}`}>

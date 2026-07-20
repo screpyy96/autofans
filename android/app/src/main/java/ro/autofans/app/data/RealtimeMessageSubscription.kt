@@ -1,6 +1,7 @@
 package ro.autofans.app.data
 
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.WebSocket
@@ -10,7 +11,13 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 
-data class RealtimeMessageEvent(val conversationId: Long, val senderId: String?)
+/** The inserted message is included so an open thread can render it immediately,
+ * instead of waiting for another HTTP round trip. */
+data class RealtimeMessageEvent(
+    val conversationId: Long,
+    val senderId: String?,
+    val message: JsonObject,
+)
 
 internal class RealtimeMessageSubscription(
     private val socket: WebSocket,
@@ -39,9 +46,19 @@ internal fun realtimeMessageListener(
             runCatching {
                 val root = json.parseToJsonElement(text).jsonObject
                 if (root["event"]?.jsonPrimitive?.content != "postgres_changes") return@runCatching
-                val record = root["payload"]?.jsonObject?.get("data")?.jsonObject?.get("record")?.jsonObject ?: return@runCatching
+                val data = root["payload"]?.jsonObject?.get("data")?.jsonObject ?: return@runCatching
+                // Supabase Realtime has used both `record` and `new` in its
+                // Postgres-change payloads. Supporting both keeps Android
+                // live updates compatible with either protocol shape.
+                val record = (data["record"] ?: data["new"])?.jsonObject ?: return@runCatching
                 val conversationId = record["conversation_id"]?.jsonPrimitive?.content?.toLongOrNull() ?: return@runCatching
-                onEvent(RealtimeMessageEvent(conversationId, record["sender_id"]?.jsonPrimitive?.content))
+                onEvent(
+                    RealtimeMessageEvent(
+                        conversationId = conversationId,
+                        senderId = record["sender_id"]?.jsonPrimitive?.content,
+                        message = record,
+                    ),
+                )
             }.onFailure(onError)
         }
 

@@ -11,6 +11,8 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -22,6 +24,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -43,6 +46,10 @@ import ro.autofans.app.data.SupabaseAuthRepository
 import ro.autofans.app.data.MobileApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import com.google.firebase.messaging.FirebaseMessaging
 
 private const val CATALOG_ROUTE = "catalog"
@@ -87,6 +94,7 @@ fun AutoFansNavigation(
     authRepository: SupabaseAuthRepository,
     mobileApi: MobileApi,
     pendingConversationId: StateFlow<Long?>,
+    accountRefreshVersion: StateFlow<Int>,
     onConversationOpened: (Long) -> Unit,
 ) {
     val navController = rememberNavController()
@@ -94,14 +102,30 @@ fun AutoFansNavigation(
     val scope = rememberCoroutineScope()
     val session by authRepository.sessionState.collectAsStateWithLifecycle()
     val requestedConversationId by pendingConversationId.collectAsState()
+    val requestedAccountRefreshVersion by accountRefreshVersion.collectAsState()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
     val latestRoute by rememberUpdatedState(currentRoute)
     val currentCollectionKind = backStackEntry?.arguments?.getString("kind")
     var pendingProtectedRoute by remember { mutableStateOf<String?>(null) }
     var sellerAccount by remember { mutableStateOf(false) }
+    var unreadMessageCount by remember { mutableIntStateOf(0) }
     val passwordRecovery = authRepository.passwordRecovery.collectAsStateWithLifecycle().value
     val mainDestinations = if (sellerAccount) sellerMainDestinations else buyerMainDestinations
+    fun refreshUnreadMessageCount() {
+        if (session == null) {
+            unreadMessageCount = 0
+            return
+        }
+        scope.launch {
+            runCatching {
+                mobileApi.call("conversations")["conversations"]
+                    ?.jsonArray
+                    ?.sumOf { conversation -> conversation.jsonObject["unread_count"]?.jsonPrimitive?.intOrNull ?: 0 }
+                    ?: 0
+            }.onSuccess { unreadMessageCount = it }
+        }
+    }
     DisposableEffect(session?.user?.id) {
         var subscription: java.io.Closeable? = null
         val job = session?.let { activeSession ->
@@ -109,12 +133,13 @@ fun AutoFansNavigation(
                 subscription = runCatching {
                     mobileApi.subscribeToMessages(
                         onEvent = { event ->
+                            refreshUnreadMessageCount()
                             if (event.senderId != null && event.senderId != activeSession.user.id && latestRoute != MESSAGES_ROUTE &&
                                 (android.os.Build.VERSION.SDK_INT < 33 || androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED)
                             ) MessageNotification.show(
                                 context = context,
                                 title = "Mesaj nou",
-                                body = "Ai primit un mesaj nou în AutoFans.",
+                                body = event.message["body"]?.jsonPrimitive?.content ?: "Ai primit un mesaj nou în AutoFans.",
                                 notificationId = event.conversationId.toInt(),
                                 conversationId = event.conversationId,
                             )
@@ -125,6 +150,9 @@ fun AutoFansNavigation(
             }
         }
         onDispose { job?.cancel(); subscription?.close() }
+    }
+    LaunchedEffect(session?.user?.id) {
+        refreshUnreadMessageCount()
     }
     LaunchedEffect(session?.user?.id) {
         if (session == null) return@LaunchedEffect
@@ -151,6 +179,19 @@ fun AutoFansNavigation(
             navController.navigate(LOGIN_ROUTE) { launchSingleTop = true }
         } else {
             navController.navigate(MESSAGES_ROUTE) {
+                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                launchSingleTop = true
+                restoreState = true
+            }
+        }
+    }
+    LaunchedEffect(requestedAccountRefreshVersion, session?.user?.id) {
+        if (requestedAccountRefreshVersion == 0) return@LaunchedEffect
+        if (session == null) {
+            pendingProtectedRoute = ACCOUNT_ROUTE
+            navController.navigate(LOGIN_ROUTE) { launchSingleTop = true }
+        } else {
+            navController.navigate(ACCOUNT_ROUTE) {
                 popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                 launchSingleTop = true
                 restoreState = true
@@ -211,6 +252,7 @@ fun AutoFansNavigation(
                         currentRoute = currentRoute,
                         currentCollectionKind = currentCollectionKind,
                         destinations = mainDestinations,
+                        unreadMessageCount = unreadMessageCount,
                         onDestinationSelected = ::navigateToMain,
                     )
                 }
@@ -253,7 +295,7 @@ fun AutoFansNavigation(
                 })
             }
             composable(ACCOUNT_ROUTE) {
-                AccountRoute(mobileApi = mobileApi, authRepository = authRepository, onBack = navController::popBackStack, onNewListing = { navController.navigate(LISTING_EDITOR_BASE) }, onSellerListings = { navController.navigate(SELLER_LISTINGS_ROUTE) }, onMessages = { navController.navigate(MESSAGES_ROUTE) }, onSellerDashboard = { navController.navigate(SELLER_DASHBOARD_ROUTE) }, onCollection = { kind -> navController.navigate("collection/$kind") }, onSellerRoleChanged = { sellerAccount = it })
+                AccountRoute(mobileApi = mobileApi, authRepository = authRepository, refreshVersion = requestedAccountRefreshVersion, onBack = navController::popBackStack, onNewListing = { navController.navigate(LISTING_EDITOR_BASE) }, onSellerListings = { navController.navigate(SELLER_LISTINGS_ROUTE) }, onMessages = { navController.navigate(MESSAGES_ROUTE) }, onSellerDashboard = { navController.navigate(SELLER_DASHBOARD_ROUTE) }, onCollection = { kind -> navController.navigate("collection/$kind") }, onSellerRoleChanged = { sellerAccount = it })
             }
             composable(LISTING_EDITOR_ROUTE, arguments=listOf(navArgument("listingId") { type=NavType.LongType; defaultValue=0L })) { entry ->
                 ListingEditorRoute(
@@ -280,6 +322,7 @@ fun AutoFansNavigation(
                     embedded = true,
                     requestedConversationId = requestedConversationId,
                     onRequestedConversationOpened = onConversationOpened,
+                    onUnreadMessagesChanged = ::refreshUnreadMessageCount,
                 )
             }
             composable(SELLER_DASHBOARD_ROUTE) { SellerDashboardRoute(mobileApi, navController::popBackStack) }
@@ -296,6 +339,7 @@ private fun AutoFansBottomNavigation(
     currentRoute: String?,
     currentCollectionKind: String?,
     destinations: List<MainDestination>,
+    unreadMessageCount: Int,
     onDestinationSelected: (String) -> Unit,
 ) {
     NavigationBar(
@@ -310,7 +354,19 @@ private fun AutoFansBottomNavigation(
             NavigationBarItem(
                 selected = selected,
                 onClick = { onDestinationSelected(destination.route) },
-                icon = destination.icon,
+                icon = {
+                    if (destination.route == MESSAGES_ROUTE && unreadMessageCount > 0) {
+                        BadgedBox(
+                            badge = {
+                                Badge(containerColor = MaterialTheme.colorScheme.error) {
+                                    androidx.compose.material3.Text(if (unreadMessageCount > 9) "9+" else unreadMessageCount.toString())
+                                }
+                            },
+                        ) { destination.icon() }
+                    } else {
+                        destination.icon()
+                    }
+                },
                 label = { androidx.compose.material3.Text(destination.label) },
                 alwaysShowLabel = true,
                 colors = NavigationBarItemDefaults.colors(

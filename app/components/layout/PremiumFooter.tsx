@@ -31,6 +31,7 @@ export function PremiumFooter({ navigation }: PremiumFooterProps) {
                 <li key={item.name}>
                   <Link
                     to={item.href}
+                    prefetch="intent"
                     className="text-gray-400 hover:text-accent-gold transition-colors duration-300 hover:translate-x-1 inline-block"
                   >
                     {item.name}
@@ -44,27 +45,27 @@ export function PremiumFooter({ navigation }: PremiumFooterProps) {
             <h3 className="font-semibold text-white mb-4">Suport</h3>
             <ul className="space-y-2">
               <li>
-                <Link to="/blog" className="text-gray-400 hover:text-accent-gold transition-colors duration-300 hover:translate-x-1 inline-block">
+                <Link to="/blog" prefetch="intent" className="text-gray-400 hover:text-accent-gold transition-colors duration-300 hover:translate-x-1 inline-block">
                   Blog & Noutăți
                 </Link>
               </li>
               <li>
-                <Link to="/help" className="text-gray-400 hover:text-accent-gold transition-colors duration-300 hover:translate-x-1 inline-block">
+                <Link to="/help" prefetch="intent" className="text-gray-400 hover:text-accent-gold transition-colors duration-300 hover:translate-x-1 inline-block">
                   Ajutor
                 </Link>
               </li>
               <li>
-                <Link to="/contact" className="text-gray-400 hover:text-accent-gold transition-colors duration-300 hover:translate-x-1 inline-block">
+                <Link to="/contact" prefetch="intent" className="text-gray-400 hover:text-accent-gold transition-colors duration-300 hover:translate-x-1 inline-block">
                   Contact
                 </Link>
               </li>
               <li>
-                <Link to="/termeni-si-conditii" className="text-gray-400 hover:text-accent-gold transition-colors duration-300 hover:translate-x-1 inline-block">
+                <Link to="/termeni-si-conditii" prefetch="intent" className="text-gray-400 hover:text-accent-gold transition-colors duration-300 hover:translate-x-1 inline-block">
                   Termeni și condiții
                 </Link>
               </li>
               <li>
-                <Link to="/politica-de-confidentialitate" className="text-gray-400 hover:text-accent-gold transition-colors duration-300 hover:translate-x-1 inline-block">
+                <Link to="/politica-de-confidentialitate" prefetch="intent" className="text-gray-400 hover:text-accent-gold transition-colors duration-300 hover:translate-x-1 inline-block">
                   Politica de confidențialitate
                 </Link>
               </li>

@@ -72,6 +72,7 @@ import ro.autofans.app.data.SupabaseAuthRepository
 fun AccountRoute(
     mobileApi: MobileApi,
     authRepository: SupabaseAuthRepository,
+    refreshVersion: Int,
     onBack: () -> Unit,
     onNewListing: () -> Unit,
     onSellerListings: () -> Unit,
@@ -128,7 +129,7 @@ fun AccountRoute(
         }
     }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(refreshVersion) {
         runCatching { mobileApi.call("account") }
             .onSuccess { response ->
                 updateProfile(response["profile"]?.jsonObject)

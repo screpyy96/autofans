@@ -12,14 +12,18 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.AccountCircle
@@ -31,8 +35,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
@@ -70,6 +72,10 @@ import ro.autofans.app.data.ListingSort
 import ro.autofans.app.data.MobileApi
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import java.text.NumberFormat
 import java.util.Currency
@@ -87,8 +93,11 @@ fun CatalogRoute(
     val viewModel: CatalogViewModel = viewModel(factory = CatalogViewModelFactory(repository))
     val state by viewModel.state.collectAsStateWithLifecycle()
     val savedQuery by SavedSearchStore.query.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
     var isLocating by remember { mutableStateOf(false) }
     var locationMessage by remember { mutableStateOf<String?>(null) }
+    var favoriteIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var favoriteError by remember { mutableStateOf<String?>(null) }
     fun applyNearbyLocation(location: android.location.Location) {
         isLocating = false
         locationMessage = null
@@ -115,6 +124,21 @@ fun CatalogRoute(
             SavedSearchStore.consume()
         }
     }
+    LaunchedEffect(isAuthenticated) {
+        if (!isAuthenticated) {
+            favoriteIds = emptySet()
+            return@LaunchedEffect
+        }
+        runCatching { mobileApi.call("favorites") }
+            .onSuccess { response ->
+                favoriteIds = response["favorites"]
+                    ?.jsonArray
+                    ?.mapNotNull { row -> row.jsonObject["listing_id"]?.jsonPrimitive?.content }
+                    ?.toSet()
+                    ?: emptySet()
+            }
+            .onFailure { favoriteError = "Nu am putut încărca favoritele." }
+    }
     CatalogScreen(
         state = state,
         onQueryChange = viewModel::updateQuery,
@@ -127,6 +151,25 @@ fun CatalogRoute(
         onListingSelected = onListingSelected,
         onAccount = onAccount,
         isAuthenticated = isAuthenticated,
+        favoriteIds = favoriteIds,
+        favoriteError = favoriteError,
+        onToggleFavorite = { listing ->
+            if (!isAuthenticated) {
+                onAccount()
+            } else {
+                favoriteError = null
+                scope.launch {
+                    runCatching {
+                        mobileApi.call("toggle_favorite", buildJsonObject { put("listingId", listing.id) })
+                    }.onSuccess { response ->
+                        val isFavorite = response["favorite"]?.jsonPrimitive?.booleanOrNull ?: !favoriteIds.contains(listing.id.toString())
+                        favoriteIds = if (isFavorite) favoriteIds + listing.id.toString() else favoriteIds - listing.id.toString()
+                    }.onFailure { error ->
+                        favoriteError = error.message ?: "Nu am putut actualiza favoritele."
+                    }
+                }
+            }
+        },
         onSaveSearch = { name ->
             mobileApi.call(
                 operation = "save_search",
@@ -177,6 +220,9 @@ fun CatalogScreen(
     onListingSelected: (String) -> Unit,
     onAccount: () -> Unit,
     isAuthenticated: Boolean = false,
+    favoriteIds: Set<String> = emptySet(),
+    favoriteError: String? = null,
+    onToggleFavorite: (Listing) -> Unit = {},
     onSaveSearch: (suspend (String) -> Unit)? = null,
     onUseNearby: () -> Unit = {},
     isLocating: Boolean = false,
@@ -200,26 +246,25 @@ fun CatalogScreen(
                 onOpenFilters = { filtersOpen = true },
                 onOpenSort = { sortOpen = true },
                 onResetFilters = onFiltersReset,
+                onQuickFilter = onFiltersApplied,
                 onUseNearby = onUseNearby,
                 isLocating = isLocating,
                 locationMessage = locationMessage,
             )
-            DropdownMenu(expanded = sortOpen, onDismissRequest = { sortOpen = false }) {
-                ListingSort.entries.forEach { sort ->
-                    DropdownMenuItem(text = { Text(sort.label) }, onClick = { onSortSelected(sort); sortOpen = false })
-                }
-            }
             if (isAuthenticated && onSaveSearch != null && (state.query.isNotBlank() || state.filters != ListingSearchFilters())) {
                 FilledTonalButton(
                     onClick = { saveSearchOpen = true; saveSearchError = null },
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 ) { Text("Salvează această căutare") }
             }
+            favoriteError?.let { Text(it, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
             CatalogContent(
                 state = state,
                 onRetry = onRetry,
                 onLoadMore = onLoadMore,
                 onListingSelected = onListingSelected,
+                favoriteIds = favoriteIds,
+                onToggleFavorite = onToggleFavorite,
                 onExploreFilters = { filtersOpen = true },
             )
         }
@@ -230,6 +275,13 @@ fun CatalogScreen(
             onDismiss = { filtersOpen = false },
             onApply = { filters -> onFiltersApplied(filters); filtersOpen = false },
             onReset = { onFiltersReset(); filtersOpen = false },
+        )
+    }
+    if (sortOpen) {
+        SortSheet(
+            selected = state.sort,
+            onDismiss = { sortOpen = false },
+            onSelected = { sort -> onSortSelected(sort); sortOpen = false },
         )
     }
     if (saveSearchOpen) {
@@ -277,15 +329,17 @@ private fun CatalogSearchPanel(
     onOpenFilters: () -> Unit,
     onOpenSort: () -> Unit,
     onResetFilters: () -> Unit,
+    onQuickFilter: (ListingSearchFilters) -> Unit,
     onUseNearby: () -> Unit,
     isLocating: Boolean,
     locationMessage: String?,
 ) {
-    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 20.dp)) {
+    val activeFilterCount = state.filters.activeCount()
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp)) {
         Text("Găsește mașina potrivită", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold)
-        Spacer(Modifier.height(4.dp))
-        Text("Caută anunțuri, compară opțiuni și decide informat.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(3.dp))
+        Text("Caută rapid printre anunțurile AutoFans.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(14.dp))
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             OutlinedTextField(
                 value = state.query,
@@ -318,18 +372,48 @@ private fun CatalogSearchPanel(
             }
         }
         Spacer(Modifier.height(12.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            FilledTonalButton(onClick = onUseNearby, enabled = !isLocating, shape = RoundedCornerShape(14.dp)) {
+        Row(
+            modifier = Modifier.horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            FilledTonalButton(
+                onClick = onUseNearby,
+                enabled = !isLocating,
+                shape = RoundedCornerShape(14.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+            ) {
                 if (isLocating) CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                 else Icon(Icons.Default.MyLocation, contentDescription = null, modifier = Modifier.size(17.dp))
                 Spacer(Modifier.width(7.dp))
-                Text(if (isLocating) "Îți găsim zona…" else "În apropiere")
+                Text(
+                    when {
+                        isLocating -> "Îți găsim zona…"
+                        state.filters.radiusKm != null -> "În jurul meu · ${state.filters.radiusKm} km"
+                        else -> "În jurul meu"
+                    },
+                )
             }
-            if (state.filters.radiusKm != null) {
-                AssistChip(onClick = onOpenFilters, label = { Text("${state.filters.radiusKm} km") })
-            }
-            if (state.filters.city != null && state.filters.radiusKm == null) {
-                AssistChip(onClick = onOpenFilters, label = { Text(state.filters.city) })
+            FilterPill(
+                label = "Automată",
+                selected = "automatic" in state.filters.transmissions,
+                onClick = {
+                    val selected = "automatic" in state.filters.transmissions
+                    onQuickFilter(state.filters.copy(transmissions = if (selected) state.filters.transmissions - "automatic" else state.filters.transmissions + "automatic"))
+                },
+            )
+            FilterPill(
+                label = "Sub 10.000 €",
+                selected = state.filters.maxPrice == 10_000,
+                onClick = { onQuickFilter(state.filters.copy(maxPrice = state.filters.maxPrice.takeUnless { it == 10_000 } ?: 10_000)) },
+            )
+            FilterPill(
+                label = "Din 2018",
+                selected = state.filters.minYear == 2018,
+                onClick = { onQuickFilter(state.filters.copy(minYear = state.filters.minYear.takeUnless { it == 2018 } ?: 2018)) },
+            )
+            if (activeFilterCount > 0) {
+                AssistChip(onClick = onResetFilters, label = { Text("Resetează") })
             }
         }
         locationMessage?.let { message ->
@@ -344,8 +428,15 @@ private fun CatalogSearchPanel(
         ) {
             Text("${state.listings.size} anunțuri", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (state.filters != ListingSearchFilters()) {
-                    AssistChip(onClick = onResetFilters, label = { Text("Resetează") })
+                Surface(onClick = onOpenFilters, shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.surfaceVariant) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Icon(Icons.Default.FilterList, contentDescription = null, modifier = Modifier.size(17.dp))
+                        Text(if (activeFilterCount == 0) "Filtre" else "Filtre ($activeFilterCount)", style = MaterialTheme.typography.labelLarge)
+                    }
                 }
                 Surface(onClick = onOpenSort, shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.surfaceVariant) {
                     Row(
@@ -354,10 +445,57 @@ private fun CatalogSearchPanel(
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Text("Sortează", style = MaterialTheme.typography.labelLarge)
+                        Text(state.sort.label, style = MaterialTheme.typography.labelLarge, maxLines = 1)
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun FilterPill(label: String, selected: Boolean, onClick: () -> Unit) {
+    AssistChip(
+        onClick = onClick,
+        label = { Text(label) },
+        shape = RoundedCornerShape(14.dp),
+        colors = androidx.compose.material3.AssistChipDefaults.assistChipColors(
+            containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+            labelColor = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+        ),
+    )
+}
+
+private fun ListingSearchFilters.activeCount(): Int = listOf(
+    makes.isNotEmpty(), models.isNotEmpty(), city != null,
+    minPrice != null || maxPrice != null,
+    minYear != null || maxYear != null,
+    minMileage != null || maxMileage != null,
+    fuelTypes.isNotEmpty(), transmissions.isNotEmpty(),
+    latitude != null && longitude != null && radiusKm != null,
+).count { it }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SortSheet(selected: ListingSort, onDismiss: () -> Unit, onSelected: (ListingSort) -> Unit) {
+    androidx.compose.material3.ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp)) {
+            Text("Sortează după", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(8.dp))
+            ListingSort.entries.forEach { option ->
+                Surface(
+                    onClick = { onSelected(option) },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    color = if (option == selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                ) {
+                    Row(modifier = Modifier.padding(horizontal = 16.dp, vertical = 15.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(option.label, modifier = Modifier.weight(1f), fontWeight = if (option == selected) FontWeight.Bold else FontWeight.Normal)
+                        if (option == selected) Text("Selectat", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    }
+                }
+            }
+            Spacer(Modifier.height(20.dp))
         }
     }
 }
@@ -368,18 +506,26 @@ fun CatalogContent(
     onRetry: () -> Unit,
     onLoadMore: () -> Unit,
     onListingSelected: (String) -> Unit,
+    favoriteIds: Set<String> = emptySet(),
+    onToggleFavorite: (Listing) -> Unit = {},
     onExploreFilters: () -> Unit,
 ) {
     when {
         state.isLoading -> LoadingState()
         state.error != null && state.listings.isEmpty() -> ErrorState(state.error, onRetry)
         state.listings.isEmpty() -> EmptyState(onRetry, onExploreFilters)
-        else -> ListingFeed(state, onLoadMore, onListingSelected)
+        else -> ListingFeed(state, onLoadMore, onListingSelected, favoriteIds, onToggleFavorite)
     }
 }
 
 @Composable
-private fun ListingFeed(state: CatalogUiState, onLoadMore: () -> Unit, onListingSelected: (String) -> Unit) {
+private fun ListingFeed(
+    state: CatalogUiState,
+    onLoadMore: () -> Unit,
+    onListingSelected: (String) -> Unit,
+    favoriteIds: Set<String>,
+    onToggleFavorite: (Listing) -> Unit,
+) {
     val listState = rememberLazyListState()
     LaunchedEffect(listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index, state.listings.size, state.hasMore) {
         val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
@@ -392,7 +538,12 @@ private fun ListingFeed(state: CatalogUiState, onLoadMore: () -> Unit, onListing
         modifier = Modifier.fillMaxSize(),
     ) {
         items(state.listings, key = { it.id }) { listing ->
-            ListingCard(listing, onClick = { onListingSelected(listing.slug) })
+            ListingCard(
+                listing = listing,
+                isFavorite = favoriteIds.contains(listing.id.toString()),
+                onClick = { onListingSelected(listing.slug) },
+                onToggleFavorite = { onToggleFavorite(listing) },
+            )
         }
         if (state.isLoadingMore) {
             item { Row(Modifier.fillMaxWidth().padding(20.dp), horizontalArrangement = Arrangement.Center) { CircularProgressIndicator() } }
@@ -404,7 +555,7 @@ private fun ListingFeed(state: CatalogUiState, onLoadMore: () -> Unit, onListing
 }
 
 @Composable
-private fun ListingCard(listing: Listing, onClick: () -> Unit) {
+private fun ListingCard(listing: Listing, isFavorite: Boolean, onClick: () -> Unit, onToggleFavorite: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).testTag("listing_${listing.id}"),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
@@ -428,7 +579,14 @@ private fun ListingCard(listing: Listing, onClick: () -> Unit) {
             Column(Modifier.padding(16.dp)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
                     Text(listing.title, modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Spacer(Modifier.width(12.dp))
+                    IconButton(onClick = onToggleFavorite, modifier = Modifier.size(40.dp)) {
+                        Icon(
+                            if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = if (isFavorite) "Elimină ${listing.title} din favorite" else "Salvează ${listing.title} la favorite",
+                            tint = if (isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Spacer(Modifier.width(4.dp))
                     Text(formatPrice(listing.price, listing.currency), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.ExtraBold)
                 }
                 Spacer(Modifier.height(8.dp))

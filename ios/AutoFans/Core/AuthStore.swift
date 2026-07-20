@@ -1,5 +1,9 @@
 import Foundation
 import SwiftUI
+import CryptoKit
+import GoogleSignIn
+import Security
+import UIKit
 
 struct AuthUser: Codable, Sendable { let id: String; let email: String? }
 struct AuthSession: Codable, Sendable { let accessToken: String; let refreshToken: String?; let expiresAt: Int?; let user: AuthUser
@@ -15,12 +19,6 @@ final class AuthStore: ObservableObject {
 
     init(config: APIConfiguration) { self.config = config; self.session = KeychainStore.read(AuthSession.self) }
 
-    var googleURL: URL {
-        var components = URLComponents(url: config.supabaseURL.appendingPath("auth/v1/authorize"), resolvingAgainstBaseURL: false)!
-        components.queryItems = [URLQueryItem(name: "provider", value: "google"), URLQueryItem(name: "redirect_to", value: "autofans://auth/callback")]
-        return components.url!
-    }
-
     func activeSession() async throws -> AuthSession {
         guard let current = session else { throw APIError.unauthorized }
         if current.expiresAt == nil || current.expiresAt! > Int(Date().timeIntervalSince1970) + 60 { return current }
@@ -30,6 +28,70 @@ final class AuthStore: ObservableObject {
     }
 
     func signIn(email: String, password: String) async throws { _ = try await post(path: "auth/v1/token?grant_type=password", payload: ["email": .string(email), "password": .string(password)], persist: true) }
+    /** Native iOS Google sign-in. The Google SDK returns an ID token whose
+     * audience is the existing Web client used by Supabase; the iOS client is
+     * used only to identify this signed AutoFans app to Google. */
+    func signInWithGoogle(presenting viewController: UIViewController) async throws {
+        guard let clientID = Bundle.main.object(forInfoDictionaryKey: "GIDClientID") as? String,
+              let serverClientID = Bundle.main.object(forInfoDictionaryKey: "GIDServerClientID") as? String,
+              !clientID.isEmpty,
+              !serverClientID.isEmpty else {
+            throw APIError.configuration("Lipsește configurația Google Sign-In pentru iOS.")
+        }
+        GIDSignIn.sharedInstance.configuration = GIDConfiguration(
+            clientID: clientID,
+            serverClientID: serverClientID,
+        )
+
+        let nonce = try Self.googleNonce()
+        let hashedNonce = Self.sha256(nonce)
+        let result: GIDSignInResult
+        do {
+            result = try await GIDSignIn.sharedInstance.signIn(
+                withPresenting: viewController,
+                hint: nil,
+                additionalScopes: nil,
+                nonce: hashedNonce,
+            )
+        } catch {
+            let details = error as NSError
+            throw APIError.server(
+                status: details.code,
+                message: "Google Sign-In a respins cererea (\(details.domain), cod \(details.code)): \(details.localizedDescription)",
+            )
+        }
+        let accessToken = result.user.accessToken.tokenString
+        guard let idToken = result.user.idToken?.tokenString, !idToken.isEmpty,
+              !accessToken.isEmpty else {
+            throw APIError.server(status: 401, message: "Google nu a returnat tokenurile necesare pentru autentificare.")
+        }
+        _ = try await post(
+            path: "auth/v1/token?grant_type=id_token",
+            payload: [
+                "provider": .string("google"),
+                "id_token": .string(idToken),
+                "access_token": .string(accessToken),
+                "nonce": .string(nonce),
+            ],
+            persist: true,
+        )
+    }
+
+    private static func googleNonce() throws -> String {
+        var bytes = [UInt8](repeating: 0, count: 32)
+        guard SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes) == errSecSuccess else {
+            throw APIError.server(status: 500, message: "Nu am putut genera nonce-ul securizat pentru Google Sign-In.")
+        }
+        return Data(bytes)
+            .base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
+    }
+
+    private static func sha256(_ value: String) -> String {
+        SHA256.hash(data: Data(value.utf8)).map { String(format: "%02x", $0) }.joined()
+    }
     func signUp(email: String, password: String) async throws -> Bool { try await post(path: "auth/v1/signup", payload: ["email": .string(email), "password": .string(password), "email_redirect_to": .string("autofans://auth/callback")], persist: true) != nil }
     func sendPasswordReset(email: String) async throws { _ = try await post(path: "auth/v1/recover", payload: ["email": .string(email), "email_redirect_to": .string("autofans://auth/callback")], persist: false) }
 
@@ -75,5 +137,13 @@ final class AuthStore: ObservableObject {
     }
 
     private func authRequest(url: URL, token: String, method: String) -> URLRequest { var request = URLRequest(url: url); request.httpMethod = method; request.setValue(config.anonKey, forHTTPHeaderField: "apikey"); request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization"); request.setValue("application/json", forHTTPHeaderField: "Content-Type"); return request }
-    private func execute(_ request: URLRequest) async throws -> Data { let (data, response) = try await URLSession.shared.data(for: request); guard let http = response as? HTTPURLResponse else { throw APIError.invalidResponse }; guard 200..<300 ~= http.statusCode else { throw APIError.server(status: http.statusCode, message: SupabaseRepository.message(data) ?? "Autentificarea a eșuat.") }; return data }
+    private func execute(_ request: URLRequest) async throws -> Data {
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse else { throw APIError.invalidResponse }
+        guard 200..<300 ~= http.statusCode else {
+            let details = SupabaseRepository.message(data) ?? "Fără mesaj de la server."
+            throw APIError.server(status: http.statusCode, message: "Supabase a respins autentificarea (HTTP \(http.statusCode)): \(details)")
+        }
+        return data
+    }
 }

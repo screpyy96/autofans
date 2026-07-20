@@ -51,6 +51,7 @@ fun AutoFansApp(
     authRepository: SupabaseAuthRepository,
     mobileApi: MobileApi,
     pendingConversationId: StateFlow<Long?>,
+    accountRefreshVersion: StateFlow<Int>,
     onConversationOpened: (Long) -> Unit,
 ) {
     val context = LocalContext.current
@@ -72,6 +73,7 @@ fun AutoFansApp(
             authRepository = authRepository,
             mobileApi = mobileApi,
             pendingConversationId = pendingConversationId,
+            accountRefreshVersion = accountRefreshVersion,
             onConversationOpened = onConversationOpened,
         )
     }

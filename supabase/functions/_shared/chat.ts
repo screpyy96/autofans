@@ -29,18 +29,25 @@ export async function handleChatOperation(context: ChatContext): Promise<Respons
       const [listingsResult, profilesResult, messagesResult] = await Promise.all([
         listingIds.length ? supabase.from("listings").select("id,slug,title,make,model,year,images").in("id", listingIds) : Promise.resolve({ data: [], error: null }),
         counterpartIds.length ? supabase.from("profiles").select("id,display_name,email,avatar_url").in("id", counterpartIds) : Promise.resolve({ data: [], error: null }),
-        conversationIds.length ? supabase.from("messages").select("conversation_id,body,created_at,sender_id").in("conversation_id", conversationIds).order("created_at", { ascending: false }).limit(200) : Promise.resolve({ data: [], error: null }),
+        conversationIds.length ? supabase.from("messages").select("conversation_id,body,created_at,sender_id,read_at").in("conversation_id", conversationIds).order("created_at", { ascending: false }).limit(200) : Promise.resolve({ data: [], error: null }),
       ]);
       if (listingsResult.error || profilesResult.error || messagesResult.error) return fail(listingsResult.error || profilesResult.error || messagesResult.error)!;
       const listingById = new Map((listingsResult.data || []).map((listing) => [listing.id, listing]));
       const profileById = new Map((profilesResult.data || []).map((profile) => [profile.id, profile]));
       const lastMessageByConversation = new Map<number, unknown>();
-      for (const message of messagesResult.data || []) if (!lastMessageByConversation.has(message.conversation_id)) lastMessageByConversation.set(message.conversation_id, message);
+      const unreadCountByConversation = new Map<number, number>();
+      for (const message of messagesResult.data || []) {
+        if (!lastMessageByConversation.has(message.conversation_id)) lastMessageByConversation.set(message.conversation_id, message);
+        if (message.sender_id !== user.id && message.read_at === null) {
+          unreadCountByConversation.set(message.conversation_id, (unreadCountByConversation.get(message.conversation_id) || 0) + 1);
+        }
+      }
       return respond({ conversations: conversations.map((conversation) => ({
         ...conversation,
         listing: listingById.get(conversation.listing_id) || null,
         counterpart: profileById.get(conversation.buyer_id === user.id ? conversation.seller_id : conversation.buyer_id) || null,
         last_message: lastMessageByConversation.get(conversation.id) || null,
+        unread_count: unreadCountByConversation.get(conversation.id) || 0,
       })) });
     }
     case "messages": {
@@ -70,6 +77,17 @@ export async function handleChatOperation(context: ChatContext): Promise<Respons
       const { data: savedMessage, error } = await supabase.from("messages").insert({ conversation_id: id, sender_id: user.id, body: message }).select("id,conversation_id,sender_id,body,created_at").single();
       if (!error) await notifyMessageRecipient({ conversationId: id, senderId: user.id, body: message }).catch((pushError) => console.warn("FCM delivery failed", pushError));
       return fail(error) || respond({ ok: true, clientMessageId, message: savedMessage });
+    }
+    case "mark_conversation_read": {
+      const id = Number(payload.conversationId);
+      if (!Number.isInteger(id)) return respond({ error: "Invalid conversation" }, 400);
+      const { error } = await supabase
+        .from("messages")
+        .update({ read_at: new Date().toISOString() })
+        .eq("conversation_id", id)
+        .neq("sender_id", user.id)
+        .is("read_at", null);
+      return fail(error) || respond({ ok: true });
     }
     default:
       return null;

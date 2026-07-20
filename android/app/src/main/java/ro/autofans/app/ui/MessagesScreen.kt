@@ -81,6 +81,7 @@ fun MessagesRoute(
     embedded: Boolean = false,
     requestedConversationId: Long? = null,
     onRequestedConversationOpened: (Long) -> Unit = {},
+    onUnreadMessagesChanged: () -> Unit = {},
 ) {
     var conversations by remember { mutableStateOf(emptyList<JsonObject>()) }
     var activeConversation by remember { mutableStateOf<JsonObject?>(null) }
@@ -94,7 +95,7 @@ fun MessagesRoute(
     val context = LocalContext.current
     val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
-    fun loadConversations() = scope.launch {
+    suspend fun refreshConversations() {
         loading = true
         runCatching { api.call("conversations")["conversations"]?.jsonArray?.map { it.jsonObject }.orEmpty() }
             .onSuccess { refreshed ->
@@ -105,13 +106,24 @@ fun MessagesRoute(
             .onFailure { error = it.message ?: "Nu am putut încărca mesajele." }
         loading = false
     }
+    fun loadConversations() = scope.launch { refreshConversations() }
+    fun markConversationRead(conversationId: Long) = scope.launch {
+        runCatching {
+            api.call("mark_conversation_read", buildJsonObject { put("conversationId", conversationId) })
+        }.onSuccess {
+            onUnreadMessagesChanged()
+        }
+    }
     fun openConversation(conversation: JsonObject) {
         val id = conversation.string("id")?.toLongOrNull() ?: return
         activeConversation = conversation
         error = null
         scope.launch {
             runCatching { api.call("messages", buildJsonObject { put("conversationId", id) })["messages"]?.jsonArray?.map { it.jsonObject }.orEmpty() }
-                .onSuccess { messages = it }
+                .onSuccess {
+                    messages = it
+                    markConversationRead(id)
+                }
                 .onFailure { error = it.message ?: "Nu am putut încărca conversația." }
         }
     }
@@ -138,22 +150,13 @@ fun MessagesRoute(
                 api.subscribeToMessages(
                     onEvent = { event ->
                         scope.launch {
-                            loadConversations()
-                            if (activeConversation?.string("id") == event.conversationId.toString()) activeConversation?.let(::openConversation)
-                            if (event.senderId != null && event.senderId != viewerId) {
-                                val conversation = conversations.firstOrNull { it.string("id") == event.conversationId.toString() }
-                                val sender = conversation?.objectOrNull("counterpart")?.displayName() ?: "Mesaj nou"
-                                val preview = conversation?.objectOrNull("last_message")?.string("body") ?: "Ai primit un mesaj nou."
-                                if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED || android.os.Build.VERSION.SDK_INT < 33) {
-                                    MessageNotification.show(
-                                        context = context,
-                                        title = sender,
-                                        body = preview,
-                                        notificationId = event.conversationId.toInt(),
-                                        conversationId = event.conversationId,
-                                    )
+                            if (activeConversation?.string("id") == event.conversationId.toString()) {
+                                messages = (messages + event.message).distinctBy { it.string("id") }
+                                if (event.senderId != null && event.senderId != viewerId) {
+                                    markConversationRead(event.conversationId)
                                 }
                             }
+                            refreshConversations()
                         }
                     },
                     onError = { },

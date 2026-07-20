@@ -3,6 +3,12 @@ import type { Route } from './+types/dealeri';
 import { BarChart3, CheckCircle2, FileSpreadsheet, ShieldCheck, Upload } from 'lucide-react';
 import { Card } from '~/components/ui/Card';
 
+export function headers() {
+  return {
+    "Cache-Control": "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800",
+  };
+}
+
 export function meta({}: Route.MetaArgs) {
   return [
     { title: 'Pentru dealeri auto | AutoFans.ro' },
