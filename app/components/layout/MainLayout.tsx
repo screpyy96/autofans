@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useRouteLoaderData } from 'react-router
 import {
   Home,
   Search,
+  Car,
   Heart,
   User,
   Menu,
@@ -31,6 +32,7 @@ interface MainLayoutProps {
 const baseNavigation = [
   { name: 'Acasă', href: '/', icon: Home },
   { name: 'Căutare', href: '/search', icon: Search },
+  { name: 'Garaj 🏎️', href: '/garage', icon: Car },
   { name: 'Blog', href: '/blog', icon: Newspaper },
   { name: 'Dealeri', href: '/dealeri', icon: Handshake },
   { name: 'Favorite', href: '/favorites', icon: Heart },

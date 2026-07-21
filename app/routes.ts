@@ -18,6 +18,9 @@ export default [
   lazyRoute("/logout", "routes/logout.tsx"),
   
   // Secondary routes - can be lazy loaded
+  lazyRoute("/garage", "routes/garage.tsx"),
+  lazyRoute("/garage/add", "routes/garage.add.tsx"),
+  route("/garage/:slug", "routes/garage.$slug.tsx"),
   lazyRoute("/blog", "routes/blog.tsx"),
   route("/blog/:slug", "routes/blog.$slug.tsx"),
   lazyRoute("/dealeri", "routes/dealeri.tsx"),
