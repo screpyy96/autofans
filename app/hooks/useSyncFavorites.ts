@@ -21,9 +21,17 @@ export function useSyncFavorites(userId: string | null | undefined) {
 
     const initializeSync = async () => {
       try {
-        // Do not put the Supabase SDK on the public homepage's critical path.
         const { getSupabaseBrowserClient } = await import('~/lib/supabase.client');
         const supabase = getSupabaseBrowserClient();
+
+        // Verify that the browser client has an active authenticated session
+        // matching userId before attempting RLS writes.
+        const { data: sessionData } = await supabase.auth.getSession();
+        const activeUser = sessionData?.session?.user;
+        if (!activeUser || activeUser.id !== userId) {
+          // Client session is not authenticated yet; skip sync until session is ready
+          return;
+        }
         const persistChanges = async (nextIds: string[]) => {
           const previousIds = lastSyncedIdsRef.current;
           const addedIds = nextIds.filter((id) => !previousIds.includes(id));
@@ -61,6 +69,9 @@ export function useSyncFavorites(userId: string | null | undefined) {
                 persistedIds = nextIds.filter((id) => !orphanedIds.includes(id));
                 useAppStore.setState({ favorites: persistedIds });
               }
+            } else if (error?.code === '42501') {
+              console.warn('Favorites sync postponed: waiting for authenticated session.');
+              return;
             } else if (error) {
               throw error;
             }
