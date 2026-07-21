@@ -182,13 +182,20 @@ export async function action({ request, params }: ActionFunctionArgs) {
 export default function GarageDetail() {
   const { vehicle, comments: initialComments, userHasUpvoted: initialUpvoted, user } = useLoaderData<typeof loader>();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const [upvotes, setUpvotes] = useState(vehicle.upvotesCount);
+  const [upvotes, setUpvotes] = useState(vehicle?.upvotesCount || 0);
   const [hasUpvoted, setHasUpvoted] = useState(initialUpvoted);
-  const [commentsList, setCommentsList] = useState(initialComments);
+  const [commentsList, setCommentsList] = useState(Array.isArray(initialComments) ? initialComments : []);
   const [newComment, setNewComment] = useState('');
+
+  const imagesList = (Array.isArray(vehicle?.images) && vehicle.images.length > 0)
+    ? vehicle.images
+    : [{ url: "https://www.autofans.ro/hero_background.jpg" }];
+  const modsList = Array.isArray(vehicle?.modifications) ? vehicle.modifications : [];
+  const safeCommentsList = Array.isArray(commentsList) ? commentsList : [];
 
   // Live Supabase Realtime Subscription for comments & upvotes
   useEffect(() => {
+    if (!vehicle?.id) return;
     const supabaseUrl = (window as any).ENV?.VITE_SUPABASE_URL || 'https://placeholder.supabase.co';
     const supabaseAnonKey = (window as any).ENV?.VITE_SUPABASE_ANON_KEY || 'placeholder';
     const client = createBrowserClient(supabaseUrl, supabaseAnonKey);
@@ -199,7 +206,7 @@ export default function GarageDetail() {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'garage_comments', filter: `vehicle_id=eq.${vehicle.id}` },
         (payload) => {
-          setCommentsList((prev: any[]) => [...prev, payload.new]);
+          setCommentsList((prev: any[]) => [...(Array.isArray(prev) ? prev : []), payload.new]);
         }
       )
       .subscribe();
@@ -207,7 +214,7 @@ export default function GarageDetail() {
     return () => {
       client.removeChannel(channel);
     };
-  }, [vehicle.id]);
+  }, [vehicle?.id]);
 
   const handleUpvoteClick = () => {
     if (!hasUpvoted) {
@@ -301,15 +308,15 @@ export default function GarageDetail() {
         <div className="space-y-4">
           <div className="relative aspect-[16/9] md:aspect-[21/9] rounded-3xl overflow-hidden bg-black/60 border border-white/10 shadow-2xl">
             <img
-              src={vehicle.images[activeImageIndex]?.url || vehicle.images[0]?.url}
+              src={imagesList[activeImageIndex]?.url || imagesList[0]?.url}
               alt={vehicle.title}
               className="w-full h-full object-cover"
             />
           </div>
 
-          {vehicle.images.length > 1 && (
+          {imagesList.length > 1 && (
             <div className="flex gap-3 overflow-x-auto pb-2">
-              {vehicle.images.map((img: any, idx: number) => (
+              {imagesList.map((img: any, idx: number) => (
                 <button
                   key={idx}
                   onClick={() => setActiveImageIndex(idx)}
@@ -331,7 +338,7 @@ export default function GarageDetail() {
           <div className="lg:col-span-2 space-y-8">
             
             {/* Modifications list */}
-            {vehicle.modifications && vehicle.modifications.length > 0 && (
+            {modsList.length > 0 && (
               <Card variant="elevated" className="bg-glass border-white/10 p-6 sm:p-8 space-y-4 shadow-xl">
                 <h3 className="text-xl font-extrabold text-white flex items-center gap-2 border-b border-white/10 pb-4">
                   <Wrench className="h-5 w-5 text-accent-gold" />
@@ -339,7 +346,7 @@ export default function GarageDetail() {
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {vehicle.modifications.map((mod: string, idx: number) => (
+                  {modsList.map((mod: string, idx: number) => (
                     <div key={idx} className="bg-white/5 border border-white/10 rounded-xl p-3 flex items-start gap-2.5 text-xs sm:text-sm text-gray-200">
                       <CheckCircle2 className="h-4 w-4 text-accent-gold flex-shrink-0 mt-0.5" />
                       <span>{mod}</span>
@@ -365,7 +372,7 @@ export default function GarageDetail() {
               <div className="flex items-center justify-between border-b border-white/10 pb-4">
                 <h3 className="text-xl font-extrabold text-white flex items-center gap-2">
                   <MessageSquare className="h-5 w-5 text-accent-gold" />
-                  Comentarii & Discuții Live ({commentsList.length})
+                  Comentarii & Discuții Live ({safeCommentsList.length})
                 </h3>
                 <span className="text-xs text-green-400 font-bold flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-green-400 animate-ping" />
@@ -375,8 +382,8 @@ export default function GarageDetail() {
 
               {/* Comments List */}
               <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
-                {commentsList.length > 0 ? (
-                  commentsList.map((c: any) => (
+                {safeCommentsList.length > 0 ? (
+                  safeCommentsList.map((c: any) => (
                     <div key={c.id} className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">

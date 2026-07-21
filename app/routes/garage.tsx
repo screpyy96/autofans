@@ -175,103 +175,109 @@ export default function GarageIndex() {
         {/* Vehicle Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredVehicles.map((car) => (
-            <Card key={car.id} variant="elevated" className="bg-glass border-white/10 overflow-hidden flex flex-col group hover:border-accent-gold/40 transition-all duration-300 shadow-xl">
-              
-              {/* Image & Badges */}
-              <div className="relative aspect-[16/10] overflow-hidden bg-black/40">
-                <img
-                  src={car.images[0]?.url || 'https://www.autofans.ro/hero_background.jpg'}
-                  alt={car.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-secondary-950 via-transparent to-transparent opacity-80" />
-
-                {/* For Sale Badge */}
-                {car.isForSale && (
-                  <div className="absolute top-3 left-3 bg-gold-gradient text-secondary-950 px-3 py-1 rounded-full font-black text-xs shadow-glow flex items-center gap-1.5">
-                    <Tag className="h-3.5 w-3.5" />
-                    DE VÂNZARE • {car.salePrice ? `${car.salePrice.toLocaleString('ro-RO')} €` : 'Contact proprietar'}
-                  </div>
-                )}
-
-                {/* Upvotes Counter Badge */}
-                <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md text-white border border-white/20 px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-                  <Flame className="h-3.5 w-3.5 text-accent-gold fill-accent-gold" />
-                  {car.upvotesCount} Voturi
-                </div>
-
-                {/* Bottom title overlay */}
-                <div className="absolute bottom-3 left-3 right-3">
-                  <h3 className="text-lg font-extrabold text-white line-clamp-1 group-hover:text-accent-gold transition-colors">
-                    {car.title}
-                  </h3>
-                  <div className="flex items-center gap-2 text-xs text-gray-300 mt-1">
-                    <span>{car.year}</span>
-                    <span>•</span>
-                    <span>{car.engine}</span>
-                    {car.powerHp > 0 && (
-                      <>
-                        <span>•</span>
-                        <span className="text-accent-gold font-bold">{car.powerHp} CP</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Card Body */}
-              <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+            <Link key={car.id} to={`/garage/${car.slug}`} className="block group cursor-pointer">
+              <Card variant="elevated" className="bg-glass border-white/10 overflow-hidden flex flex-col group-hover:border-accent-gold/50 group-hover:scale-[1.01] transition-all duration-300 shadow-xl h-full">
                 
-                {/* Modifications snippet */}
-                {car.modifications && car.modifications.length > 0 && (
-                  <div className="space-y-1.5">
-                    <span className="text-[11px] uppercase tracking-wider text-gray-400 font-bold flex items-center gap-1">
-                      <Wrench className="h-3.5 w-3.5 text-accent-gold" />
-                      Modificări cheie:
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {car.modifications.slice(0, 3).map((mod: string, idx: number) => (
-                        <span key={idx} className="bg-white/5 border border-white/10 text-gray-300 px-2 py-0.5 rounded-md text-[11px]">
-                          {mod}
-                        </span>
-                      ))}
-                      {car.modifications.length > 3 && (
-                        <span className="text-[11px] text-accent-gold font-bold self-center">
-                          +{car.modifications.length - 3} altele
-                        </span>
+                {/* Image & Badges */}
+                <div className="relative aspect-[16/10] overflow-hidden bg-black/40">
+                  <img
+                    src={(Array.isArray(car.images) && car.images[0]?.url) || 'https://www.autofans.ro/hero_background.jpg'}
+                    alt={car.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-secondary-950 via-transparent to-transparent opacity-80" />
+
+                  {/* For Sale Badge */}
+                  {car.isForSale && (
+                    <div className="absolute top-3 left-3 bg-gold-gradient text-secondary-950 px-3 py-1 rounded-full font-black text-xs shadow-glow flex items-center gap-1.5">
+                      <Tag className="h-3.5 w-3.5" />
+                      DE VÂNZARE • {car.salePrice ? `${car.salePrice.toLocaleString('ro-RO')} €` : 'Contact proprietar'}
+                    </div>
+                  )}
+
+                  {/* Upvotes Counter Badge */}
+                  <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md text-white border border-white/20 px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                    <Flame className="h-3.5 w-3.5 text-accent-gold fill-accent-gold" />
+                    {car.upvotesCount || 0} Voturi
+                  </div>
+
+                  {/* Bottom title overlay */}
+                  <div className="absolute bottom-3 left-3 right-3">
+                    <h3 className="text-lg font-extrabold text-white line-clamp-1 group-hover:text-accent-gold transition-colors">
+                      {car.title}
+                    </h3>
+                    <div className="flex items-center gap-2 text-xs text-gray-300 mt-1">
+                      <span>{car.year}</span>
+                      {car.engine && (
+                        <>
+                          <span>•</span>
+                          <span>{car.engine}</span>
+                        </>
+                      )}
+                      {car.powerHp > 0 && (
+                        <>
+                          <span>•</span>
+                          <span className="text-accent-gold font-bold">{car.powerHp} CP</span>
+                        </>
                       )}
                     </div>
                   </div>
-                )}
-
-                {/* Story snippet */}
-                <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">
-                  {car.story}
-                </p>
-
-                {/* Footer Owner & Action */}
-                <div className="border-t border-white/10 pt-4 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {car.ownerAvatar ? (
-                      <img src={car.ownerAvatar} alt={car.ownerName} className="w-7 h-7 rounded-full object-cover border border-white/20" />
-                    ) : (
-                      <div className="w-7 h-7 rounded-full bg-accent-gold/20 flex items-center justify-center text-accent-gold text-xs font-bold">
-                        {car.ownerName[0]}
-                      </div>
-                    )}
-                    <span className="text-xs font-semibold text-gray-300">{car.ownerName}</span>
-                  </div>
-
-                  <Link to={`/garage/${car.slug}`}>
-                    <Button variant="ghost" size="sm" className="text-accent-gold hover:text-white hover:bg-accent-gold/20 text-xs font-bold px-3 py-1.5">
-                      Vezi Garajul <ArrowRight className="h-3.5 w-3.5 ml-1" />
-                    </Button>
-                  </Link>
                 </div>
 
-              </div>
+                {/* Card Body */}
+                <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                  
+                  {/* Modifications snippet */}
+                  {Array.isArray(car.modifications) && car.modifications.length > 0 && (
+                    <div className="space-y-1.5">
+                      <span className="text-[11px] uppercase tracking-wider text-gray-400 font-bold flex items-center gap-1">
+                        <Wrench className="h-3.5 w-3.5 text-accent-gold" />
+                        Modificări cheie:
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {car.modifications.slice(0, 3).map((mod: string, idx: number) => (
+                          <span key={idx} className="bg-white/5 border border-white/10 text-gray-300 px-2 py-0.5 rounded-md text-[11px]">
+                            {mod}
+                          </span>
+                        ))}
+                        {car.modifications.length > 3 && (
+                          <span className="text-[11px] text-accent-gold font-bold self-center">
+                            +{car.modifications.length - 3} altele
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
-            </Card>
+                  {/* Story snippet */}
+                  {car.story && (
+                    <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">
+                      {car.story}
+                    </p>
+                  )}
+
+                  {/* Footer Owner & Action */}
+                  <div className="border-t border-white/10 pt-4 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {car.ownerAvatar ? (
+                        <img src={car.ownerAvatar} alt={car.ownerName} className="w-7 h-7 rounded-full object-cover border border-white/20" />
+                      ) : (
+                        <div className="w-7 h-7 rounded-full bg-accent-gold/20 flex items-center justify-center text-accent-gold text-xs font-bold">
+                          {(car.ownerName || 'M')[0]}
+                        </div>
+                      )}
+                      <span className="text-xs font-semibold text-gray-300">{car.ownerName}</span>
+                    </div>
+
+                    <span className="text-accent-gold group-hover:translate-x-1 transition-transform text-xs font-bold flex items-center gap-1">
+                      Vezi Garajul <ArrowRight className="h-3.5 w-3.5" />
+                    </span>
+                  </div>
+
+                </div>
+
+              </Card>
+            </Link>
           ))}
         </div>
 
