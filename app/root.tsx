@@ -8,6 +8,7 @@ import {
   useRouteError,
   isRouteErrorResponse,
   useLoaderData,
+  redirect,
 } from "react-router";
 import type { LoaderFunctionArgs } from "react-router";
 import type { LinksFunction } from "react-router";
@@ -133,6 +134,21 @@ export default function App() {
 }
 
 export async function loader({ request }: LoaderFunctionArgs) {
+  const url = new URL(request.url);
+  const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || url.host;
+  const proto = request.headers.get("x-forwarded-proto") || url.protocol.replace(":", "");
+
+  if (process.env.NODE_ENV === "production" || host.includes("autofans.ro")) {
+    const isNonWww = host === "autofans.ro";
+    const isHttp = proto === "http" && !host.includes("localhost") && !host.includes("127.0.0.1");
+
+    if (isNonWww || isHttp) {
+      url.protocol = "https:";
+      url.host = "www.autofans.ro";
+      return redirect(url.toString(), 301);
+    }
+  }
+
   // Avoid a remote auth validation on every public page view. Logged-in
   // requests still use getUser(), which validates the user server-side.
   if (!hasSupabaseAuthCookie(request)) {

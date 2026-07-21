@@ -1,4 +1,17 @@
 {
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "autofans.ro"
+        }
+      ],
+      "destination": "https://www.autofans.ro/:path*",
+      "permanent": true
+    }
+  ],
   "headers": [
     {
       "source": "/assets/:path*",

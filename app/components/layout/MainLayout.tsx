@@ -48,6 +48,7 @@ const NotificationBell = React.lazy(() =>
 export function MainLayout({ children }: MainLayoutProps) {
   const [isBottomDrawerOpen, setIsBottomDrawerOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const drawerDragStartY = useRef<number | null>(null);
   const restoreDrawerScroll = useRef(true);
   const drawerRef = useRef<HTMLDivElement>(null);
@@ -58,6 +59,17 @@ export function MainLayout({ children }: MainLayoutProps) {
   useEffect(() => {
     setHasHydrated(true);
   }, []);
+
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [userMenuOpen]);
 
   // A bottom sheet must never allow the page behind it to scroll on mobile.
   useEffect(() => {
@@ -233,11 +245,14 @@ export function MainLayout({ children }: MainLayoutProps) {
     closeBottomDrawer(false);
   }, [location.pathname, closeBottomDrawer]);
 
-  // Build navigation dynamically (hide "Contul meu" when logged out)
+  // Build navigation dynamically (when logged in, user-specific links like Favorite, Mesaje, Contul meu are accessible via the user profile dropdown)
   const navigation = React.useMemo(() => {
     return baseNavigation.filter((item) => {
-      if (item.href === '/profile') return !!authUser; // hide when not logged
-      if (item.href === '/messages') return !!authUser;
+      if (authUser) {
+        if (item.href === '/profile' || item.href === '/messages' || item.href === '/favorites') return false;
+      } else {
+        if (item.href === '/profile' || item.href === '/messages') return false;
+      }
       return true;
     });
   }, [authUser]);
@@ -357,9 +372,9 @@ export function MainLayout({ children }: MainLayoutProps) {
 
               {/* Auth */}
               {authUser ? (
-                <div className="relative">
+                <div className="relative" ref={userMenuRef}>
                   <button
-                    className="flex items-center gap-2 px-2 py-1 rounded-2xl hover:bg-white/5 transition"
+                    className="flex items-center gap-2 px-2.5 py-1.5 rounded-2xl hover:bg-white/10 border border-transparent hover:border-white/10 transition"
                     onClick={() => setUserMenuOpen((v) => !v)}
                     aria-haspopup="menu"
                     aria-expanded={userMenuOpen}
@@ -368,40 +383,94 @@ export function MainLayout({ children }: MainLayoutProps) {
                       <img
                         src={(profile?.avatar_url || authUser.user_metadata?.avatar_url || authUser.user_metadata?.picture) as string}
                         alt="avatar"
-                        className="h-7 w-7 rounded-full border border-white/20"
+                        className="h-7 w-7 rounded-full border border-accent-gold/40"
                       />
                     ) : (
-                      <div className="h-7 w-7 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-xs text-white">
+                      <div className="h-7 w-7 rounded-full bg-accent-gold/20 border border-accent-gold/40 flex items-center justify-center text-xs font-bold text-accent-gold">
                         {(authUser.email?.[0] || 'U').toUpperCase()}
                       </div>
                     )}
-                    <span className="hidden sm:block text-sm text-gray-300 max-w-[160px] truncate">
+                    <span className="hidden sm:block text-sm font-medium text-gray-200 max-w-[140px] truncate">
                       {profile?.display_name || authUser.email}
                     </span>
-                    <ChevronDown className="h-4 w-4 text-gray-400" />
+                    <ChevronDown className={cn("h-4 w-4 text-gray-400 transition-transform duration-200", userMenuOpen && "rotate-180")} />
                   </button>
                   {userMenuOpen && (
                     <div
                       role="menu"
-                      className="absolute right-0 mt-2 w-48 bg-secondary-900/90 border border-white/20 rounded-2xl shadow-2xl backdrop-blur-xl overflow-hidden z-50"
+                      className="absolute right-0 mt-2 w-52 bg-secondary-900/95 border border-white/20 rounded-2xl shadow-2xl backdrop-blur-xl overflow-hidden z-50 py-1.5"
                     >
+                      <div className="px-4 py-2 border-b border-white/10 mb-1">
+                        <p className="text-[11px] font-medium text-gray-400">Conectat ca</p>
+                        <p className="text-xs font-bold text-white truncate">
+                          {profile?.display_name || authUser.email}
+                        </p>
+                      </div>
+
                       {profile?.role === 'seller' && (
-                        <Link to="/dashboard" prefetch="intent" className="block px-3 py-2 text-sm text-gray-200 hover:bg-white/5" role="menuitem">
-                          Dashboard
+                        <Link 
+                          to="/dashboard" 
+                          prefetch="intent" 
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-2.5 px-4 py-2 text-sm font-medium text-gray-200 hover:bg-white/10 hover:text-white transition-colors" 
+                          role="menuitem"
+                        >
+                          <LayoutDashboard className="h-4 w-4 text-accent-gold" />
+                          Dashboard Vânzător
                         </Link>
                       )}
-                      <Link to="/profile" prefetch="intent" className="block px-3 py-2 text-sm text-gray-200 hover:bg-white/5" role="menuitem">
-                        Profil
+                      <Link 
+                        to="/profile" 
+                        prefetch="intent" 
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2 text-sm font-medium text-gray-200 hover:bg-white/10 hover:text-white transition-colors" 
+                        role="menuitem"
+                      >
+                        <User className="h-4 w-4 text-accent-gold" />
+                        Contul meu
                       </Link>
-                      <Link to="/favorites" prefetch="intent" className="block px-3 py-2 text-sm text-gray-200 hover:bg-white/5" role="menuitem">
+                      <Link 
+                        to="/messages" 
+                        prefetch="intent" 
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2 text-sm font-medium text-gray-200 hover:bg-white/10 hover:text-white transition-colors" 
+                        role="menuitem"
+                      >
+                        <MessageCircle className="h-4 w-4 text-accent-gold" />
+                        Mesajele mele
+                      </Link>
+                      <Link 
+                        to="/favorites" 
+                        prefetch="intent" 
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2 text-sm font-medium text-gray-200 hover:bg-white/10 hover:text-white transition-colors" 
+                        role="menuitem"
+                      >
+                        <Heart className="h-4 w-4 text-accent-gold" />
                         Favorite
                       </Link>
-                      <Link to="/reports" prefetch="intent" className="block px-3 py-2 text-sm text-gray-200 hover:bg-white/5" role="menuitem">
+                      <Link 
+                        to="/reports" 
+                        prefetch="intent" 
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2 text-sm font-medium text-gray-200 hover:bg-white/10 hover:text-white transition-colors" 
+                        role="menuitem"
+                      >
+                        <Flag className="h-4 w-4 text-red-400" />
                         Rapoartele mele
                       </Link>
-                      <div className="my-1 h-px bg-white/10" />
-                      <Link to="/logout" prefetch="intent" className="block px-3 py-2 text-sm text-gray-200 hover:bg-white/5" role="menuitem">
-                        Ieșire
+
+                      <div className="my-1.5 h-px bg-white/10" />
+
+                      <Link 
+                        to="/logout" 
+                        prefetch="intent" 
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2 text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors" 
+                        role="menuitem"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Deconectare
                       </Link>
                     </div>
                   )}
