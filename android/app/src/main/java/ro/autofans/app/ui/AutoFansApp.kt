@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Badge
@@ -53,6 +54,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import com.google.firebase.messaging.FirebaseMessaging
 
 private const val CATALOG_ROUTE = "catalog"
+private const val GARAGE_ROUTE = "garage"
 private const val DETAIL_ROUTE = "listing/{slug}"
 private const val LOGIN_ROUTE = "login"
 private const val ACCOUNT_ROUTE = "account"
@@ -74,15 +76,15 @@ private data class MainDestination(
 
 private val buyerMainDestinations = listOf(
     MainDestination(CATALOG_ROUTE, "Acasă", protected = false) { Icon(Icons.Default.Home, contentDescription = null) },
+    MainDestination(GARAGE_ROUTE, "Garaj 🏎️", protected = false) { Icon(Icons.Default.DirectionsCar, contentDescription = null) },
     MainDestination("collection/favorites", "Favorite", protected = true) { Icon(Icons.Default.FavoriteBorder, contentDescription = null) },
-    MainDestination(COMPARE_ROUTE, "Compară", protected = false) { Icon(Icons.AutoMirrored.Filled.CompareArrows, contentDescription = null) },
     MainDestination(MESSAGES_ROUTE, "Mesaje", protected = true) { Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null) },
     MainDestination(ACCOUNT_ROUTE, "Cont", protected = true) { Icon(Icons.Default.Person, contentDescription = null) },
 )
 
 private val sellerMainDestinations = listOf(
     MainDestination(CATALOG_ROUTE, "Acasă", protected = false) { Icon(Icons.Default.Home, contentDescription = null) },
-    MainDestination("collection/favorites", "Favorite", protected = true) { Icon(Icons.Default.FavoriteBorder, contentDescription = null) },
+    MainDestination(GARAGE_ROUTE, "Garaj 🏎️", protected = false) { Icon(Icons.Default.DirectionsCar, contentDescription = null) },
     MainDestination(LISTING_EDITOR_BASE, "Vinde", protected = true) { Icon(Icons.Default.AddCircle, contentDescription = null) },
     MainDestination(MESSAGES_ROUTE, "Mesaje", protected = true) { Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null) },
     MainDestination(ACCOUNT_ROUTE, "Cont", protected = true) { Icon(Icons.Default.Person, contentDescription = null) },
@@ -218,9 +220,10 @@ fun AutoFansNavigation(
             navigateToMain(route)
         }
     }
-    val showBottomNavigation = currentRoute in setOf(CATALOG_ROUTE, COLLECTION_ROUTE, COMPARE_ROUTE, MESSAGES_ROUTE, ACCOUNT_ROUTE)
+    val showBottomNavigation = currentRoute in setOf(CATALOG_ROUTE, GARAGE_ROUTE, COLLECTION_ROUTE, COMPARE_ROUTE, MESSAGES_ROUTE, ACCOUNT_ROUTE)
     val headerTitle = when (currentRoute) {
         CATALOG_ROUTE -> null
+        GARAGE_ROUTE -> "Garajul Comunității 🏎️"
         COLLECTION_ROUTE -> when (currentCollectionKind) {
             "favorites" -> "Favorite"
             "saved" -> "Căutări salvate"
@@ -323,6 +326,14 @@ fun AutoFansNavigation(
                     requestedConversationId = requestedConversationId,
                     onRequestedConversationOpened = onConversationOpened,
                     onUnreadMessagesChanged = ::refreshUnreadMessageCount,
+                )
+            }
+            composable(GARAGE_ROUTE) {
+                GarageScreen(
+                    mobileApi = mobileApi,
+                    onVehicleSelected = { slug ->
+                        navController.navigate("listing/$slug")
+                    }
                 )
             }
             composable(SELLER_DASHBOARD_ROUTE) { SellerDashboardRoute(mobileApi, navController::popBackStack) }
