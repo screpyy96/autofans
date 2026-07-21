@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useLoaderData, Form, useActionData } from 'react-router';
+import { Link, useLoaderData, Form, useActionData, useLocation, useNavigate } from 'react-router';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
 import { 
   Flame, 
@@ -182,6 +182,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
 export default function GarageDetail() {
   const { vehicle, comments: initialComments, userHasUpvoted: initialUpvoted, user } = useLoaderData<typeof loader>();
+  const location = useLocation();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [upvotes, setUpvotes] = useState(vehicle?.upvotesCount || 0);
   const [hasUpvoted, setHasUpvoted] = useState(initialUpvoted);
@@ -423,23 +424,36 @@ export default function GarageDetail() {
                 )}
               </div>
 
-              {/* Add Comment Form */}
-              <form onSubmit={handleAddComment} className="flex gap-2 pt-2">
-                <input
-                  type="text"
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Scrie un comentariu sau o întrebare despre proiect..."
-                  className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-xs sm:text-sm focus:outline-none focus:border-accent-gold"
-                />
-                <Button
-                  type="submit"
-                  disabled={!newComment.trim()}
-                  className="bg-gold-gradient text-secondary-950 font-bold px-4 py-3 rounded-xl border-none"
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
-              </form>
+              {/* Add Comment Form or Auth Required Notice */}
+              {user ? (
+                <form onSubmit={handleAddComment} className="flex gap-2 pt-2">
+                  <input
+                    type="text"
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder="Scrie un comentariu sau o întrebare despre proiect..."
+                    className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-xs sm:text-sm focus:outline-none focus:border-accent-gold"
+                  />
+                  <Button
+                    type="submit"
+                    disabled={!newComment.trim()}
+                    className="bg-gold-gradient text-secondary-950 font-bold px-4 py-3 rounded-xl border-none"
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </form>
+              ) : (
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-5 text-center space-y-3">
+                  <p className="text-xs sm:text-sm text-gray-300 font-medium">
+                    🔒 Trebuie să fii autentificat pentru ca comentariile tale să se salveze în baza de date!
+                  </p>
+                  <Link to={`/login?next=${encodeURIComponent(location.pathname)}`}>
+                    <Button variant="primary" className="bg-gold-gradient text-secondary-950 font-black px-6 py-2.5 rounded-xl text-xs sm:text-sm shadow-glow border-none">
+                      Loghează-te pentru a comenta
+                    </Button>
+                  </Link>
+                </div>
+              )}
             </Card>
 
           </div>
