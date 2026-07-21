@@ -18,6 +18,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     "/blog",
     "/termeni-si-conditii",
     "/politica-de-confidentialitate",
+    "/delete-account",
   ];
 
   // Generăm URL-urile statice

@@ -46,5 +46,5 @@ export default [
   lazyRoute("/admin/reports", "routes/admin.reports.tsx"),
   lazyRoute("/termeni-si-conditii", "routes/terms.tsx"),
   lazyRoute("/politica-de-confidentialitate", "routes/privacy.tsx"),
-  
+  lazyRoute("/delete-account", "routes/delete-account.tsx"),
 ] satisfies RouteConfig;
