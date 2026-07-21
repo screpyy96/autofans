@@ -67,11 +67,38 @@ export async function action({ request }: ActionFunctionArgs) {
       is_for_sale: isForSale,
       sale_price: isForSale ? salePrice : null
     })
-    .select('slug')
+    .select('id, slug')
     .single();
 
+  if (isForSale && data) {
+    // Autocreează anunțul public în tabele de căutare listings pentru a fi vizibil instant pe /search!
+    const { data: newListing } = await supabase
+      .from('listings')
+      .insert({
+        owner_id: user.id,
+        title,
+        slug: `car-${slug}`,
+        make,
+        model,
+        year,
+        price: salePrice,
+        currency: 'EUR',
+        description: `${story}\n\n🏎️ Anunț publicat direct din Garajul AutoFans!`,
+        images,
+        status: 'published'
+      })
+      .select('id')
+      .maybeSingle();
+
+    if (newListing) {
+      await supabase
+        .from('garage_vehicles')
+        .update({ listing_id: newListing.id })
+        .eq('id', data.id);
+    }
+  }
+
   if (error) {
-    // If DB table not ready, simulate redirect to garage
     return redirect(`/garage`);
   }
 
