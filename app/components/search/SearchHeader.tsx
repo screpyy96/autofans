@@ -5,7 +5,23 @@ import { Button } from '~/components/ui/Button';
 import { Badge } from '~/components/ui/Badge';
 import { Filter, X } from 'lucide-react';
 
+import { useCurrency } from '~/stores/useAppStore';
+
 const cn = (...values: Array<string | false | null | undefined>) => values.filter(Boolean).join(' ');
+
+function CurrencyToggle() {
+  const { currency, toggleCurrency } = useCurrency();
+  return (
+    <button
+      onClick={toggleCurrency}
+      className="flex items-center justify-center gap-1 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 hover:border-accent-gold/45 text-xs font-bold text-accent-gold shadow-md active:scale-95 transition-all select-none min-h-[36px]"
+      title="Schimbă valuta (EUR / RON)"
+    >
+      <span>{currency}</span>
+      <span className="text-[10px] text-gray-400 font-normal ml-0.5">⇄</span>
+    </button>
+  );
+}
 
 interface SearchHeaderProps {
   onSearch: (query: string) => void;
@@ -119,8 +135,9 @@ export function SearchHeader({
                 )}
               </div>
 
-              {/* Right actions: Sorting Dropdown & Layout Grid/List Toggle */}
+              {/* Right actions: Currency Selector, Sorting Dropdown & Layout Grid/List Toggle */}
               <div className="flex items-center gap-2.5 sm:ml-auto">
+                <CurrencyToggle />
                 <SortControls
                   activeSort={activeSort}
                   onSortChange={setActiveSort}

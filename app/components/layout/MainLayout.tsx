@@ -328,23 +328,6 @@ export function MainLayout({ children }: MainLayoutProps) {
 
             {/* Right side actions */}
             <div className="flex items-center gap-3">
-              {/* Currency Toggle */}
-              <button
-                onClick={toggleCurrency}
-                className="flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-xl bg-glass border border-white/10 hover:border-accent-gold/45 text-xs font-bold text-accent-gold shadow-md active:scale-95 transition-all select-none min-h-[32px] min-w-[50px]"
-                title="Schimbă valuta (EUR / RON)"
-                disabled={!hasHydrated}
-              >
-                {hasHydrated ? (
-                  <>
-                    <span>{currency}</span>
-                    <span className="text-[10px] text-gray-400 font-normal ml-0.5">⇄</span>
-                  </>
-                ) : (
-                  <div className="h-3.5 w-7 bg-white/10 rounded animate-pulse" />
-                )}
-              </button>
-
               {/* Notification Bell */}
               {authUser && (
                 <React.Suspense fallback={<span aria-hidden="true" className="hidden h-10 w-10 sm:block" />}>
