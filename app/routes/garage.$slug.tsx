@@ -296,24 +296,25 @@ export default function GarageDetail() {
               <input type="hidden" name="vehicleId" value={vehicle.id} />
               <Button
                 type="submit"
-                className={`px-5 py-3 rounded-xl font-bold transition-all flex items-center gap-2 border-none shadow-lg ${
+                variant={hasUpvoted ? "danger" : "secondary"}
+                className={`px-5 py-3 rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg ${
                   hasUpvoted
-                    ? 'bg-red-500 text-white shadow-red-500/30 scale-105'
-                    : 'bg-white/10 hover:bg-accent-gold/20 text-accent-gold border border-accent-gold/30'
+                    ? 'bg-gradient-to-r from-red-600 to-amber-600 text-white border-red-500/50 shadow-red-500/30 scale-105'
+                    : 'bg-secondary-900/90 border border-accent-gold/50 text-accent-gold hover:bg-accent-gold/20 hover:text-white'
                 }`}
               >
                 <Flame className={`h-5 w-5 ${hasUpvoted ? 'fill-white text-white' : 'fill-accent-gold text-accent-gold'}`} />
-                <span>{hasUpvoted ? 'Respect Acordat!' : 'Dă Respect (Upvote)'}</span>
-                <span className="bg-black/40 px-2 py-0.5 rounded-full text-xs ml-1">{upvotes}</span>
+                <span className="font-black text-sm">{hasUpvoted ? 'Respect Acordat!' : 'Dă Respect (Upvote)'}</span>
+                <span className="bg-black/70 border border-white/20 text-white px-2.5 py-0.5 rounded-full text-xs font-black ml-1 shadow-inner">{upvotes}</span>
               </Button>
             </Form>
 
             {/* Direct Contact if for sale */}
             {vehicle.isForSale && vehicle.ownerId && (
               <Link to={`/messages?seller=${vehicle.ownerId}`}>
-                <Button className="bg-gold-gradient text-secondary-950 font-black px-5 py-3 rounded-xl shadow-glow hover:scale-[1.02] transition-all border-none">
-                  <MessageSquare className="h-5 w-5 mr-2" />
-                  Cumpără / Contactează
+                <Button variant="primary" className="bg-gold-gradient text-secondary-950 font-black px-5 py-3 rounded-xl shadow-glow hover:scale-[1.02] transition-all border-none flex items-center gap-2 text-sm">
+                  <MessageSquare className="h-5 w-5 text-secondary-950" />
+                  <span>Cumpără / Contactează</span>
                 </Button>
               </Link>
             )}
