@@ -171,7 +171,7 @@ Este recomandat să păstrezi cel puțin 10–15% din bugetul total (aproximativ
 
 [Caută mașini second-hand sub 10.000 euro pe AutoFans](/search) și folosește filtrele noastre avansate pentru a găsi cele mai bune oferte verificate din România!
     `,
-    coverImage: "/blog/cum-cumperi-masina-second-hand-2026.webp",
+    coverImage: "/blog/top-masini-fiabile-10000-euro-2026.jpg",
     author: { name: "AutoFans", role: "Echipa editorială AutoFans" },
     category: "Ghid cumpărare",
     tags: ["Mașini second-hand sub 10000 euro", "Cele mai fiabile mașini", "Ghid achiziție auto", "Motoare de evitat", "Mașină ieftină și bună", "Verificare auto", "AutoFans"],

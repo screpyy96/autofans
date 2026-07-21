@@ -36,7 +36,7 @@ export function meta({ data }: Route.MetaArgs) {
   return [
     { title },
     { name: "description", content: description },
-    { name: "robots", content: "index,follow,max-image-preview:large" },
+    { name: "robots", content: isDealer ? "index,follow,max-image-preview:large" : "noindex,follow" },
     { tagName: "link", rel: "canonical", href: canonicalUrl },
     { property: "og:title", content: title },
     { property: "og:description", content: description },
