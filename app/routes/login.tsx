@@ -67,10 +67,18 @@ export default function Login() {
       const dest = next || "/profile";
       window.location.href = dest;
     } catch (err: any) {
-      setError(err?.message || "Autentificare eșuată");
+      setError(formatAuthError(err?.message));
     } finally {
       setLoading(false);
     }
+  }
+
+  function formatAuthError(msg: string) {
+    if (!msg) return "Autentificare eșuată";
+    if (msg.includes("Invalid login credentials")) return "Adresa de email sau parola introduse sunt incorecte.";
+    if (msg.includes("Email not confirmed")) return "Adresa de email nu a fost confirmată. Te rugăm să verifici emailul.";
+    if (msg.includes("User already registered")) return "Există deja un cont creat cu această adresă de email.";
+    return msg;
   }
 
   async function handleRegister(e: React.FormEvent) {

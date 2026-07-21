@@ -41,6 +41,7 @@ export const links: LinksFunction = () => [
 ];
 
 export function Layout({ children }: { children: ReactNode }) {
+  const data = useLoaderData<typeof loader>();
   return (
     <html lang="ro" className="dark">
       <head>
@@ -50,6 +51,11 @@ export function Layout({ children }: { children: ReactNode }) {
         <meta name="google-site-verification" content="RHKKSS1PkcH2LMq-gwj8oR4KEgccWN1X0-Cqo6Sld7Q" />
         <Meta />
         <Links />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.ENV = ${JSON.stringify(data?.ENV || {})};`,
+          }}
+        />
       </head>
       <body className="font-sans antialiased">
         {children}
@@ -149,10 +155,15 @@ export async function loader({ request }: LoaderFunctionArgs) {
     }
   }
 
+  const ENV = {
+    VITE_SUPABASE_URL: process.env.VITE_SUPABASE_URL || process.env.REMIX_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL,
+    VITE_SUPABASE_ANON_KEY: process.env.VITE_SUPABASE_ANON_KEY || process.env.REMIX_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY,
+  };
+
   // Avoid a remote auth validation on every public page view. Logged-in
   // requests still use getUser(), which validates the user server-side.
   if (!hasSupabaseAuthCookie(request)) {
-    return { user: null, profile: null, unreadNotificationCount: 0 };
+    return { user: null, profile: null, unreadNotificationCount: 0, ENV };
   }
   try {
     const { supabase, headers } = getSupabaseServerClient(request);
@@ -175,9 +186,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
       profile = profileResult.data ?? null;
       unreadNotificationCount = unreadNotificationsResult.count ?? 0;
     }
-    return { user, profile, unreadNotificationCount };
+    return { user, profile, unreadNotificationCount, ENV };
   } catch (e) {
     console.error("Supabase init error:", e);
-    return { user: null, profile: null, unreadNotificationCount: 0 };
+    return { user: null, profile: null, unreadNotificationCount: 0, ENV };
   }
 }
