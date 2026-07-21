@@ -75,16 +75,16 @@ private data class MainDestination(
 )
 
 private val buyerMainDestinations = listOf(
-    MainDestination(CATALOG_ROUTE, "Acasă", protected = false) { Icon(Icons.Default.Home, contentDescription = null) },
     MainDestination(GARAGE_ROUTE, "Garaj 🏎️", protected = false) { Icon(Icons.Default.DirectionsCar, contentDescription = null) },
+    MainDestination(CATALOG_ROUTE, "Căutare", protected = false) { Icon(Icons.Default.Home, contentDescription = null) },
     MainDestination("collection/favorites", "Favorite", protected = true) { Icon(Icons.Default.FavoriteBorder, contentDescription = null) },
     MainDestination(MESSAGES_ROUTE, "Mesaje", protected = true) { Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null) },
     MainDestination(ACCOUNT_ROUTE, "Cont", protected = true) { Icon(Icons.Default.Person, contentDescription = null) },
 )
 
 private val sellerMainDestinations = listOf(
-    MainDestination(CATALOG_ROUTE, "Acasă", protected = false) { Icon(Icons.Default.Home, contentDescription = null) },
     MainDestination(GARAGE_ROUTE, "Garaj 🏎️", protected = false) { Icon(Icons.Default.DirectionsCar, contentDescription = null) },
+    MainDestination(CATALOG_ROUTE, "Căutare", protected = false) { Icon(Icons.Default.Home, contentDescription = null) },
     MainDestination(LISTING_EDITOR_BASE, "Vinde", protected = true) { Icon(Icons.Default.AddCircle, contentDescription = null) },
     MainDestination(MESSAGES_ROUTE, "Mesaje", protected = true) { Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null) },
     MainDestination(ACCOUNT_ROUTE, "Cont", protected = true) { Icon(Icons.Default.Person, contentDescription = null) },
@@ -263,7 +263,7 @@ fun AutoFansNavigation(
         ) { padding ->
         NavHost(
             navController = navController,
-            startDestination = CATALOG_ROUTE,
+            startDestination = GARAGE_ROUTE,
             modifier = Modifier.padding(padding),
         ) {
             composable(CATALOG_ROUTE) {
