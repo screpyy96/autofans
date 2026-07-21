@@ -21,6 +21,7 @@ import { Card } from '~/components/ui/Card';
 import { Button } from '~/components/ui/Button';
 import { Badge } from '~/components/ui/Badge';
 import { getSupabaseServerClient, hasSupabaseAuthCookie } from '~/lib/supabase.server';
+import { getSupabaseBrowserClient } from '~/lib/supabase.client';
 import { createBrowserClient } from '@supabase/ssr';
 
 export function meta({ data }: { data: any }) {
@@ -226,21 +227,36 @@ export default function GarageDetail() {
     }
   };
 
-  const handleAddComment = (e: React.FormEvent) => {
+  const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newComment.trim()) return;
+    const text = newComment.trim();
+    if (!text) return;
 
     const tempComment = {
       id: Math.random().toString(),
-      comment: newComment.trim(),
+      comment: text,
       created_at: new Date().toISOString(),
       user: {
         display_name: user?.email ? user.email.split('@')[0] : 'Tu',
         avatar_url: null
       }
     };
-    setCommentsList((prev: any[]) => [...prev, tempComment]);
+    setCommentsList((prev: any[]) => [...(Array.isArray(prev) ? prev : []), tempComment]);
     setNewComment('');
+
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { data: authData } = await supabase.auth.getUser();
+      if (authData?.user) {
+        await supabase.from('garage_comments').insert({
+          vehicle_id: vehicle.id,
+          user_id: authData.user.id,
+          comment: text
+        });
+      }
+    } catch (err) {
+      console.error('Eroare la salvarea comentariului în Supabase:', err);
+    }
   };
 
   return (
