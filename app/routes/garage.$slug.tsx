@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { Link, useLoaderData } from 'react-router';
+import { useState, useEffect } from 'react';
+import { Link, useLoaderData, Form, useActionData } from 'react-router';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
 import { 
   Flame, 
   ArrowLeft, 
@@ -12,12 +13,15 @@ import {
   Zap, 
   Shield, 
   User,
-  Heart
+  Send,
+  Heart,
+  AlertCircle
 } from 'lucide-react';
 import { Card } from '~/components/ui/Card';
 import { Button } from '~/components/ui/Button';
 import { Badge } from '~/components/ui/Badge';
-import { getSupabaseServerClient } from '~/lib/supabase.server';
+import { getSupabaseServerClient, hasSupabaseAuthCookie } from '~/lib/supabase.server';
+import { createBrowserClient } from '@supabase/ssr';
 
 export function meta({ data }: { data: any }) {
   const vehicle = data?.vehicle;
@@ -37,8 +41,43 @@ export function meta({ data }: { data: any }) {
   ];
 }
 
-const DEMO_GARAGE_MAP: Record<string, any> = {
-  "bmw-m3-e46-laguna-seca": {
+export async function loader({ params, request }: LoaderFunctionArgs) {
+  const { slug } = params;
+  const { supabase } = getSupabaseServerClient(request);
+
+  let user = null;
+  if (hasSupabaseAuthCookie(request)) {
+    const { data: userData } = await supabase.auth.getUser();
+    user = userData.user;
+  }
+
+  // Fetch vehicle details from DB
+  const { data: v } = await supabase
+    .from('garage_vehicles')
+    .select('*, owner:profiles(id, display_name, avatar_url)')
+    .eq('slug', slug)
+    .single();
+
+  // Fetch comments
+  const { data: comments } = v ? await supabase
+    .from('garage_comments')
+    .select('id, comment, created_at, user:profiles(display_name, avatar_url)')
+    .eq('vehicle_id', v.id)
+    .order('created_at', { ascending: true }) : { data: [] };
+
+  // Check if current user upvoted
+  let userHasUpvoted = false;
+  if (user && v) {
+    const { data: upvote } = await supabase
+      .from('garage_upvotes')
+      .select('vehicle_id')
+      .eq('vehicle_id', v.id)
+      .eq('user_id', user.id)
+      .maybeSingle();
+    userHasUpvoted = !!upvote;
+  }
+
+  const fallbackVehicle = {
     id: "g-1",
     title: "BMW M3 E46 - Track Tool & OEM Plus",
     slug: "bmw-m3-e46-laguna-seca",
@@ -55,13 +94,10 @@ const DEMO_GARAGE_MAP: Record<string, any> = {
       "Jante BBS E88 pe 18 inch cu anvelope Michelin Cup 2",
       "Scaune Scoică Recaro Pole Position cu prinderi Macht Schnell"
     ],
-    story: `Această mașină a fost achiziționată în 2022 ca un proiect de restaurare totală. Fiind un fan înrăit al șasiului E46 M3, am reconstruit întreaga punte spate cu ranforsări Redish Motorsport, am schimbat cuzineții de bielă preventiv și am refăcut vanos-ul cu piese Beisan Systems.
-
-Mașina nu are nicio pată de rugină și este păstrată exclusiv în garaj încălzit. Este o plăcere absolută de condus atât pe drumuri montane cât și la event-uri de track day.`,
+    story: `Această mașină a fost achiziționată în 2022 ca un proiect de restaurare totală. Fiind un fan înrăit al șasiului E46 M3, am reconstruit întreaga punte spate cu ranforsări Redish Motorsport, am schimbat cuzineții de bielă preventiv și am refăcut vanos-ul cu piese Beisan Systems.`,
     images: [
       { url: "https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&w=1400&q=80" },
       { url: "https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&w=1400&q=80" },
-      { url: "https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=1400&q=80" }
     ],
     upvotesCount: 142,
     isForSale: true,
@@ -69,55 +105,111 @@ Mașina nu are nicio pată de rugină și este păstrată exclusiv în garaj în
     ownerId: "seller-1",
     ownerName: "Alex M.",
     ownerAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80"
-  }
-};
+  };
 
-export async function loader({ params, request }: { params: any; request: Request }) {
-  const { slug } = params;
-  try {
-    const { supabase } = getSupabaseServerClient(request);
-    const { data: v } = await supabase
-      .from('garage_vehicles')
-      .select('*, owner:profiles(id, display_name, avatar_url)')
-      .eq('slug', slug)
-      .single();
+  const currentVehicle = v ? {
+    id: v.id,
+    title: v.title,
+    slug: v.slug,
+    make: v.make,
+    model: v.model,
+    year: v.year,
+    engine: v.engine || '',
+    powerHp: v.power_hp || 0,
+    modifications: v.modifications || [],
+    story: v.story || '',
+    images: v.images || [],
+    upvotesCount: v.upvotes_count || 0,
+    isForSale: v.is_for_sale || false,
+    salePrice: v.sale_price || null,
+    ownerId: v.owner?.id || '',
+    ownerName: v.owner?.display_name || 'Membru AutoFans',
+    ownerAvatar: v.owner?.avatar_url || null
+  } : fallbackVehicle;
 
-    if (v) {
-      return {
-        vehicle: {
-          id: v.id,
-          title: v.title,
-          slug: v.slug,
-          make: v.make,
-          model: v.model,
-          year: v.year,
-          engine: v.engine || '',
-          powerHp: v.power_hp || 0,
-          modifications: v.modifications || [],
-          story: v.story || '',
-          images: v.images || [],
-          upvotesCount: v.upvotes_count || 0,
-          isForSale: v.is_for_sale || false,
-          salePrice: v.sale_price || null,
-          ownerId: v.owner?.id || '',
-          ownerName: v.owner?.display_name || 'Membru AutoFans',
-          ownerAvatar: v.owner?.avatar_url || null
-        }
-      };
+  return {
+    vehicle: currentVehicle,
+    comments: comments || [],
+    userHasUpvoted,
+    user
+  };
+}
+
+export async function action({ request, params }: ActionFunctionArgs) {
+  const { supabase } = getSupabaseServerClient(request);
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return Response.json({ error: "Trebuie să fii conectat." }, { status: 401 });
+
+  const formData = await request.formData();
+  const actionType = String(formData.get("actionType"));
+  const vehicleId = String(formData.get("vehicleId"));
+
+  if (actionType === "upvote") {
+    // Upvote logic
+    const { data: existing } = await supabase
+      .from('garage_upvotes')
+      .select('vehicle_id')
+      .eq('vehicle_id', vehicleId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (existing) {
+      await supabase.from('garage_upvotes').delete().eq('vehicle_id', vehicleId).eq('user_id', user.id);
+      await supabase.rpc('decrement_garage_upvotes', { vid: vehicleId });
+    } else {
+      await supabase.from('garage_upvotes').insert({ vehicle_id: vehicleId, user_id: user.id });
+      await supabase.rpc('increment_garage_upvotes', { vid: vehicleId });
     }
-  } catch (e) {
-    // Fallback
+    return Response.json({ success: true });
   }
-  return { vehicle: DEMO_GARAGE_MAP[slug] || DEMO_GARAGE_MAP["bmw-m3-e46-laguna-seca"] };
+
+  if (actionType === "comment") {
+    const commentText = String(formData.get("commentText") || "").trim();
+    if (!commentText) return Response.json({ error: "Comentariul nu poate fi gol." }, { status: 400 });
+
+    await supabase.from('garage_comments').insert({
+      vehicle_id: vehicleId,
+      user_id: user.id,
+      comment: commentText
+    });
+    return Response.json({ success: true });
+  }
+
+  return Response.json({ success: true });
 }
 
 export default function GarageDetail() {
-  const { vehicle } = useLoaderData<typeof loader>();
+  const { vehicle, comments: initialComments, userHasUpvoted: initialUpvoted, user } = useLoaderData<typeof loader>();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [upvotes, setUpvotes] = useState(vehicle.upvotesCount);
-  const [hasUpvoted, setHasUpvoted] = useState(false);
+  const [hasUpvoted, setHasUpvoted] = useState(initialUpvoted);
+  const [commentsList, setCommentsList] = useState(initialComments);
+  const [newComment, setNewComment] = useState('');
 
-  const handleUpvote = () => {
+  // Live Supabase Realtime Subscription for comments & upvotes
+  useEffect(() => {
+    const supabaseUrl = (window as any).ENV?.VITE_SUPABASE_URL || 'https://placeholder.supabase.co';
+    const supabaseAnonKey = (window as any).ENV?.VITE_SUPABASE_ANON_KEY || 'placeholder';
+    const client = createBrowserClient(supabaseUrl, supabaseAnonKey);
+
+    const channel = client
+      .channel(`garage-vehicle-${vehicle.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'garage_comments', filter: `vehicle_id=eq.${vehicle.id}` },
+        (payload) => {
+          setCommentsList((prev: any[]) => [...prev, payload.new]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      client.removeChannel(channel);
+    };
+  }, [vehicle.id]);
+
+  const handleUpvoteClick = () => {
     if (!hasUpvoted) {
       setUpvotes((prev: number) => prev + 1);
       setHasUpvoted(true);
@@ -125,6 +217,23 @@ export default function GarageDetail() {
       setUpvotes((prev: number) => prev - 1);
       setHasUpvoted(false);
     }
+  };
+
+  const handleAddComment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newComment.trim()) return;
+
+    const tempComment = {
+      id: Math.random().toString(),
+      comment: newComment.trim(),
+      created_at: new Date().toISOString(),
+      user: {
+        display_name: user?.email ? user.email.split('@')[0] : 'Tu',
+        avatar_url: null
+      }
+    };
+    setCommentsList((prev: any[]) => [...prev, tempComment]);
+    setNewComment('');
   };
 
   return (
@@ -158,19 +267,23 @@ export default function GarageDetail() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Upvote Button */}
-            <Button
-              onClick={handleUpvote}
-              className={`px-5 py-3 rounded-xl font-bold transition-all flex items-center gap-2 border-none shadow-lg ${
-                hasUpvoted
-                  ? 'bg-red-500 text-white shadow-red-500/30 scale-105'
-                  : 'bg-white/10 hover:bg-accent-gold/20 text-accent-gold border border-accent-gold/30'
-              }`}
-            >
-              <Flame className={`h-5 w-5 ${hasUpvoted ? 'fill-white text-white' : 'fill-accent-gold text-accent-gold'}`} />
-              <span>{hasUpvoted ? 'Respect Acordat!' : 'Dă Respect (Upvote)'}</span>
-              <span className="bg-black/40 px-2 py-0.5 rounded-full text-xs ml-1">{upvotes}</span>
-            </Button>
+            {/* Realtime Upvote Form */}
+            <Form method="post" onSubmit={handleUpvoteClick}>
+              <input type="hidden" name="actionType" value="upvote" />
+              <input type="hidden" name="vehicleId" value={vehicle.id} />
+              <Button
+                type="submit"
+                className={`px-5 py-3 rounded-xl font-bold transition-all flex items-center gap-2 border-none shadow-lg ${
+                  hasUpvoted
+                    ? 'bg-red-500 text-white shadow-red-500/30 scale-105'
+                    : 'bg-white/10 hover:bg-accent-gold/20 text-accent-gold border border-accent-gold/30'
+                }`}
+              >
+                <Flame className={`h-5 w-5 ${hasUpvoted ? 'fill-white text-white' : 'fill-accent-gold text-accent-gold'}`} />
+                <span>{hasUpvoted ? 'Respect Acordat!' : 'Dă Respect (Upvote)'}</span>
+                <span className="bg-black/40 px-2 py-0.5 rounded-full text-xs ml-1">{upvotes}</span>
+              </Button>
+            </Form>
 
             {/* Direct Contact if for sale */}
             {vehicle.isForSale && vehicle.ownerId && (
@@ -211,10 +324,10 @@ export default function GarageDetail() {
           )}
         </div>
 
-        {/* Grid Content: Specs & Story */}
+        {/* Grid Content: Specs, Story & Live Comments */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           
-          {/* Main Column: Story & Mod List */}
+          {/* Main Column: Story, Mod List & Live Chat Comments */}
           <div className="lg:col-span-2 space-y-8">
             
             {/* Modifications list */}
@@ -245,6 +358,64 @@ export default function GarageDetail() {
               <p className="text-gray-300 text-sm sm:text-base leading-relaxed whitespace-pre-line">
                 {vehicle.story}
               </p>
+            </Card>
+
+            {/* Live Discussion & Comments Section */}
+            <Card variant="elevated" className="bg-glass border-white/10 p-6 sm:p-8 space-y-6 shadow-xl">
+              <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                <h3 className="text-xl font-extrabold text-white flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5 text-accent-gold" />
+                  Comentarii & Discuții Live ({commentsList.length})
+                </h3>
+                <span className="text-xs text-green-400 font-bold flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-green-400 animate-ping" />
+                  Realtime Active
+                </span>
+              </div>
+
+              {/* Comments List */}
+              <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+                {commentsList.length > 0 ? (
+                  commentsList.map((c: any) => (
+                    <div key={c.id} className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-accent-gold/20 flex items-center justify-center text-accent-gold text-xs font-bold">
+                            {(c.user?.display_name || 'U')[0]}
+                          </div>
+                          <span className="text-xs font-bold text-white">{c.user?.display_name || 'Utilizator'}</span>
+                        </div>
+                        <span className="text-[10px] text-gray-400">
+                          {new Date(c.created_at).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <p className="text-xs sm:text-sm text-gray-200 pl-8">{c.comment}</p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-xs text-gray-400 text-center py-6">
+                    Niciun comentariu încă. Fii primul care adresează o întrebare despre acest proiect!
+                  </p>
+                )}
+              </div>
+
+              {/* Add Comment Form */}
+              <form onSubmit={handleAddComment} className="flex gap-2 pt-2">
+                <input
+                  type="text"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder="Scrie un comentariu sau o întrebare despre proiect..."
+                  className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-xs sm:text-sm focus:outline-none focus:border-accent-gold"
+                />
+                <Button
+                  type="submit"
+                  disabled={!newComment.trim()}
+                  className="bg-gold-gradient text-secondary-950 font-bold px-4 py-3 rounded-xl border-none"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </form>
             </Card>
 
           </div>
