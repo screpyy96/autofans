@@ -529,18 +529,18 @@ export function MainLayout({ children }: MainLayoutProps) {
             <span>Adaugă</span>
           </Link>
 
-          {/* Dealeri — direct, because this is a core conversion route on mobile. */}
+          {/* Garajul Comunității — direct engagement tab on mobile app */}
           <Link
-            to="/dealeri"
+            to="/garage"
             prefetch="intent"
             className={cn(
               "flex flex-col items-center gap-1 text-[10px] font-medium transition-all duration-300",
-              location.pathname.startsWith('/dealeri') ? "text-accent-gold" : "text-gray-400 hover:text-white"
+              location.pathname.startsWith('/garage') ? "text-accent-gold" : "text-gray-400 hover:text-white"
             )}
-            aria-label="Pentru dealeri"
+            aria-label="Garajul Comunității"
           >
-            <Handshake className="h-5 w-5" />
-            <span>Dealeri</span>
+            <Car className="h-5 w-5" />
+            <span>Garaj 🏎️</span>
           </Link>
 
           {/* Meniu (Opens Drawer) */}

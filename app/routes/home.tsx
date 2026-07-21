@@ -1,8 +1,9 @@
 import { Link, useNavigate } from 'react-router';
 import type { Route } from "./+types/home";
 import type { LinksFunction } from 'react-router';
-import { Search, Shield, GitCompare, Heart, MessageCircle, SlidersHorizontal, Plus, CircleCheck, MapPin } from 'lucide-react';
+import { Search, Shield, GitCompare, Heart, MessageCircle, SlidersHorizontal, Plus, CircleCheck, MapPin, Flame } from 'lucide-react';
 import { Card } from '~/components/ui/Card';
+import { Button } from '~/components/ui/Button';
 import { Hero } from '~/components/home/Hero';
 import { RouteErrorBoundary } from '~/components/error';
 
@@ -106,6 +107,51 @@ function HomeContent() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(homeSchema) }} />
       <Hero onSearch={handleSearch} />
+
+      {/* Community Garage Showcase Banner */}
+      <section className="defer-render py-12 w-full bg-gradient-to-r from-red-950/40 via-secondary-900 to-black border-y border-accent-gold/20 backdrop-blur-xl relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-8">
+          <div className="space-y-4 max-w-2xl text-center md:text-left">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-accent-gold/15 border border-accent-gold/30 text-accent-gold text-xs font-black uppercase tracking-wider shadow-glow">
+              <Flame className="h-4 w-4 fill-accent-gold" />
+              GARANȚIA PASIUNII • GARAJUL COMUNITĂȚII
+            </div>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-tight">
+              Arată-ți Mașina. Votează Proiecte. <span className="text-accent-gold">Vinde din Garaj!</span> 🏎️🔥
+            </h2>
+            <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
+              Descoperă mașinile pasionaților din România, votează proiectele tale favorite, discută în timp real și cumpără vehicule unice direct din garajul proprietarilor!
+            </p>
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 pt-2">
+              <Link to="/garage" prefetch="intent">
+                <Button className="bg-gold-gradient text-secondary-950 font-black px-7 py-3.5 rounded-xl shadow-glow hover:scale-105 transition-all text-sm border-none">
+                  🏎️ Explorează Garajul Comunității
+                </Button>
+              </Link>
+              <Link to="/garage/add" prefetch="intent">
+                <Button variant="secondary" className="bg-white/10 hover:bg-white/20 text-white font-bold px-6 py-3.5 rounded-xl text-sm border border-white/20">
+                  + Adaugă Mașina Ta în Garaj
+                </Button>
+              </Link>
+            </div>
+          </div>
+
+          <div className="w-full md:w-80 bg-glass/60 border border-accent-gold/30 rounded-3xl p-6 shadow-2xl text-center space-y-4 relative">
+            <div className="w-16 h-16 rounded-full bg-accent-gold/20 border border-accent-gold/40 flex items-center justify-center mx-auto text-accent-gold shadow-glow">
+              <Flame className="h-8 w-8 fill-accent-gold" />
+            </div>
+            <h3 className="text-lg font-extrabold text-white">Comunitatea Pasionaților</h3>
+            <p className="text-xs text-gray-400">
+              Modificări tuning, poze de înaltă rezoluție, povești reale și comentarii live între fani auto.
+            </p>
+            <div className="pt-2 border-t border-white/10 flex justify-around text-xs font-black text-accent-gold">
+              <span>🔥 Upvotes Live</span>
+              <span>•</span>
+              <span>💬 Chat Realtime</span>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Info Cards Section */}
       <section className="defer-render py-16 w-full bg-glass/10 backdrop-blur-md text-white border-b border-white/5">
