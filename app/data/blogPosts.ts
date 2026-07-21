@@ -21,6 +21,171 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    id: "10",
+    slug: "top-masini-second-hand-fiabile-sub-10000-euro-2026",
+    title: "Top 10 cele mai fiabile mașini second-hand sub 10.000 euro în 2026: ce modele să alegi și motoare de evitat",
+    excerpt: "Ghid complet de achiziție pentru bugetul de 10.000€: clasament al celor mai fiabile mașini rulate, motoare recomandate, costuri de întreținere și capcane de evitat.",
+    content: `
+Căutarea de **mașini second-hand sub 10.000 euro** reprezintă cel mai popular segment de achiziție din România. La acest buget poți găsi mașini rulate moderne, sigure și bine dotate, produse între 2012 și 2019. În același timp, piața este plină de mașini cu rulaj dat înapoi, vicii ascunse sau motorizări cu probleme cronice de fabricație care pot consuma rapid mii de euro în reparații.
+
+> **Pe scurt:** În bugetul de 10.000€, prioritatea absolută trebuie să fie fiabilitatea motorului și istoricul de service documentat. Nu cheltui toți cei 10.000€ doar pe prețul mașinii: păstrează 1.000€ – 1.500€ pentru revizia inițială, asigurarea RCA, ITP și inspecția într-un service independent.
+
+---
+
+## Cum să îți împarți corect bugetul de 10.000 Euro
+
+O greșeală frecventă când cauți mașini rulate este alocarea întregului buget prețului de cumpărare. O mașină cumpărată la limita superioară a bugetului te va lăsa fără resurse când apar primele cheltuieli obligatorii.
+
+Ghidul nostru despre [costul real al unei mașini în 2026](/blog/costul-real-al-unei-masini-in-2026) recomandă următoarea schemă de calcul:
+
+- **Preț maxim de achiziție:** 8.500 € – 8.800 €
+- **Verificare pre-cumpărare & Raport VIN:** 100 € – 150 €
+- **Formalități, RCA și transcriere:** 250 € – 400 €
+- **Revizia inițială (ulei, filtre, distribuție):** 400 € – 700 €
+- **Rezervă de siguranță pentru reparații neprevăzute:** 500 € – 800 €
+
+---
+
+## Top 10 cele mai fiabile mașini second-hand sub 10.000 Euro
+
+### 1. Volkswagen Golf 7 (2013–2019) – Regele echilibrului
+Golf 7 este considerat de mulți specialiști drept cel mai reușit hatchback din ultimul deceniu. Construit pe platforma MQB, oferă o antifonare excelentă, materiale interioare de calitate și o rețea uriașă de piese de schimb accesibile.
+
+- **Motorizare recomandată:** 1.4 TSI (122 CP / 125 CP / 150 CP – generația EA211 pe curea) pentru benzină sau 2.0 TDI (150 CP) pentru drumuri lungi.
+- **Puncte forte:** Confort excelent, ergonomie, valoare foarte bună la revânzare.
+- **De evitat:** Cutia automată DSG7 cu ambreiaje uscate (DQ200) dacă nu are istoric clar de revizie la mecatronic.
+
+### 2. Toyota Auris / Corolla (2013–2018) – Campionul fiabilității urbane
+Dacă vrei o mașină care să nu cunoască mecanicul, Toyota este alegerea numărul 1. Sistemul hibrid alimentat de motorul de 1.8 litri aspirat este legendar pentru fiabilitatea sa.
+
+- **Motorizare recomandată:** 1.8 VVT-i Hybrid (136 CP) sau 1.6 Benzină aspirat (132 CP).
+- **Puncte forte:** Consum imbatabil în oraș (4–5 l/100 km), zero uzură la ambreiaj sau demaror, fiabilitate demonstrată în regim de taxi/ride-sharing.
+- **Puncte slabe:** Antifonare medie la viteze de autostradă, transmisie e-CVT liniară care nu transmite senzații sportive.
+
+### 3. Skoda Octavia 3 (2013–2019) – Spațiu imens pentru familie
+Skoda Octavia 3 împarte platforma tehnică cu Golf 7, dar oferă un portbagaj uriaș de 590 litri (sau 610 litri la varianta Combi) și spațiu pentru picioare pe bancheta din spate comparabil cu limuzinele din clase superioare.
+
+- **Motorizare recomandată:** 1.4 TSI (140 CP / 150 CP) sau 2.0 TDI (150 CP).
+- **Puncte forte:** Practicitate imbatabilă, consum redus, suspensie confortabilă pentru drumurile din România.
+- **La ce să fii atent:** Verifică funcționarea sistemului de climatizare și pompa de apă la motoarele 2.0 TDI.
+
+### 4. Mazda 3 / Mazda 6 (2013–2018) – Design spectaculos și motoare aspirate
+Generația Kodo cu tehnologie SkyActiv a readus Mazda în prim-plan. Spre deosebire de competitori care au trecut pe motoare mici turbo în 3 cilindri, Mazda a perfecționat motoarele pe benzină de 2.0 litri aspirat.
+
+- **Motorizare recomandată:** 2.0 SkyActiv-G (120 CP / 165 CP) pe benzină.
+- **Puncte forte:** Design atemporal, răspuns liniar la accelerare, fiabilitate mecanică de excepție.
+- **De evitat:** Motorizarea diesel 2.2 SkyActiv-D (are probleme cronice cu depunerile de calamină, saibele de foc și presiunea de ulei).
+
+### 5. Ford Focus Mk3.5 Facelift (2015–2018) – Cea mai bună manevrabilitate
+Ford Focus rămâne etalonul clasei compacte când vine vorba de plăcerea de a conduce. Versiunea Facelift (lansată în 2015) a rezolvat problemele de izolare fonică și a adus un sistem multimedia SYNC mult mai performant.
+
+- **Motorizare recomandată:** 1.5 TDCi Diesel (120 CP) sau 1.5 EcoBoost Benzină (4 cilindri, 150 CP).
+- **Puncte forte:** Șasiu excelent, direcție precisă, prețuri de achiziție mai mici decât la rivalii germani.
+- **De evitat:** Cutia automată PowerShift (dublu ambreiaj uscat) și motorul 1.0 EcoBoost dacă nu are istoricul de schimb al cureaui imersate în ulei.
+
+### 6. Hyundai i30 / Kia Cee'd (2014–2019) – Raport calitate-preț imbatabil
+Modelele frățești sud-coreene oferă una dintre cele mai bune experiențe de deținere. Sunt mașini simple, robuste, cu costuri foarte mici de întreținere și piese ieftine.
+
+- **Motorizare recomandată:** 1.6 CRDi Diesel (110 CP / 136 CP) sau 1.4 MPI Benzină aspirat (100 CP).
+- **Puncte forte:** Motoare diesel extrem de durabile, distribuție pe lanț rezistentă, interior bine construit.
+- **Puncte slabe:** Vopsea mai subțire predispusă la zgârieturi fine.
+
+### 7. Honda Civic IX (2012–2017) – Inovație japoneză fără moarte
+Civic 9 are un design futuristic și una dintre cele mai inteligente compartimentări de interior datorită sistemului *Magic Seats* (bancheta spate se pliază complet în sus).
+
+- **Motorizare recomandată:** 1.8 i-VTEC Benzină (142 CP) sau 1.6 i-DTEC Diesel (120 CP).
+- **Puncte forte:** Motorul 1.8 i-VTEC este practic indestructibil, consum impecabil la dieselul 1.6 i-DTEC.
+- **Puncte slabe:** Piese de caroserie mai scumpe în caz de accident.
+
+### 8. Volvo V40 / S60 (2012–2018) – Siguranță și rafinament premium
+Dacă vrei o marcă premium sub 10.000€ fără riscurile enorme ale unui BMW sau Audi foarte rulat, Volvo V40 sau S60 reprezintă alternativa ideală.
+
+- **Motorizare recomandată:** 2.0 D3 / D4 Diesel (150 CP / 190 CP – motoarele Volvo VEA cu 4 cilindri).
+- **Puncte forte:** Scaune ortopedice fantastice, sisteme de siguranță activă (City Safety în standard), materiale de înaltă calitate.
+- **Puncte slabe:** Portbagaj mai mic la modelul V40.
+
+### 9. Renault Megane 4 (2016–2020) – Confort și cel mai economic diesel
+Megane 4 aduce un design franțuzesc foarte atractiv, faruri cu semnătură LED și un bord digital modern. Este una dintre cele mai tinere mașini pe care le poți cumpăra în bugetul de 10.000 Euro.
+
+- **Motorizare recomandată:** 1.5 dCi / Blue dCi (110 CP / 115 CP) – legendarul motor K9K.
+- **Puncte forte:** Consum extrem de mic (sub 4.5 l/100 km extraurban), suspensie foarte moale și confortabilă.
+- **Puncte slabe:** Sistemul multimedia R-Link poate avea mici bug-uri software.
+
+### 10. Suzuki Vitara / SX4 S-Cross (2015–2019) – Cel mai ieftin SUV fiabil
+Dacă ai nevoie obligatoriu de o gardă la sol ridicată sau de tracțiune integrală 4x4 (AllGrip) pentru iarnă și drumuri neasfaltate, Suzuki Vitara este răspunsul cel mai rațional sub 10.000 Euro.
+
+- **Motorizare recomandată:** 1.6 VVT Benzină aspirat (120 CP).
+- **Puncte forte:** Sistem 4x4 eficient, gardă la sol de 185 mm, mecanică simplă și durabilă.
+- **Puncte slabe:** Plastice dure la interior, antifonare modestă.
+
+---
+
+## Tabel Comparativ: Consum, Fiabilitate și Cost Revizie
+
+| Model | Motor Recomandat | Consum Mediu | Scor Fiabilitate | Cost Revizie Ulei + Filtre |
+| --- | --- | --- | --- | --- |
+| **Toyota Auris** | 1.8 Hybrid (136 CP) | 4.3 L / 100 km | 9.8 / 10 | ~ 450 RON |
+| **Mazda 3 SkyActiv** | 2.0 Benzină (120 CP) | 6.2 L / 100 km | 9.5 / 10 | ~ 500 RON |
+| **VW Golf 7** | 1.4 TSI EA211 (125 CP) | 5.8 L / 100 km | 9.0 / 10 | ~ 550 RON |
+| **Skoda Octavia 3** | 2.0 TDI (150 CP) | 5.0 L / 100 km | 8.9 / 10 | ~ 600 RON |
+| **Hyundai i30** | 1.6 CRDi (110 CP) | 4.8 L / 100 km | 9.2 / 10 | ~ 480 RON |
+| **Renault Megane 4** | 1.5 dCi (110 CP) | 4.5 L / 100 km | 9.1 / 10 | ~ 450 RON |
+
+---
+
+## ⚠️ MOTOARE DE EVITAT NEAPĂRAT sub 10.000 Euro
+
+O mașină ieftină poate deveni rapid un coșmar financiar dacă alegi o motorizare cu defecte din fabrică. Iată ce motoare ar trebui să eviți pe piața second-hand:
+
+1. **1.2 TSI & 1.4 TSI (Generația EA111 pe lanț, 2007–2012):** Probleme grave la distribuția pe lanț (se alungește și sare de pe punct), consum excesiv de ulei. A nu se confunda cu generația EA211 pe curea lansată după 2013!
+2. **1.2 PureTech (Peugeot / Citroen / Opel):** Cureaua de distribuție este imersată în baie de ulei (wet belt). În timp, cureaua se dezonează, iar particulele de cauciuc înfundă sorbul pompei de ulei, ducând la griparea motorului.
+3. **2.0 N47 Diesel (BMW Seria 1, Seria 3, X1 2007–2014):** Lanțul de distribuție este amplasat în spatele motorului spre habitaclu. Se uzează prematur și se poate rupe, distrugând motorul complet. Înlocuirea preventivă costă peste 4.000–5.000 lei.
+4. **1.6 THP / Prince (Peugeot, Citroen, MINI):** Dezvoltat în colaborare cu BMW, suferă de depuneri masive de calamină pe supape, întinzător de lanț defectuos și consum uriaș de ulei.
+5. **2.2 SkyActiv-D (Mazda 2012–2017):** Probleme severe la garniturile șaibelor de foc de la injectoare, diluția uleiului cu motorină și uzura axului cu came.
+
+---
+
+## Ce verifici înainte să cumperi o mașină second-hand
+
+După ce ai selectat modelul dorit, respectă pașii esențiali de verificare:
+
+1. **Verifică numărul VIN:** Solicită seria de șasiu înainte de vizionare. Vezi ghidul nostru despre [cum verifici istoricul unei mașini după VIN](/blog/ghid-verificare-istoric-auto-second-hand).
+2. **Compară Actele:** Asigură-te că vânzătorul din acte este persoana cu care discuți. Consultă [checklist-ul cu actele necesare la cumpărare](/blog/acte-necesare-cumparare-vanzare-masina-2026).
+3. **Pornirea la rece & Test Drive:** Programează vizionarea când motorul este rece. Folosește [checklist-ul complet pentru vizionarea auto](/blog/ce-verifici-la-vizionarea-unei-masini-second-hand-checklist).
+4. **Inspecția pe elevator:** Nu cumpăra niciodată fără o verificare într-un service independent.
+
+---
+
+## Întrebări frecvente (FAQ)
+
+### Care este cea mai fiabilă mașină second-hand de oraș sub 10.000 euro?
+Toyota Auris 1.8 Hybrid și Mazda 3 2.0 SkyActiv-G sunt considerate cele mai fiabile alegeri de oraș. Au motoare extrem de durabile și costuri minime de întreținere.
+
+### Merită să cumpăr un diesel cu peste 200.000 km sub 10.000 euro?
+Da, dacă mașina are istoric complet de service și a fost folosită predominant la drum lung. Motoare precum 2.0 TDI (VW/Skoda) sau 1.5 dCi (Renault) pot parcurge peste 350.000–400.000 km fără probleme majore dacă au primit ulei schimbat la timp.
+
+### Câți bani trebuie să păstrez rezervă după cumpărare?
+Este recomandat să păstrezi cel puțin 10–15% din bugetul total (aproximativ 1.000€ – 1.500€) pentru revizia inițială, asigurare, anvelope de sezon și eventuale mici reparații.
+
+---
+
+[Caută mașini second-hand sub 10.000 euro pe AutoFans](/search) și folosește filtrele noastre avansate pentru a găsi cele mai bune oferte verificate din România!
+    `,
+    coverImage: "/blog/cum-cumperi-masina-second-hand-2026.webp",
+    author: { name: "AutoFans", role: "Echipa editorială AutoFans" },
+    category: "Ghid cumpărare",
+    tags: ["Mașini second-hand sub 10000 euro", "Cele mai fiabile mașini", "Ghid achiziție auto", "Motoare de evitat", "Mașină ieftină și bună", "Verificare auto", "AutoFans"],
+    readTime: 14,
+    publishedAt: "2026-07-21T18:00:00Z",
+    updatedAt: "2026-07-21T18:00:00Z",
+    faqs: [
+      { question: "Care este cea mai fiabilă mașină second-hand sub 10.000 euro?", answer: "Toyota Auris 1.8 Hybrid și Mazda 3 2.0 SkyActiv-G sunt în topul fiabilității la acest buget, urmate îndeaproape de VW Golf 7 1.4 TSI EA211 și Honda Civic 1.8." },
+      { question: "Ce motoare second-hand trebuie să evit neapărat?", answer: "Evită motoarele 1.2/1.4 TSI din seria veche EA111 pe lanț (2007-2012), 1.2 PureTech pe curea imersată în ulei, 2.0 N47 Diesel BMW și 1.6 THP." },
+      { question: "Câți bani păstrez rezervă după cumpărare?", answer: "Păstrează 1.000 - 1.500 euro din bugetul total pentru revizia inițială, asigurarea RCA, ITP, anvelope și verificări în service." },
+    ],
+    isFeatured: true,
+  },
+  {
     id: "9",
     slug: "masini-second-hand-de-vanzare-cum-cumperi-sau-vinzi-2026",
     title: "Mașini second-hand de vânzare: cum cumperi bine sau vinzi mai repede în 2026",
