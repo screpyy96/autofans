@@ -7,6 +7,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import okhttp3.MediaType.Companion.toMediaType
@@ -14,6 +16,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.HttpUrl.Companion.toHttpUrl
+import java.time.LocalDate
 import java.io.IOException
 import java.util.UUID
 
@@ -23,6 +26,7 @@ import java.util.UUID
 class MobileApi(
     private val config: SupabaseConfig,
     private val auth: SupabaseAuthRepository,
+    private val clientSessionId: String,
     private val client: OkHttpClient = OkHttpClient(),
     private val json: Json = Json { ignoreUnknownKeys = true },
 ) {
@@ -112,11 +116,93 @@ class MobileApi(
         "${config.url.trimEnd('/')}/storage/v1/object/public/profile-avatars/$path"
     }
 
+    suspend fun signListingImageUrls(paths: List<String>): Map<String, String> = withContext(Dispatchers.IO) {
+        val distinctPaths = paths.filter(String::isNotBlank).distinct()
+        if (distinctPaths.isEmpty()) return@withContext emptyMap()
+        val session = auth.activeSession()
+        val requestJson = json.encodeToString(SignRequest(distinctPaths, 3_600))
+        val request = Request.Builder()
+            .url("${config.url.trimEnd('/')}/storage/v1/object/sign/listing-images")
+            .header("apikey", config.anonKey)
+            .header("Authorization", "Bearer ${session.access_token}")
+            .post(requestJson.toRequestBody(JSON))
+            .build()
+        client.newCall(request).execute().use { response ->
+            val text = response.body?.string().orEmpty()
+            if (!response.isSuccessful) throw SupabaseException(response.code, mobileApiError(response.code, response.header("Content-Type"), text))
+            json.decodeFromString<List<SignedUrlDto>>(text).mapNotNull { signed ->
+                val path = signed.path ?: signed.name ?: return@mapNotNull null
+                val signedPath = signed.signedUrl ?: return@mapNotNull null
+                val fullUrl = if (signedPath.startsWith("http")) signedPath else "${config.url.trimEnd('/')}/storage/v1$signedPath"
+                path to fullUrl
+            }.toMap()
+        }
+    }
+
+    suspend fun recordListingView(listingId: Long) {
+        recordPublicActivity(
+            table = "listing_views",
+            payload = buildJsonObject {
+                put("listing_id", listingId)
+                put("visitor_id", kotlinx.serialization.json.JsonNull)
+                put("session_id", clientSessionId)
+                put("viewed_on", currentActivityDay())
+            },
+        )
+    }
+
+    suspend fun recordListingContact(listingId: Long, contactType: String) {
+        recordPublicActivity(
+            table = "listing_contacts",
+            payload = buildJsonObject {
+                put("listing_id", listingId)
+                put("visitor_id", kotlinx.serialization.json.JsonNull)
+                put("contact_type", normalizeContactType(contactType))
+                put("session_id", clientSessionId)
+                put("contacted_on", currentActivityDay())
+            },
+        )
+    }
+
     private companion object {
         val CHAT_OPERATIONS = setOf("conversations", "messages", "start_conversation", "send_message", "mark_conversation_read")
         val JSON = "application/json; charset=utf-8".toMediaType()
         val PROFILE_AVATAR_MIME_TYPES = setOf("image/jpeg", "image/png", "image/webp")
         const val PROFILE_AVATAR_MAX_BYTES = 5 * 1024 * 1024
+    }
+
+    @Serializable
+    private data class SignRequest(val paths: List<String>, @SerialName("expiresIn") val expiresIn: Int)
+
+    @Serializable
+    private data class SignedUrlDto(
+        val name: String? = null,
+        val path: String? = null,
+        @SerialName("signedURL") val signedUrl: String? = null,
+    )
+
+    private suspend fun recordPublicActivity(table: String, payload: JsonObject) = withContext(Dispatchers.IO) {
+        val request = Request.Builder()
+            .url("${config.url.trimEnd('/')}/rest/v1/$table")
+            .header("apikey", config.anonKey)
+            .header("Authorization", "Bearer ${config.anonKey}")
+            .header("Content-Type", "application/json")
+            .header("Prefer", "return=minimal")
+            .post(payload.toString().toRequestBody(JSON))
+            .build()
+        client.newCall(request).execute().use { response ->
+            val text = response.body?.string().orEmpty()
+            if (response.isSuccessful) return@withContext
+            if (response.code == 409 && text.contains("\"code\":\"23505\"")) return@withContext
+            throw SupabaseException(response.code, mobileApiError(response.code, response.header("Content-Type"), text))
+        }
+    }
+
+    private fun currentActivityDay(): String = LocalDate.now().toString()
+
+    private fun normalizeContactType(value: String): String = when (value) {
+        "phone", "whatsapp", "viewing" -> value
+        else -> "message"
     }
 
     private fun mobileApiError(status: Int, contentType: String?, body: String): String {

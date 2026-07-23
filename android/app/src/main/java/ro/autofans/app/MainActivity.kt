@@ -20,6 +20,7 @@ import ro.autofans.app.data.SupabaseListingRepository
 import ro.autofans.app.ui.AutoFansApp
 import ro.autofans.app.ui.theme.AutoFansTheme
 import ro.autofans.app.push.AutoFansFirebaseMessagingService
+import java.util.UUID
 
 class MainActivity : ComponentActivity() {
     private lateinit var authRepository: SupabaseAuthRepository
@@ -42,7 +43,11 @@ class MainActivity : ComponentActivity() {
             SupabaseConfig(BuildConfig.SUPABASE_URL, BuildConfig.SUPABASE_ANON_KEY),
             SecureSessionStore(applicationContext),
         )
-        val mobileApi = MobileApi(SupabaseConfig(BuildConfig.SUPABASE_URL, BuildConfig.SUPABASE_ANON_KEY), authRepository)
+        val mobileApi = MobileApi(
+            SupabaseConfig(BuildConfig.SUPABASE_URL, BuildConfig.SUPABASE_ANON_KEY),
+            authRepository,
+            activitySessionId(),
+        )
         setContent {
             AutoFansTheme {
                 AutoFansApp(
@@ -51,6 +56,9 @@ class MainActivity : ComponentActivity() {
                     mobileApi = mobileApi,
                     pendingConversationId = pendingConversationId,
                     accountRefreshVersion = accountRefreshVersion,
+                    onConversationRequested = { conversationId ->
+                        pendingConversationId.value = conversationId
+                    },
                     onConversationOpened = { conversationId ->
                         if (pendingConversationId.value == conversationId) {
                             pendingConversationId.value = null
@@ -91,5 +99,14 @@ class MainActivity : ComponentActivity() {
                 accountRefreshVersion.value += 1
             }
         }
+    }
+
+    private fun activitySessionId(): String {
+        val preferences = getSharedPreferences("autofans_activity", Context.MODE_PRIVATE)
+        val existing = preferences.getString("client_session_id", null)
+        if (!existing.isNullOrBlank()) return existing
+        val created = UUID.randomUUID().toString().lowercase()
+        preferences.edit().putString("client_session_id", created).apply()
+        return created
     }
 }

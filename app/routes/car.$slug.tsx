@@ -223,6 +223,11 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
 export default function CarDetail({ params }: Route.ComponentProps) {
   const data = useLoaderData() as any;
   const navigate = useNavigate();
+  const [listingMetrics, setListingMetrics] = useState(() => data?.listingMetrics || {
+    view_count: 0,
+    contact_count: 0,
+    favorite_count: 0,
+  });
   const [showContactModal, setShowContactModal] = useState(false);
   const [contactMode, setContactMode] = useState<ContactMode>('message');
   const [feedbackMessage, setFeedbackMessage] = useState('');
@@ -239,6 +244,14 @@ export default function CarDetail({ params }: Route.ComponentProps) {
     viewedListingId.current = id;
     trackAnalyticsEvent('listing_view', { listing_id: id });
   }, [data?.listing?.id]);
+
+  useEffect(() => {
+    setListingMetrics(data?.listingMetrics || {
+      view_count: 0,
+      contact_count: 0,
+      favorite_count: 0,
+    });
+  }, [data?.listing?.id, data?.listingMetrics]);
 
   let car: Car | undefined = undefined;
   if (data?.listing) {
@@ -309,9 +322,9 @@ export default function CarDetail({ params }: Route.ComponentProps) {
       createdAt: l.created_at ? new Date(l.created_at) : new Date(),
       updatedAt: l.created_at ? new Date(l.created_at) : new Date(),
       status: mapListingStatus(l.status),
-      viewCount: Number(data.listingMetrics?.view_count || 0),
-      favoriteCount: Number(data.listingMetrics?.favorite_count || 0),
-      contactCount: Number(data.listingMetrics?.contact_count || 0),
+      viewCount: Number(listingMetrics?.view_count || 0),
+      favoriteCount: Number(listingMetrics?.favorite_count || 0),
+      contactCount: Number(listingMetrics?.contact_count || 0),
       owners: l.owners ?? 1,
       serviceHistory: !!l.service_history,
     };
@@ -345,6 +358,12 @@ export default function CarDetail({ params }: Route.ComponentProps) {
       // A second tab can race with this tab. That is an expected duplicate,
       // not an error a visitor or developer needs to act on.
       if (error && error.code !== '23505') throw error;
+      if (!error) {
+        setListingMetrics((current: any) => ({
+          ...current,
+          view_count: Number(current?.view_count || 0) + 1,
+        }));
+      }
     }).catch((error) => console.warn('Unable to record listing view:', error));
   }, [listingId, data.userId, data.listing?.owner_id]);
 
