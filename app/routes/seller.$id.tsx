@@ -24,14 +24,46 @@ import {
 import { formatRelativeTime } from '~/utils/helpers';
 import { useComparison, useFavorites } from '~/stores/useAppStore';
 
+function truncateSeoText(text: string, maxLength = 160) {
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
+}
+
+function buildSellerSeoTitle(seller: any, listings: any[]) {
+  const sellerName = seller?.display_name || 'Vanzator Auto';
+  const count = listings?.length || 0;
+  return `${sellerName} - ${count} masini second hand de vanzare | AutoFans`;
+}
+
+function buildSellerSeoDescription(seller: any, listings: any[], reviews: any[]) {
+  const sellerName = seller?.display_name || 'acest vanzator';
+  const count = listings?.length || 0;
+  const topMakes = Array.from(new Set(
+    (listings || []).map((listing) => listing.make).filter(Boolean),
+  )).slice(0, 3);
+  const rating = reviews?.length
+    ? `${(reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) / reviews.length).toFixed(1)} din ${reviews.length} recenzii`
+    : null;
+
+  return truncateSeoText(
+    [
+      `Vezi ${count} masini second hand publicate de ${sellerName} pe AutoFans`,
+      topMakes.length ? `inclusiv ${topMakes.join(', ')}` : null,
+      rating ? `rating ${rating}` : null,
+      seller?.is_verified ? 'Profil verificat.' : 'Contact direct cu vanzatorul.',
+    ].filter(Boolean).join('. '),
+  );
+}
+
 export function meta({ data }: Route.MetaArgs) {
   const seller = (data as any)?.seller;
-  const sellerName = seller?.display_name || 'Vânzător Auto';
-  const isDealer = seller?.role === 'dealer';
+  const listings = (data as any)?.listings || [];
+  const reviews = (data as any)?.reviews || [];
+  const isDealer = seller?.role === 'seller';
   const canonicalUrl = seller?.id ? `https://www.autofans.ro/seller/${encodeURIComponent(seller.id)}` : 'https://www.autofans.ro/seller';
 
-  const title = `Profil ${sellerName} - ${isDealer ? 'Dealer' : 'Vânzător'} pe AutoFans.ro`;
-  const description = `Vezi anunțurile publicate și informațiile de profil pentru ${sellerName} pe AutoFans.ro.`;
+  const title = buildSellerSeoTitle(seller, listings);
+  const description = buildSellerSeoDescription(seller, listings, reviews);
   const image = seller?.avatar_url || "https://www.autofans.ro/hero_background.jpg";
 
   return [
@@ -270,6 +302,57 @@ export default function SellerProfile() {
     return { star, count, percentage };
   });
 
+  const sellerSchema = {
+    '@context': 'https://schema.org',
+    '@type': seller.role === 'seller' ? 'AutoDealer' : 'Person',
+    name: seller.display_name || 'Vanzator Auto',
+    url: `https://www.autofans.ro/seller/${encodeURIComponent(seller.id)}`,
+    image: seller.avatar_url || undefined,
+    telephone: seller.phone || undefined,
+    areaServed: 'RO',
+    ...(reviewsAvailable && totalReviews > 0 ? {
+      aggregateRating: {
+        '@type': 'AggregateRating',
+        ratingValue: Number(averageRating),
+        reviewCount: totalReviews,
+        bestRating: 5,
+        worstRating: 1,
+      },
+    } : {}),
+  };
+
+  const itemListSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: `Anunturi ${seller.display_name || 'vanzator'}`,
+    numberOfItems: listings.length,
+    itemListElement: listings.slice(0, 24).map((listing, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      url: `https://www.autofans.ro/car/${encodeURIComponent(listing.slug)}`,
+      name: listing.title,
+    })),
+  };
+
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'AutoFans',
+        item: 'https://www.autofans.ro/',
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: seller.display_name || 'Vanzator Auto',
+        item: `https://www.autofans.ro/seller/${encodeURIComponent(seller.id)}`,
+      },
+    ],
+  };
+
   const handleFavorite = (listingId: string) => {
     if (isFavorited(listingId)) removeFromFavorites(listingId);
     else addToFavorites(listingId);
@@ -290,6 +373,9 @@ export default function SellerProfile() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      {seller.role === 'seller' && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(sellerSchema) }} />}
+      {seller.role === 'seller' && listings.length > 0 && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema) }} />}
+      {seller.role === 'seller' && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />}
       {/* Back button */}
       <Link to="/" className="inline-flex items-center text-accent-gold hover:text-accent-gold/80 transition-colors mb-6 text-sm font-semibold">
         <ArrowLeft className="h-4 w-4 mr-2" />

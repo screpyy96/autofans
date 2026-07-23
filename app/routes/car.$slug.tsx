@@ -15,6 +15,47 @@ import { signListingImages } from '~/utils/listingImages';
 
 const ContactModal = lazy(() => import('~/components/ui/ContactModal').then(({ ContactModal: ContactModalComponent }) => ({ default: ContactModalComponent })));
 
+function formatNumberRo(value: number | string | null | undefined) {
+  const numeric = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(numeric)) return null;
+  return numeric.toLocaleString('ro-RO');
+}
+
+function truncateSeoText(text: string, maxLength = 160) {
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
+}
+
+function buildListingSeoTitle(listing: any) {
+  const name = [listing?.make, listing?.model, listing?.year].filter(Boolean).join(' ');
+  const details = [
+    listing?.price ? `${formatNumberRo(listing.price)} ${listing.currency || 'EUR'}` : null,
+    listing?.mileage ? `${formatNumberRo(listing.mileage)} km` : null,
+    listing?.city || null,
+  ].filter(Boolean);
+  return `${name} de vanzare${details.length ? ` - ${details.join(' - ')}` : ''} | AutoFans`;
+}
+
+function buildListingSeoDescription(listing: any) {
+  const name = [listing?.make, listing?.model, listing?.year].filter(Boolean).join(' ');
+  const location = [listing?.city, listing?.county].filter(Boolean).join(', ');
+  const facts = [
+    listing?.mileage ? `${formatNumberRo(listing.mileage)} km` : null,
+    listing?.fuel_type || null,
+    listing?.transmission || null,
+    listing?.body_type || null,
+  ].filter(Boolean);
+  const price = listing?.price ? `${formatNumberRo(listing.price)} ${listing.currency || 'EUR'}` : null;
+  return truncateSeoText(
+    [
+      `Vezi ${name}${price ? ` la ${price}` : ''}`,
+      facts.length ? `cu ${facts.join(', ')}` : null,
+      location ? `disponibil in ${location}` : null,
+      'Poze reale, dotari si date complete pe AutoFans.',
+    ].filter(Boolean).join('. '),
+  );
+}
+
 function getVisitorSessionId() {
   const key = 'autofans_visitor_session';
   try {
@@ -45,8 +86,8 @@ export function meta({ data }: Route.MetaArgs) {
   const listing = data?.listing as any;
   if (!listing) return [{ title: "Anunț invalid - AutoFans" }];
 
-  const title = `${listing.make} ${listing.model} ${listing.year} - ${listing.price?.toLocaleString('ro-RO')} ${listing.currency} | AutoFans`;
-  const description = listing.description ? (listing.description.substring(0, 150) + "...") : `Cumpără ${listing.make} ${listing.model} din ${listing.year} la prețul de ${listing.price} ${listing.currency}.`;
+  const title = buildListingSeoTitle(listing);
+  const description = buildListingSeoDescription(listing);
   const canonicalUrl = `https://www.autofans.ro/car/${encodeURIComponent(listing.slug)}`;
 
   // A short-lived Storage URL breaks social previews after its expiry. Keep the
@@ -446,15 +487,25 @@ export default function CarDetail({ params }: Route.ComponentProps) {
 
   const productSchema = {
     '@context': 'https://schema.org',
-    '@type': 'Product',
+    '@type': ['Product', 'Car'],
     name: car.title,
-    description: car.description || `${car.brand} ${car.model}, ${car.year}`,
+    description: buildListingSeoDescription(data.listing),
     sku: car.id,
     url: `https://www.autofans.ro/car/${encodeURIComponent(car.slug)}`,
     // Use the stable image endpoint rather than an expiring Storage URL so
     // Google's structured-data crawler can retrieve the cover consistently.
     image: car.images.length ? `https://www.autofans.ro/og/car/${encodeURIComponent(car.slug)}` : undefined,
     brand: { '@type': 'Brand', name: car.brand },
+    model: car.model,
+    vehicleModelDate: car.year,
+    mileageFromOdometer: car.mileage ? {
+      '@type': 'QuantitativeValue',
+      value: car.mileage,
+      unitCode: 'KMT',
+    } : undefined,
+    fuelType: car.fuelType,
+    vehicleTransmission: car.transmission,
+    bodyType: car.specifications.bodyType,
     category: 'Autoturism',
     itemCondition: 'https://schema.org/UsedCondition',
     additionalProperty: [
@@ -470,12 +521,43 @@ export default function CarDetail({ params }: Route.ComponentProps) {
       priceCurrency: car.currency,
       availability: car.status === 'sold' ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock',
       itemCondition: 'https://schema.org/UsedCondition',
+      seller: {
+        '@type': car.seller.type === 'dealer' ? 'AutoDealer' : 'Person',
+        name: car.seller.name,
+        url: `https://www.autofans.ro/seller/${encodeURIComponent(car.seller.id)}`,
+      },
     },
+  };
+
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'AutoFans',
+        item: 'https://www.autofans.ro/',
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Masini second-hand',
+        item: 'https://www.autofans.ro/search',
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: car.title,
+        item: `https://www.autofans.ro/car/${encodeURIComponent(car.slug)}`,
+      },
+    ],
   };
 
   return (
     <div className="mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
       {feedbackMessage && (
         <div className="fixed inset-x-4 top-20 z-[70] mx-auto max-w-md rounded-2xl border border-accent-gold/35 bg-secondary-950/95 px-4 py-3 text-sm font-medium text-white shadow-modal backdrop-blur-xl" role="status" aria-live="polite">
           <div className="flex items-start justify-between gap-3">

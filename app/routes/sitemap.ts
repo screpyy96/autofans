@@ -6,6 +6,14 @@ import { getMoldovaCountySummaries, getMoldovaInventoryStats } from '~/utils/loc
 
 const DOMAIN = "https://www.autofans.ro";
 
+function chunkArray<T>(items: T[], size: number) {
+  const chunks: T[][] = [];
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+  return chunks;
+}
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { supabase } = getSupabaseServerClient(request);
 
@@ -46,11 +54,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   try {
     const { data: cars } = await supabase
       .from("listings")
-      .select("slug, updated_at")
+      .select("slug, updated_at, owner_id")
       .eq("status", "published")
       .order("updated_at", { ascending: false });
 
     if (cars && cars.length > 0) {
+      const dealerActivity = new Map<string, string>();
       for (const car of cars) {
         if (!car.slug) continue;
         const lowerSlug = car.slug.toLowerCase();
@@ -66,6 +75,32 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         sitemap += `    <changefreq>weekly</changefreq>\n`;
         sitemap += `    <priority>0.8</priority>\n`;
         sitemap += `  </url>\n`;
+
+        if (car.owner_id && car.updated_at && !dealerActivity.has(car.owner_id)) {
+          dealerActivity.set(car.owner_id, new Date(car.updated_at).toISOString());
+        }
+      }
+
+      const dealerIds = Array.from(dealerActivity.keys());
+      if (dealerIds.length) {
+        const dealerChunks = chunkArray(dealerIds, 200);
+        for (const ids of dealerChunks) {
+          const { data: dealers } = await supabase
+            .from('profiles')
+            .select('id, role')
+            .eq('role', 'seller')
+            .in('id', ids);
+
+          for (const dealer of dealers || []) {
+            const lastMod = dealerActivity.get(dealer.id) || new Date().toISOString();
+            sitemap += `  <url>\n`;
+            sitemap += `    <loc>${DOMAIN}/seller/${dealer.id}</loc>\n`;
+            sitemap += `    <lastmod>${lastMod}</lastmod>\n`;
+            sitemap += `    <changefreq>weekly</changefreq>\n`;
+            sitemap += `    <priority>0.7</priority>\n`;
+            sitemap += `  </url>\n`;
+          }
+        }
       }
     }
   } catch (error) {
