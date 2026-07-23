@@ -16,31 +16,36 @@ export async function publishOwnedListing(
   ownerId: string,
   listingId: number,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  if (!Number.isSafeInteger(listingId) || listingId < 1) {
-    return { ok: false, error: 'Anunț invalid.' };
+  try {
+    if (!Number.isSafeInteger(listingId) || listingId < 1) {
+      return { ok: false, error: 'Anunț invalid.' };
+    }
+
+    const { data: listing, error: listingError } = await supabase
+      .from('listings')
+      .select(PUBLICATION_FIELDS)
+      .eq('id', listingId)
+      .eq('owner_id', ownerId)
+      .maybeSingle();
+
+    if (listingError || !listing) {
+      return { ok: false, error: 'Anunțul nu a fost găsit.' };
+    }
+
+    const validation = validateListingForPublication(listing, ownerId);
+    if ('error' in validation) return { ok: false, error: validation.error };
+
+    const { error: updateError } = await supabase
+      .from('listings')
+      .update({ status: 'published' })
+      .eq('id', listingId)
+      .eq('owner_id', ownerId);
+
+    if (updateError) return { ok: false, error: 'Anunțul nu a putut fi publicat. Încearcă din nou.' };
+    if (listing.slug) await submitIndexNowBestEffort([listingCanonicalUrl(listing.slug)]);
+    return { ok: true };
+  } catch (err: any) {
+    console.error('[Publish Listing Error]', err);
+    return { ok: false, error: err?.message || 'A apărut o eroare la publicarea anunțului.' };
   }
-
-  const { data: listing, error: listingError } = await supabase
-    .from('listings')
-    .select(PUBLICATION_FIELDS)
-    .eq('id', listingId)
-    .eq('owner_id', ownerId)
-    .maybeSingle();
-
-  if (listingError || !listing) {
-    return { ok: false, error: 'Anunțul nu a fost găsit.' };
-  }
-
-  const validation = validateListingForPublication(listing, ownerId);
-  if ('error' in validation) return { ok: false, error: validation.error };
-
-  const { error: updateError } = await supabase
-    .from('listings')
-    .update({ status: 'published' })
-    .eq('id', listingId)
-    .eq('owner_id', ownerId);
-
-  if (updateError) return { ok: false, error: 'Anunțul nu a putut fi publicat. Încearcă din nou.' };
-  if (listing.slug) await submitIndexNowBestEffort([listingCanonicalUrl(listing.slug)]);
-  return { ok: true };
 }

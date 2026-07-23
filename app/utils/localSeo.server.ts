@@ -1,5 +1,5 @@
 import { mapListingToCar } from '~/utils/listingMapper';
-import { signListingImages } from '~/utils/listingImages';
+import { LISTING_CARD_IMAGE_TRANSFORM, signListingImages } from '~/utils/listingImages';
 import {
   CITY_INDEX_THRESHOLD,
   COUNTY_INDEX_THRESHOLD,
@@ -99,9 +99,7 @@ export async function loadLocalInventory(
   if (location.city) query = query.eq('city', location.city.name);
   const { data: listings, error, count } = await query.range((page - 1) * LOCAL_PAGE_SIZE, page * LOCAL_PAGE_SIZE - 1);
   if (error) throw error;
-  const signedMap = await signListingImages(supabase, listings || [], 60 * 60, {
-    width: 720, height: 450, quality: 70, resize: 'cover',
-  });
+  const signedMap = await signListingImages(supabase, listings || [], 60 * 60, LISTING_CARD_IMAGE_TRANSFORM);
   return {
     cars: (listings || []).map((listing: any) => mapListingToCar(listing, signedMap)),
     total: Number(count || 0),

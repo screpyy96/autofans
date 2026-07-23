@@ -8,6 +8,7 @@ import { Button } from '~/components/ui/Button';
 import { Badge } from '~/components/ui/Badge';
 import { CarCard } from '~/components/car/CarCard';
 import { cn } from '~/lib/utils';
+import { LISTING_CARD_IMAGE_TRANSFORM } from '~/utils/listingImages';
 import { 
   Star, 
   Car, 
@@ -154,9 +155,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     if (paths.length) {
       const { data: signedUrls } = await (supabase.storage
         .from('listing-images') as any)
-        .createSignedUrls(paths, 3600, {
-          transform: { width: 720, height: 450, quality: 70, resize: 'cover' },
-        });
+        .createSignedUrls(paths, 3600, { transform: LISTING_CARD_IMAGE_TRANSFORM });
         
       if (signedUrls) {
         signedListings = mappedListings.map((l, index) => {

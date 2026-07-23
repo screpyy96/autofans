@@ -1,6 +1,6 @@
 import type { ActionFunctionArgs } from 'react-router';
 import type { FilterState } from '~/types';
-import { signListingImages } from '~/utils/listingImages';
+import { LISTING_CARD_IMAGE_TRANSFORM, signListingImages } from '~/utils/listingImages';
 import { getSupabaseServerClient } from '~/lib/supabase.server';
 
 const PAGE_SIZE = 12;
@@ -110,9 +110,7 @@ export async function action({ request }: ActionFunctionArgs) {
   // Search cards never need original camera files. A compact cover image keeps
   // the first mobile render fast even when sellers upload large photos.
   const previews = (listings || []).map(toSearchPreview);
-  const signedMap = await signListingImages(supabase as any, previews, 60 * 60, {
-    width: 720, height: 450, quality: 70, resize: 'cover',
-  });
+  const signedMap = await signListingImages(supabase as any, previews, 60 * 60, LISTING_CARD_IMAGE_TRANSFORM);
   const total = count || 0;
   return Response.json({
     listings: previews,

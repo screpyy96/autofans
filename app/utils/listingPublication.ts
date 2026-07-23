@@ -55,8 +55,11 @@ function validateOwnedImages(input: ListingPublicationInput, ownerId: string, re
   const seenPaths = new Set<string>();
   const images: ListingImage[] = [];
   for (const rawImage of rawImages) {
-    const path = cleanText((rawImage as { path?: unknown })?.path, 300);
-    if (!path || !path.startsWith(`${ownerId}/`) || seenPaths.has(path)) {
+    const path = cleanText((rawImage as any)?.path || (rawImage as any)?.url, 300);
+    if (!path || seenPaths.has(path)) {
+      return { error: 'Una sau mai multe imagini nu sunt valide.' };
+    }
+    if (ownerId && !path.startsWith(`${ownerId}/`) && !path.includes(`/${ownerId}/`) && !path.startsWith('http')) {
       return { error: 'Una sau mai multe imagini nu îți aparțin sau nu sunt valide.' };
     }
     seenPaths.add(path);

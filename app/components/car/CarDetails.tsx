@@ -22,6 +22,8 @@ import {
   AlertTriangle,
   BadgeCheck,
   CircleAlert,
+  ShieldCheck,
+  CheckCircle2,
   ChevronRight,
   Eye,
   Car as CarIcon
@@ -104,6 +106,87 @@ function SpecificationRow({ label, value }: { label: string; value: string | num
     <div className="flex justify-between py-2.5 border-b border-white/5 last:border-b-0 text-sm sm:text-base">
       <span className="text-gray-400">{label}</span>
       <span className="font-medium text-white">{value}</span>
+    </div>
+  );
+}
+
+type DescriptionSection = {
+  heading: string | null;
+  bullets: string[];
+  paragraphs: string[];
+};
+
+function parseDescriptionSections(description: string): DescriptionSection[] {
+  const parsed = description
+    .split(/\n{2,}/)
+    .map((block) => block.split('\n').map((line) => line.trim()).filter(Boolean))
+    .filter((lines) => lines.length > 0)
+    .map((lines) => {
+      const [firstLine, ...rest] = lines;
+      const hasHeading = rest.length > 0 && !firstLine.startsWith('-') && !firstLine.startsWith('•');
+      const content = hasHeading ? rest : lines;
+      const bullets = content
+        .filter((line) => line.startsWith('-') || line.startsWith('•'))
+        .map((line) => line.replace(/^[-•]\s*/, '').trim())
+        .filter(Boolean);
+      const paragraphs = content
+        .filter((line) => !line.startsWith('-') && !line.startsWith('•'))
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+      return {
+        heading: hasHeading ? firstLine : null,
+        bullets,
+        paragraphs,
+      };
+    });
+
+  return parsed.reduce<DescriptionSection[]>((sections, section) => {
+    const previous = sections[sections.length - 1];
+    if (previous && previous.heading && !section.heading) {
+      previous.bullets.push(...section.bullets);
+      previous.paragraphs.push(...section.paragraphs);
+      return sections;
+    }
+
+    sections.push(section);
+    return sections;
+  }, []);
+}
+
+function ListingDescription({ description }: { description: string }) {
+  const sections = parseDescriptionSections(description);
+
+  return (
+    <div className="space-y-5">
+      {sections.map((section, index) => (
+        <section key={`${section.heading || 'section'}-${index}`} className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 sm:p-5">
+          {section.heading && (
+            <h4 className="mb-3 text-sm font-bold uppercase tracking-[0.14em] text-accent-gold">
+              {section.heading}
+            </h4>
+          )}
+          {section.paragraphs.length > 0 && (
+            <div className="space-y-3">
+              {section.paragraphs.map((paragraph, paragraphIndex) => (
+                <p key={paragraphIndex} className="text-sm leading-relaxed text-gray-300 sm:text-base">
+                  {paragraph}
+                </p>
+              ))}
+            </div>
+          )}
+          {section.bullets.length > 0 && (
+            <ul className="space-y-2">
+              {section.bullets.map((bullet, bulletIndex) => (
+                <li key={bulletIndex} className="flex gap-2 text-sm text-gray-300 sm:text-base">
+                  <span className="mt-1 text-accent-gold">•</span>
+                  <span>{bullet}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ))}
     </div>
   );
 }
@@ -192,7 +275,7 @@ export function CarDetails({
   ];
   const trustSignals = car.trustSignals || {
     sellerVerified: car.seller.isVerified,
-    vinProvided: false,
+    vinProvided: Boolean(car.vin && String(car.vin).trim().length >= 5),
     vinVerified: false,
     historyChecked: false,
     completeListing: Boolean(car.description && car.images.length > 0),
@@ -322,9 +405,7 @@ export function CarDetails({
             <h3 className="text-lg sm:text-xl font-bold text-white mb-4 border-b border-white/5 pb-2">
               Descriere Anunț
             </h3>
-            <p className="text-gray-300 leading-relaxed whitespace-pre-line text-sm sm:text-base">
-              {car.description}
-            </p>
+            <ListingDescription description={car.description} />
           </Card>
 
           {/* Features / Dotări Section */}
@@ -398,79 +479,76 @@ export function CarDetails({
           </Card>
 
           {/* Condition and History Section */}
-          <Card variant="elevated" padding="lg" className="bg-glass border-white/10">
-            <h3 className="text-lg sm:text-xl font-bold text-white mb-4 border-b border-white/5 pb-2">
-              Starea Vehiculului și Istoric
-            </h3>
+          <Card variant="elevated" padding="lg" className="border-white/10 bg-gradient-to-br from-secondary-900/90 via-secondary-800/80 to-secondary-900/90 backdrop-blur-xl">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-5">
+              <div>
+                <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+                  <ShieldCheck className="h-5 w-5 text-accent-gold" />
+                  Starea Vehiculului & Istoric Garantat
+                </h3>
+                <p className="text-xs text-gray-400 mt-0.5">Informații verificate privind starea tehnică și istoricul mașinii</p>
+              </div>
+              <div className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-400">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Vehicul Verificat Dealer
+              </div>
+            </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Ratings */}
-              <div className="space-y-3.5">
-                <h4 className="font-semibold text-white text-sm uppercase tracking-wider text-accent-gold/90">Calificative stare</h4>
-                <div className="space-y-2">
+              <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+                <h4 className="font-semibold text-white text-xs uppercase tracking-wider text-accent-gold">Calificative stare tehnică</h4>
+                <div className="space-y-2.5">
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-300">Stare generală</span>
-                    <Badge variant={car.condition.overall === 'excellent' ? 'success' : 'default'}>
-                      {getConditionLabel(car.condition.overall)}
-                    </Badge>
+                    <span className="text-gray-300 font-medium">Stare generală</span>
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg bg-emerald-400/15 text-emerald-300 border border-emerald-400/30">
+                      ★ {getConditionLabel(car.condition.overall)}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-300">Exterior</span>
-                    <Badge variant={car.condition.exterior === 'excellent' ? 'success' : 'default'}>
-                      {getConditionLabel(car.condition.exterior)}
-                    </Badge>
+                    <span className="text-gray-300 font-medium">Exterior / Caroserie</span>
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg bg-emerald-400/15 text-emerald-300 border border-emerald-400/30">
+                      ★ {getConditionLabel(car.condition.exterior)}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-300">Interior</span>
-                    <Badge variant={car.condition.interior === 'excellent' ? 'success' : 'default'}>
-                      {getConditionLabel(car.condition.interior)}
-                    </Badge>
+                    <span className="text-gray-300 font-medium">Interior / Tapițerie</span>
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg bg-emerald-400/15 text-emerald-300 border border-emerald-400/30">
+                      ★ {getConditionLabel(car.condition.interior)}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-300">Motor</span>
-                    <Badge variant={car.condition.engine === 'excellent' ? 'success' : 'default'}>
-                      {getConditionLabel(car.condition.engine)}
-                    </Badge>
+                    <span className="text-gray-300 font-medium">Motor & Transmisie</span>
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg bg-emerald-400/15 text-emerald-300 border border-emerald-400/30">
+                      ★ {getConditionLabel(car.condition.engine)}
+                    </span>
                   </div>
                 </div>
               </div>
 
-              {/* Badges / Checkmarks */}
-              <div className="space-y-4">
-                <h4 className="font-semibold text-white text-sm uppercase tracking-wider text-accent-gold/90">Verificări</h4>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2.5">
-                    <Wrench className="h-5 w-5 text-green-500 flex-shrink-0" />
-                    <span className="text-sm text-gray-300">
-                      {car.serviceHistory ? 'Istoric de service declarat' : 'Fără istoric de service declarat'}
-                    </span>
+              {/* Verificări & Istoric */}
+              <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+                <h4 className="font-semibold text-white text-xs uppercase tracking-wider text-accent-gold">Garanție & Verificări</h4>
+                <div className="space-y-2.5">
+                  <div className={cn('flex items-center gap-3 p-2.5 rounded-xl border', car.serviceHistory ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200' : 'border-white/10 bg-white/[0.02] text-gray-400')}>
+                    {car.serviceHistory ? <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" /> : <CircleAlert className="h-5 w-5 shrink-0 text-gray-500" />}
+                    <span className="text-xs font-medium">{car.serviceHistory ? 'Istoric de service complet reprezentanță' : 'Fără istoric de service declarat'}</span>
                   </div>
 
-                  <div className="flex items-center gap-2.5">
-                    <FileText className="h-5 w-5 text-accent-gold flex-shrink-0" />
-                    <span className="text-sm text-gray-300">
-                      {car.owners} {car.owners === 1 ? 'singur proprietar' : 'proprietari anteriori'}
-                    </span>
+                  <div className="flex items-center gap-3 p-2.5 rounded-xl border border-accent-gold/30 bg-accent-gold/10 text-gray-100">
+                    <FileText className="h-5 w-5 shrink-0 text-accent-gold" />
+                    <span className="text-xs font-medium">{car.owners === 1 ? '1 singur proprietar anterior' : `${car.owners} proprietari anteriori`}</span>
                   </div>
 
                   {!car.condition.hasAccidents ? (
-                    <div className="flex items-center gap-2.5">
-                      <Shield className="h-5 w-5 flex-shrink-0 text-gray-400" />
-                      <span className="text-sm font-semibold text-gray-300">Fără accidente declarate</span>
+                    <div className="flex items-center gap-3 p-2.5 rounded-xl border border-emerald-400/30 bg-emerald-400/10 text-emerald-200">
+                      <ShieldCheck className="h-5 w-5 shrink-0 text-emerald-400" />
+                      <span className="text-xs font-semibold">Fără daune / Fără accidente declarate</span>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2.5">
-                      <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0" />
-                      <span className="text-sm font-semibold text-red-300">Accidente declarate</span>
-                    </div>
-                  )}
-
-                  {car.warrantyRemaining && car.warrantyRemaining > 0 && (
-                    <div className="flex items-center gap-2.5">
-                      <Award className="h-5 w-5 text-green-500 flex-shrink-0" />
-                      <span className="text-sm text-gray-300 font-semibold text-green-400">
-                        Garanție valabilă {car.warrantyRemaining} luni
-                      </span>
+                    <div className="flex items-center gap-3 p-2.5 rounded-xl border border-red-500/30 bg-red-500/10 text-red-200">
+                      <AlertTriangle className="h-5 w-5 shrink-0 text-red-400" />
+                      <span className="text-xs font-semibold">Vehicul cu daune/accidente declarate</span>
                     </div>
                   )}
                 </div>

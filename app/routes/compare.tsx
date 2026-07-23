@@ -11,7 +11,7 @@ import { Link, useLoaderData, useNavigate } from 'react-router';
 import { getSupabaseServerClient } from '~/lib/supabase.server';
 import type { Car } from '~/types';
 import { mapListingToCar } from '~/utils/listingMapper';
-import { signListingImages } from '~/utils/listingImages';
+import { LISTING_CARD_IMAGE_TRANSFORM, signListingImages } from '~/utils/listingImages';
 import { useComparison, useFavorites } from '~/stores/useAppStore';
 import { trackAnalyticsEvent } from '~/utils/analytics.client';
 
@@ -41,9 +41,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       .in('id', ids)
       .eq('status', 'published');
 
-    const signedMap = await signListingImages(supabase, listings || [], 60 * 60, {
-      width: 720, height: 450, quality: 72, resize: 'cover',
-    });
+    const signedMap = await signListingImages(supabase, listings || [], 60 * 60, LISTING_CARD_IMAGE_TRANSFORM);
 
     const listingById = new Map((listings || []).map((listing: any) => [String(listing.id), listing]));
     const orderedListings = ids.map((id) => listingById.get(id)).filter(Boolean);

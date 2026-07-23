@@ -1,6 +1,6 @@
 import type { LoaderFunctionArgs } from 'react-router';
 import { getSupabaseServerClient, hasSupabaseAuthCookie } from '~/lib/supabase.server';
-import { signListingImages } from '~/utils/listingImages';
+import { LISTING_CARD_IMAGE_TRANSFORM, signListingImages } from '~/utils/listingImages';
 import { buildRecommendations } from '~/utils/recommendations';
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -41,9 +41,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
     const listings = listingsResult.data || [];
     const recommendations = buildRecommendations({ candidates: recommendationListings, favorites: favoriteListings, savedSearches, limit: 6 });
-    const signedMap = await signListingImages(supabase as any, [...listings, ...recommendations.map((item) => item.listing)], 60 * 60, {
-      width: 720, height: 450, quality: 70, resize: 'cover',
-    });
+    const signedMap = await signListingImages(
+      supabase as any,
+      [...listings, ...recommendations.map((item) => item.listing)],
+      60 * 60,
+      LISTING_CARD_IMAGE_TRANSFORM,
+    );
     const brandCounts = (brandRowsResult.data || []).reduce((acc: Record<string, number>, row: any) => {
       if (row.make) acc[row.make] = (acc[row.make] || 0) + 1;
       return acc;

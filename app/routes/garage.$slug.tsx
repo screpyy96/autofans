@@ -55,7 +55,7 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
   // Fetch vehicle details from DB
   const { data: v } = await supabase
     .from('garage_vehicles')
-    .select('*, owner:profiles(id, display_name, avatar_url)')
+    .select('*, owner:profiles!garage_vehicles_owner_id_fkey(id, display_name, avatar_url)')
     .eq('slug', slug)
     .single();
 

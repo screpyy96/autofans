@@ -1,4 +1,5 @@
 import { lazy, Suspense, useState, useRef, useEffect, useCallback } from 'react';
+import { ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react';
 import { cn } from '~/lib/utils';
 import type { Image } from '~/types';
 import { useTouch } from '~/hooks/useTouch';
@@ -230,16 +231,14 @@ export const ImageGallery = ({
                 goToPrevious();
               }}
               className={cn(
-                "absolute left-2 top-1/2 -translate-y-1/2 bg-secondary-900/80 text-white rounded-full transition-all hover:bg-accent-gold/20 hover:text-accent-gold border border-premium",
-                "focus:outline-none focus:ring-2 focus:ring-accent-gold focus:ring-offset-2 focus:ring-offset-secondary-800",
-                isMobile ? "p-3 opacity-70" : "p-2 opacity-0 group-hover:opacity-100"
+                "absolute left-3 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/90 text-white rounded-full p-2.5 transition-all shadow-lg backdrop-blur-md border border-white/20 z-10",
+                "focus:outline-none focus:ring-2 focus:ring-accent-gold",
+                isMobile ? "opacity-90" : "opacity-80 group-hover:opacity-100 hover:scale-110"
               )}
               aria-label={`Imaginea anterioară (${currentIndex} din ${images.length})`}
               type="button"
             >
-              <svg className={cn("fill-none stroke-currentColor", isMobile ? "w-6 h-6" : "w-5 h-5")} viewBox="0 0 24 24" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
+              <ChevronLeft className="w-5 h-5 text-white stroke-[2.5]" />
             </button>
 
             <button
@@ -248,23 +247,21 @@ export const ImageGallery = ({
                 goToNext();
               }}
               className={cn(
-                "absolute right-2 top-1/2 -translate-y-1/2 bg-secondary-900/80 text-white rounded-full transition-all hover:bg-accent-gold/20 hover:text-accent-gold border border-premium",
-                "focus:outline-none focus:ring-2 focus:ring-accent-gold focus:ring-offset-2 focus:ring-offset-secondary-800",
-                isMobile ? "p-3 opacity-70" : "p-2 opacity-0 group-hover:opacity-100"
+                "absolute right-3 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/90 text-white rounded-full p-2.5 transition-all shadow-lg backdrop-blur-md border border-white/20 z-10",
+                "focus:outline-none focus:ring-2 focus:ring-accent-gold",
+                isMobile ? "opacity-90" : "opacity-80 group-hover:opacity-100 hover:scale-110"
               )}
               aria-label={`Imaginea următoare (${currentIndex + 2} din ${images.length})`}
               type="button"
             >
-              <svg className={cn("fill-none stroke-currentColor", isMobile ? "w-6 h-6" : "w-5 h-5")} viewBox="0 0 24 24" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
+              <ChevronRight className="w-5 h-5 text-white stroke-[2.5]" />
             </button>
           </>
         )}
 
         {/* Image Counter */}
         {images.length > 1 && (
-          <div className="absolute bottom-2 right-2 bg-secondary-900/80 text-white px-3 py-1.5 rounded-full text-sm border border-premium">
+          <div className="absolute bottom-3 right-3 bg-black/70 backdrop-blur-md text-white px-3.5 py-1.5 rounded-full text-xs font-semibold border border-white/20 shadow-md">
             {currentIndex + 1} / {images.length}
           </div>
         )}
@@ -277,16 +274,14 @@ export const ImageGallery = ({
               setIsFullscreen(true);
             }}
             className={cn(
-              "absolute top-2 right-2 bg-secondary-900/80 text-white p-2 rounded-full transition-all hover:bg-accent-gold/20 hover:text-accent-gold border border-premium",
-              "focus:outline-none focus:ring-2 focus:ring-accent-gold focus:ring-offset-2 focus:ring-offset-secondary-800",
-              isMobile ? "opacity-70" : "opacity-0 group-hover:opacity-100"
+              "absolute top-3 right-3 bg-black/60 hover:bg-black/90 text-white p-2.5 rounded-full transition-all shadow-lg backdrop-blur-md border border-white/20 z-10",
+              "focus:outline-none focus:ring-2 focus:ring-accent-gold",
+              isMobile ? "opacity-90" : "opacity-80 group-hover:opacity-100 hover:scale-110"
             )}
             aria-label="Vizualizare pe tot ecranul"
             type="button"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-            </svg>
+            <Maximize2 className="w-4 h-4 text-white" />
           </button>
         )}
       </div>

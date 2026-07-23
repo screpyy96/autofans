@@ -79,7 +79,7 @@ export async function loader({ request }: { request: Request }) {
     const { supabase } = getSupabaseServerClient(request);
     const { data: dbVehicles } = await supabase
       .from('garage_vehicles')
-      .select('*, owner:profiles(display_name, avatar_url)')
+      .select('*, owner:profiles!garage_vehicles_owner_id_fkey(display_name, avatar_url)')
       .order('upvotes_count', { ascending: false });
 
     if (dbVehicles && dbVehicles.length > 0) {

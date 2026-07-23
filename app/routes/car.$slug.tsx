@@ -85,7 +85,6 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
       .from('listings')
       .select('id, slug, owner_id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, body_type, vin, vin_verified, history_checked, images, status, created_at, owners, service_history, engine_size, power, doors, seats, condition_overall, condition_exterior, condition_interior, condition_engine, condition_transmission, has_accidents, features, city, county')
       .eq('slug', slugParam)
-      .eq('status', 'published')
       .maybeSingle();
 
     // Keep old/id links working while all new search links use the canonical slug.
@@ -94,12 +93,14 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
         .from('listings')
         .select('id, slug, owner_id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, body_type, vin, vin_verified, history_checked, images, status, created_at, owners, service_history, engine_size, power, doors, seats, condition_overall, condition_exterior, condition_interior, condition_engine, condition_transmission, has_accidents, features, city, county')
         .eq('id', slugParam)
-        .eq('status', 'published')
         .maybeSingle();
       listing = byId.data;
     }
 
     if (!listing) throw new Response('Not Found', { status: 404 });
+    if (listing.status !== 'published' && listing.owner_id !== user?.id) {
+      throw new Response('Not Found', { status: 404 });
+    }
 
     const [sellerProfileResult, comparablesResult, similarListingsResult, metricsResult] = listing
       ? await Promise.all([

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import type { Route } from "./+types/favorites";
 import type { Car } from '~/types';
 import { mapListingToCar } from '~/utils/listingMapper';
-import { signListingImages } from '~/utils/listingImages';
+import { LISTING_CARD_IMAGE_TRANSFORM, signListingImages } from '~/utils/listingImages';
 import { getSupabaseBrowserClient } from '~/lib/supabase.client';
 import { CarGrid } from '~/components/car/CarGrid';
 import { Button } from '~/components/ui/Button';
@@ -44,9 +44,7 @@ export default function Favorites() {
           .eq('status', 'published');
         if (error) throw error;
 
-        const signedMap = await signListingImages(supabase, listings || [], 60 * 60, {
-          width: 720, height: 450, quality: 70, resize: 'cover',
-        });
+        const signedMap = await signListingImages(supabase, listings || [], 60 * 60, LISTING_CARD_IMAGE_TRANSFORM);
 
         const cars: Car[] = (listings || []).map((listing: any) => mapListingToCar(listing, signedMap));
         if (!cancelled) setFavoriteCars(cars);

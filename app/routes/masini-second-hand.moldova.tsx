@@ -6,7 +6,7 @@ import { Card } from '~/components/ui/Card';
 import { getSupabaseServerClient } from '~/lib/supabase.server';
 import { DOMAIN, MOLDOVA_COUNTIES, MOLDOVA_GUIDES, countyUrl } from '~/utils/localSeo';
 import { getMoldovaCountySummaries, getMoldovaInventoryStats } from '~/utils/localSeo.server';
-import { signListingImages } from '~/utils/listingImages';
+import { LISTING_CARD_IMAGE_TRANSFORM, signListingImages } from '~/utils/listingImages';
 import { mapListingToCar } from '~/utils/listingMapper';
 
 const LISTING_FIELDS = 'id, slug, owner_id, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, images, status, created_at, city, county, latitude, longitude, features, owners, service_history';
@@ -47,9 +47,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     .order('created_at', { ascending: false })
     .limit(8);
   if (error) throw error;
-  const signedMap = await signListingImages(supabase as any, listings || [], 60 * 60, {
-    width: 720, height: 450, quality: 70, resize: 'cover',
-  });
+  const signedMap = await signListingImages(supabase as any, listings || [], 60 * 60, LISTING_CARD_IMAGE_TRANSFORM);
   return { counties, hasInventory: counties.some((county) => county.isIndexable), cars: (listings || []).map((listing: any) => mapListingToCar(listing, signedMap)) };
 }
 

@@ -144,6 +144,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || url.host;
   const proto = request.headers.get("x-forwarded-proto") || url.protocol.replace(":", "");
 
+  if (url.searchParams.has("code") && url.pathname !== "/auth/callback") {
+    const callbackUrl = new URL("/auth/callback", request.url);
+    url.searchParams.forEach((val, key) => callbackUrl.searchParams.set(key, val));
+    return redirect(callbackUrl.toString());
+  }
+
   if (process.env.NODE_ENV === "production" || host.includes("autofans.ro")) {
     const isNonWww = host === "autofans.ro";
     const isHttp = proto === "http" && !host.includes("localhost") && !host.includes("127.0.0.1");

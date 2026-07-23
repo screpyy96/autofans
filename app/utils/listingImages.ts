@@ -8,6 +8,13 @@ type StorageClient = {
 
 type ImageTransform = { width?: number; height?: number; quality?: number; resize?: 'cover' | 'contain' | 'fill' };
 
+export const LISTING_CARD_IMAGE_TRANSFORM: ImageTransform = {
+  width: 560,
+  height: 350,
+  quality: 62,
+  resize: 'cover',
+};
+
 export async function signListingImages(
   supabase: StorageClient,
   listings: any[],

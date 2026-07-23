@@ -40,6 +40,8 @@ export default [
   route("/api/home", "routes/api.home.tsx"),
   route("/api/search", "routes/api.search.ts"),
   route("/api/messages/start", "routes/api.messages.start.ts"),
+  route("/api/dealer/autoport/scan", "routes/api.dealer.autoport.scan.ts"),
+  route("/api/dealer/autoport/import-one", "routes/api.dealer.autoport.import-one.ts"),
   route("/api/mobile/v1", "routes/api.mobile.v1.ts"),
   route("/og/car/:slug", "routes/og.car.$slug.ts"),
   lazyRoute("/compare", "routes/compare.tsx"),

@@ -1,10 +1,12 @@
+import { useState } from 'react';
 import { type ActionFunctionArgs, type LoaderFunctionArgs, redirect } from 'react-router';
-import { Form, Link, useLoaderData } from 'react-router';
-import { CheckCircle2, Download, FileSpreadsheet, ImagePlus, Layers3, TriangleAlert, Upload } from 'lucide-react';
+import { Form, Link, useLoaderData, useNavigate, useNavigation } from 'react-router';
+import { Building2, CheckCircle2, Download, FileSpreadsheet, ImagePlus, Layers3, RefreshCw, TriangleAlert, Upload } from 'lucide-react';
 import { getSupabaseServerClient } from '~/lib/supabase.server';
 import { Card } from '~/components/ui/Card';
 import { Button } from '~/components/ui/Button';
 import { DEALER_CSV_MAX_ROWS, parseDealerCsv } from '~/utils/dealerCsv';
+import { getDealerImportListingPublicationStatus, summarizeDealerImportListings } from '~/utils/dealerImportPublication';
 import { generateUniqueSlug } from '~/utils/helpers';
 import { publishOwnedListing } from '~/utils/publishListing.server';
 
@@ -45,6 +47,17 @@ type ImportRow = {
   listing_id: number | null;
   status: 'imported' | 'invalid';
   errors: string[];
+  listing_status?: 'draft' | 'published' | null;
+  publication_state?: 'published' | 'ready' | 'blocked' | 'missing';
+  publication_error?: string | null;
+};
+
+type ImportPublicationSummary = {
+  totalListings: number;
+  draftCount: number;
+  readyDraftCount: number;
+  blockedDraftCount: number;
+  publishedCount: number;
 };
 
 function redirectToImport(headers: Headers, params: Record<string, string | number | undefined>) {
@@ -83,6 +96,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   const selected = (imports || []).find((item: ImportSummary) => item.id === selectedImportId) || (imports || [])[0] || null;
   let rows: ImportRow[] = [];
+  let publicationSummary: ImportPublicationSummary = {
+    totalListings: 0,
+    draftCount: 0,
+    readyDraftCount: 0,
+    blockedDraftCount: 0,
+    publishedCount: 0,
+  };
   if (selected) {
     const { data, error } = await supabase
       .from('dealer_csv_import_rows')
@@ -92,16 +112,61 @@ export async function loader({ request }: LoaderFunctionArgs) {
       .limit(MAX_IMPORT_ROWS);
     if (error) throw new Response('Nu am putut citi rândurile importului.', { status: 500 });
     rows = (data || []) as ImportRow[];
+
+    const listingIds = rows
+      .map((row) => row.listing_id)
+      .filter((listingId): listingId is number => typeof listingId === 'number' && Number.isSafeInteger(listingId) && listingId > 0);
+
+    if (listingIds.length) {
+      const { data: importedListings, error: listingsError } = await supabase
+        .from('listings')
+        .select('id, status, title, description, price, currency, make, model, year, mileage, fuel_type, transmission, city, county, images')
+        .eq('owner_id', user.id)
+        .in('id', listingIds);
+      if (listingsError) throw new Response('Nu am putut verifica statusul drafturilor pentru acest import.', { status: 500 });
+
+      const listings = (importedListings || []) as Array<Record<string, unknown> & { id: number; status?: string | null }>;
+      const publicationByListingId = new Map(
+        listings.map((listing) => [listing.id, getDealerImportListingPublicationStatus(listing, user.id)]),
+      );
+
+      rows = rows.map((row) => {
+        if (!row.listing_id) {
+          return {
+            ...row,
+            listing_status: null,
+            publication_state: row.status === 'invalid' ? 'missing' : undefined,
+            publication_error: null,
+          };
+        }
+
+        const listing = listings.find((item) => item.id === row.listing_id);
+        const publication = publicationByListingId.get(row.listing_id);
+        return {
+          ...row,
+          listing_status: listing?.status === 'published' ? 'published' : (listing?.status === 'draft' ? 'draft' : null),
+          publication_state: publication?.state,
+          publication_error: publication?.error || null,
+        };
+      });
+
+      publicationSummary = summarizeDealerImportListings(listings, user.id);
+    }
   }
+
+  const allowedEmails = (process.env.AUTOPORT_ALLOWED_EMAILS || 'iosifscrepy@gmail.com').split(',').map((e) => e.trim().toLowerCase());
+  const isAutoportAllowed = Boolean(user.email && allowedEmails.includes(user.email.toLowerCase()));
 
   return {
     imports: (imports || []) as ImportSummary[],
     selected,
     rows,
+    isAutoportAllowed,
     notice: url.searchParams.get('notice') || '',
     error: url.searchParams.get('error') || '',
     published: Number(url.searchParams.get('published') || 0),
     blocked: Number(url.searchParams.get('blocked') || 0),
+    publicationSummary,
   };
 }
 
@@ -134,15 +199,33 @@ export async function action({ request }: ActionFunctionArgs) {
       .eq('status', 'draft')
       .limit(MAX_IMPORT_ROWS);
     if (error) return redirectToImport(headers, { import: importId, error: 'Nu am putut pregăti publicarea în masă.' });
+    if (!(drafts || []).length) {
+      return redirectToImport(headers, {
+        import: importId,
+        notice: 'Nu mai există drafturi de publicat pentru acest import.',
+      });
+    }
 
     let published = 0;
     let blocked = 0;
+    const blockedReasons = new Set<string>();
     for (const draft of drafts || []) {
       const result = await publishOwnedListing(supabase, user.id, Number(draft.id));
       if (result.ok) published += 1;
-      else blocked += 1;
+      else {
+        blocked += 1;
+        blockedReasons.add(result.error);
+      }
     }
-    return redirectToImport(headers, { import: importId, published, blocked, notice: published ? 'Publicarea în masă s-a terminat.' : undefined });
+    return redirectToImport(headers, {
+      import: importId,
+      published,
+      blocked,
+      notice: published ? `Au fost publicate ${published} drafturi.` : undefined,
+      error: !published && blocked
+        ? [...blockedReasons][0] || 'Niciun draft nu a putut fi publicat. Verifică anunțurile marcate ca blocate.'
+        : undefined,
+    });
   }
 
   if (intent === 'attach-images') {
@@ -346,7 +429,134 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export default function DealerImport() {
-  const { imports, selected, rows, notice, error, published, blocked } = useLoaderData<typeof loader>();
+  const { imports, selected, rows, isAutoportAllowed, notice, error, published, blocked, publicationSummary } = useLoaderData<typeof loader>();
+  const navigate = useNavigate();
+  const navigation = useNavigation();
+
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncProgress, setSyncProgress] = useState<{
+    total: number;
+    processed: number;
+    created: number;
+    updated: number;
+    failed: number;
+    currentTitle: string;
+    errors: string[];
+  }>({
+    total: 0,
+    processed: 0,
+    created: 0,
+    updated: 0,
+    failed: 0,
+    currentTitle: '',
+    errors: [],
+  });
+
+  const handleAutoportSync = async () => {
+    setIsSyncing(true);
+    setSyncProgress({
+      total: 0,
+      processed: 0,
+      created: 0,
+      updated: 0,
+      failed: 0,
+      currentTitle: 'Scanare stoc pe Autoport.ro...',
+      errors: [],
+    });
+
+    try {
+      const scanRes = await fetch('/api/dealer/autoport/scan', { method: 'POST' });
+      const scanData = await scanRes.json();
+      if (!scanRes.ok || scanData.error) {
+        throw new Error(scanData.error || 'Scanarea stocului Autoport a eșuat.');
+      }
+
+      const { importId, items, total } = scanData;
+      setSyncProgress((prev) => ({
+        ...prev,
+        total,
+        currentTitle: `Am găsit ${total} vehicule. Se inițiază preluarea datelor și a pozelor...`,
+      }));
+
+      if (!items || items.length === 0) {
+        setIsSyncing(false);
+        return;
+      }
+
+      let processedCount = 0;
+      let createdCount = 0;
+      let updatedCount = 0;
+      let failedCount = 0;
+      const errorsList: string[] = [];
+
+      const queue = items.map((item: any, idx: number) => ({ item, idx }));
+
+      const worker = async () => {
+        while (queue.length > 0) {
+          const task = queue.shift();
+          if (!task) break;
+          const { item, idx } = task;
+
+          setSyncProgress((prev) => ({
+            ...prev,
+            currentTitle: `Se procesează [${idx + 1}/${total}]: ${item.title || item.sourceSlug}`,
+          }));
+
+          try {
+            const res = await fetch('/api/dealer/autoport/import-one', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                importId,
+                sourceUrl: item.sourceUrl,
+                itemIndex: idx,
+              }),
+            });
+
+            const data = await res.json();
+            if (res.ok && data.success) {
+              if (data.isCreated) {
+                createdCount++;
+              } else {
+                updatedCount++;
+              }
+            } else {
+              failedCount++;
+              errorsList.push(`[${item.title || item.sourceSlug}] ${data.error || 'Eroare la import'}`);
+            }
+          } catch (err: any) {
+            failedCount++;
+            errorsList.push(`[${item.title || item.sourceSlug}] ${err?.message || 'Eroare de rețea'}`);
+          } finally {
+            processedCount++;
+            setSyncProgress((prev) => ({
+              ...prev,
+              processed: processedCount,
+              created: createdCount,
+              updated: updatedCount,
+              failed: failedCount,
+              errors: [...errorsList],
+            }));
+          }
+        }
+      };
+
+      await Promise.all([worker(), worker()]);
+
+      navigate(`/dashboard/dealer-import?import=${importId}&notice=${encodeURIComponent(`Sincronizarea Autoport s-a încheiat: ${createdCount} drafturi create, ${updatedCount} actualizate, ${failedCount} erori.`)}`, { replace: true });
+    } catch (err: any) {
+      setSyncProgress((prev) => ({
+        ...prev,
+        errors: [...prev.errors, err.message || 'Eroare neașteptată la sincronizarea Autoport.'],
+      }));
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const isBulkPublishing = navigation.state === 'submitting'
+    && navigation.formData?.get('intent') === 'bulk-publish'
+    && navigation.formData?.get('import_id') === selected?.id;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-5 sm:px-6 sm:py-8 lg:px-8">
@@ -356,7 +566,7 @@ export default function DealerImport() {
             <Layers3 className="h-3.5 w-3.5" /> Dealer tools
           </div>
           <h1 className="text-2xl font-bold text-white sm:text-3xl">Importă stocul dealerului</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-gray-300 sm:text-base">Încarcă până la 100 de mașini din CSV. Datele sunt verificate, iar anunțurile sunt create ca drafturi — nimic nu apare public fără validare.</p>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-gray-300 sm:text-base">Încarcă până la 100 de mașini din CSV sau sincronizează automat stocul de pe Autoport.ro. Datele sunt verificate, iar anunțurile sunt create ca drafturi — nimic nu apare public fără validare.</p>
         </div>
         <Button asChild variant="outline" className="border-white/15 text-white"><Link to="/dashboard/listings">Anunțurile mele</Link></Button>
       </div>
@@ -366,8 +576,74 @@ export default function DealerImport() {
       {(published > 0 || blocked > 0) && <div className="mb-5 rounded-xl border border-accent-gold/30 bg-accent-gold/10 px-4 py-3 text-sm text-gray-100">Publicate: <strong>{published}</strong>. Blocate pentru completare: <strong>{blocked}</strong>.</div>}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <Card variant="elevated" padding="none" className="overflow-hidden">
-          <div className="border-b border-white/10 bg-gradient-to-r from-accent-gold/15 to-transparent p-5 sm:p-6">
+        <div className="space-y-6">
+          {/* Card Sincronizează Autoport */}
+          {isAutoportAllowed && (
+            <Card variant="elevated" padding="none" className="overflow-hidden border border-accent-gold/30 bg-secondary-900/60">
+              <div className="border-b border-white/10 bg-gradient-to-r from-accent-gold/20 via-accent-gold/10 to-transparent p-5 sm:p-6">
+                <div className="flex items-start gap-3">
+                  <div className="rounded-xl bg-accent-gold/20 p-2.5">
+                    <Building2 className="h-5 w-5 text-accent-gold" />
+                  </div>
+                  <div>
+                    <h2 className="font-semibold text-white">Sincronizează Autoport</h2>
+                    <p className="mt-1 text-sm text-gray-300">Preia automat mașinile disponibile, datele și fotografiile de pe Autoport.ro.</p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-5 sm:p-6">
+                <p className="mb-4 text-sm text-gray-400">
+                  Sistemul va scana inventarul activ de pe Autoport.ro, va extrage datele tehnice, descrierea completă și imaginile la rezoluție maximă și le va salva în contul tău ca drafturi.
+                </p>
+
+                {isSyncing ? (
+                  <div className="space-y-4 rounded-xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+                    <div className="flex items-center justify-between gap-3 text-sm text-white">
+                      <span className="truncate font-medium">{syncProgress.currentTitle || 'Se procesează...'}</span>
+                      <span className="shrink-0 font-bold text-accent-gold">
+                        {syncProgress.total > 0 ? `${Math.round((syncProgress.processed / syncProgress.total) * 100)}%` : '0%'}
+                      </span>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
+                      <div
+                        className="h-full bg-gold-gradient transition-all duration-300 ease-out"
+                        style={{ width: `${syncProgress.total > 0 ? (syncProgress.processed / syncProgress.total) * 100 : 0}%` }}
+                      />
+                    </div>
+
+                    <div className="flex flex-wrap gap-4 text-xs text-gray-300">
+                      <div>Procesate: <strong className="text-white">{syncProgress.processed} / {syncProgress.total}</strong></div>
+                      <div>Create: <strong className="text-emerald-400">{syncProgress.created}</strong></div>
+                      <div>Actualizate: <strong className="text-sky-400">{syncProgress.updated}</strong></div>
+                      {syncProgress.failed > 0 && <div>Erori: <strong className="text-red-400">{syncProgress.failed}</strong></div>}
+                    </div>
+
+                    {syncProgress.errors.length > 0 && (
+                      <div className="mt-3 max-h-32 overflow-y-auto rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-xs text-red-200 space-y-1">
+                        {syncProgress.errors.map((err, i) => (
+                          <div key={i}>{err}</div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <Button
+                    type="button"
+                    onClick={handleAutoportSync}
+                    className="bg-gold-gradient text-secondary-900 font-semibold"
+                  >
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Începe sincronizarea
+                  </Button>
+                )}
+              </div>
+            </Card>
+          )}
+
+          <Card variant="elevated" padding="none" className="overflow-hidden">
+            <div className="border-b border-white/10 bg-gradient-to-r from-accent-gold/15 to-transparent p-5 sm:p-6">
             <div className="flex items-start gap-3">
               <div className="rounded-xl bg-accent-gold/15 p-2.5"><FileSpreadsheet className="h-5 w-5 text-accent-gold" /></div>
               <div>
@@ -400,6 +676,7 @@ export default function DealerImport() {
             </div>
           </div>
         </Card>
+        </div>
 
         <Card variant="default" padding="md" className="h-fit">
           <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-gray-300">Importuri recente</h2>
@@ -420,12 +697,27 @@ export default function DealerImport() {
         <div className="flex flex-col gap-4 border-b border-white/10 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
           <div>
             <h2 className="font-semibold text-white">Raport: {selected.file_name}</h2>
-            <p className="mt-1 text-sm text-gray-400">{selected.total_rows} rânduri · {selected.imported_count} drafturi create · {selected.invalid_count} rânduri cu erori</p>
+            <p className="mt-1 text-sm text-gray-400">
+              {selected.total_rows} rânduri · {selected.imported_count} drafturi create · {selected.invalid_count} rânduri cu erori
+            </p>
+            <p className="mt-2 text-xs text-gray-400">
+              Acum: {publicationSummary.readyDraftCount} gata de publicare · {publicationSummary.blockedDraftCount} blocate · {publicationSummary.publishedCount} publicate
+            </p>
           </div>
           <Form method="post">
             <input type="hidden" name="intent" value="bulk-publish" />
             <input type="hidden" name="import_id" value={selected.id} />
-            <Button type="submit" disabled={!selected.imported_count} className="bg-gold-gradient text-secondary-900">Publică drafturile gata</Button>
+            <Button
+              type="submit"
+              disabled={!publicationSummary.readyDraftCount}
+              loading={isBulkPublishing}
+              loadingText="Se publică..."
+              className="bg-gold-gradient text-secondary-900"
+            >
+              {publicationSummary.readyDraftCount > 0
+                ? `Publică ${publicationSummary.readyDraftCount} drafturi gata`
+                : 'Niciun draft gata'}
+            </Button>
           </Form>
         </div>
         <div className="border-b border-white/10 bg-white/[0.02] p-5 sm:p-6">
@@ -448,8 +740,32 @@ export default function DealerImport() {
           {rows.map((row) => (
             <div key={row.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
               <div className="min-w-0">
-                <p className="font-medium text-white">Rândul {row.row_number} <span className="ml-2 text-sm font-normal text-gray-400">{row.external_stock_id || 'fără stock_id'}</span></p>
-                {row.errors.length > 0 ? <p className="mt-1 text-sm text-red-200">{row.errors.join(' ')}</p> : <p className="mt-1 text-sm text-gray-400">Draft creat — pozele se pot încărca în lot sau din editor.</p>}
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-medium text-white">Rândul {row.row_number} <span className="ml-2 text-sm font-normal text-gray-400">{row.external_stock_id || 'fără stock_id'}</span></p>
+                  {row.publication_state === 'published' && (
+                    <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-200">Publicat</span>
+                  )}
+                  {row.publication_state === 'ready' && (
+                    <span className="rounded-full border border-accent-gold/30 bg-accent-gold/10 px-2 py-0.5 text-[11px] font-semibold text-accent-gold">Gata de publicare</span>
+                  )}
+                  {row.publication_state === 'blocked' && (
+                    <span className="rounded-full border border-red-400/30 bg-red-400/10 px-2 py-0.5 text-[11px] font-semibold text-red-200">Blocat</span>
+                  )}
+                  {row.status === 'invalid' && (
+                    <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[11px] font-semibold text-gray-300">Invalid la import</span>
+                  )}
+                </div>
+                {row.errors.length > 0 ? (
+                  <p className="mt-1 text-sm text-red-200">{row.errors.join(' ')}</p>
+                ) : row.publication_state === 'blocked' ? (
+                  <p className="mt-1 text-sm text-red-200">{row.publication_error}</p>
+                ) : row.publication_state === 'published' ? (
+                  <p className="mt-1 text-sm text-emerald-200">Anunțul este deja publicat.</p>
+                ) : row.publication_state === 'ready' ? (
+                  <p className="mt-1 text-sm text-gray-400">Draft complet — poate fi publicat imediat.</p>
+                ) : (
+                  <p className="mt-1 text-sm text-gray-400">Draft creat — pozele se pot încărca în lot sau din editor.</p>
+                )}
               </div>
               {row.listing_id && <Button asChild variant="outline" size="sm" className="border-accent-gold/30 text-accent-gold"><Link to={`/create-listing?edit=${row.listing_id}`}><ImagePlus className="mr-2 h-4 w-4" />Adaugă poze</Link></Button>}
             </div>

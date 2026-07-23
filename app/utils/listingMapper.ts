@@ -69,6 +69,7 @@ export function mapListingToCar(listing: any, signedMap: Record<string, string> 
     condition: { overall: 3 as any, exterior: 3 as any, interior: 3 as any, engine: 3 as any, transmission: 3 as any, hasAccidents: !!listing.has_accidents },
     seller: { id: listing.owner_id || 'unknown', type: 'individual', name: 'Vânzător', email: '', phone: '', location: { id: 'loc-1', city: listing.city || 'București', county: listing.county || 'București', country: 'RO' }, isVerified: false },
     description: listing.description || '',
+    vin: listing.vin || undefined,
     createdAt: listing.created_at ? new Date(listing.created_at) : new Date(),
     updatedAt: listing.updated_at ? new Date(listing.updated_at) : new Date(listing.created_at || Date.now()),
     status: mapListingStatus(listing.status),
